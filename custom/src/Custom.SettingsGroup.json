@@ -1,0 +1,80 @@
+{
+    "version":  1,
+    "fileType": "FactMetaData",
+    "QGC.MetaData.Facts":
+[
+{
+    "name":             "altitude",
+    "shortDesc":        "Altitude to perform VHF scan",
+    "type":             "double",
+    "units":            "m",
+    "decimalPlaces":    1,
+    "default":     121.92
+},
+{
+    "name":             "divisions",
+    "shortDesc": "Number of divisions to stop rotation at",
+    "type":             "Int32",
+    "default":     16
+},
+{
+    "name":             "tagId",
+    "shortDesc": "Tag Id",
+    "type":             "Uint32",
+    "default":     1
+},
+{
+    "name":             "frequency",
+    "shortDesc": "Tag frequency",
+    "type":             "Uint32",
+    "min":              100000,
+    "max":              199999,
+    "default":     146000
+},
+{
+    "name":             "frequencyDelta",
+    "shortDesc": "Frequency Delta",
+    "type":             "Uint32",
+    "default":     0
+},
+{
+    "name":             "pulseDuration",
+    "type":             "Uint32",
+    "min":              1,
+    "default":     20,
+    "units":            "msecs"
+},
+{
+    "name":             "intraPulse1",
+    "type":             "Uint32",
+    "min":              1,
+    "default":     1500,
+    "units":            "msecs"
+},
+{
+    "name":             "intraPulse2",
+    "type":             "Uint32",
+    "default":     2000,
+    "units":            "msecs"
+},
+{
+    "name":             "intraPulseUncertainty",
+    "type":             "Uint32",
+    "default":     500,
+    "units":            "msecs"
+},
+{
+    "name":             "intraPulseJitter",
+    "type":             "Uint32",
+    "default":     0,
+    "units":            "msecs"
+},
+{
+    "name":             "maxPulse",
+    "shortDesc": "Maximum pulse value",
+    "type":             "float",
+    "min":              0,
+    "default":     19
+}
+]
+}
