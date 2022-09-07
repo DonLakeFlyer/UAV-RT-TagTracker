@@ -95,12 +95,6 @@ jobs:
           name: ${{ env.ARTIFACT }}
           path: ${{ runner.temp }}\shadow_build_dir\staging\${{ env.ARTIFACT }}
 
-      - name: Save PDB artifact
-        uses: actions/upload-artifact@master
-        with:
-          name: qgroundcontrol.pdb
-          path: ${{ runner.temp }}\shadow_build_dir\staging\qgroundcontrol.pdb
-
       # This will set GIT_BRANCH_NAME environment variable
       - name: Git branch name
         id:   git-branch-name
