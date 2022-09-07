@@ -29,23 +29,26 @@ CONFIG  += QGC_DISABLE_APM_PLUGIN QGC_DISABLE_APM_PLUGIN_FACTORY
 # We implement our own PX4 plugin factory
 CONFIG  += QGC_DISABLE_PX4_PLUGIN_FACTORY
 
+# Disable things we don't need
+CONFIG += DISABLE_AIRMAP DISABLE_VIDEOSTREAMING
+
 # Branding
 
 DEFINES += CUSTOMHEADER=\"\\\"CustomPlugin.h\\\"\"
 DEFINES += CUSTOMCLASS=CustomPlugin
 
-TARGET   = CustomQGroundControl
-DEFINES += QGC_APPLICATION_NAME='"\\\"Custom QGroundControl\\\""'
+TARGET   = TagTracker
+DEFINES += QGC_APPLICATION_NAME='"\\\"Tag Tracker\\\""'
 
 DEFINES += QGC_ORG_NAME=\"\\\"qgroundcontrol.org\\\"\"
 DEFINES += QGC_ORG_DOMAIN=\"\\\"org.qgroundcontrol\\\"\"
 
-QGC_APP_NAME        = "Custom QGroundControl"
-QGC_BINARY_NAME     = "CustomQGroundControl"
+QGC_APP_NAME        = "Tag Tracker"
+QGC_BINARY_NAME     = "TagTracker"
 QGC_ORG_NAME        = "Custom"
 QGC_ORG_DOMAIN      = "org.custom"
 QGC_ANDROID_PACKAGE = "org.custom.qgroundcontrol"
-QGC_APP_DESCRIPTION = "Custom QGroundControl"
+QGC_APP_DESCRIPTION = "Tag Telemetry"
 QGC_APP_COPYRIGHT   = "Copyright (C) 2020 QGroundControl Development Team. All rights reserved."
 
 # Our own, custom resources
@@ -57,28 +60,18 @@ QML_IMPORT_PATH += \
 
 # Our own, custom sources
 SOURCES += \
+    $$PWD/src/CustomFirmwarePlugin.cc \
+    $$PWD/src/CustomFirmwarePluginFactory.cc \
+    $$PWD/src/CustomOptions.cc \
     $$PWD/src/CustomPlugin.cc \
+    $$PWD/src/CustomSettings.cc \
 
 HEADERS += \
+    $$PWD/src/CustomFirmwarePlugin.h \
+    $$PWD/src/CustomFirmwarePluginFactory.h \
+    $$PWD/src/CustomOptions.h \
     $$PWD/src/CustomPlugin.h \
+    $$PWD/src/CustomSettings.h \
 
 INCLUDEPATH += \
     $$PWD/src \
-
-#-------------------------------------------------------------------------------------
-# Custom Firmware/AutoPilot Plugin
-
-INCLUDEPATH += \
-    $$PWD/src/FirmwarePlugin \
-    $$PWD/src/AutoPilotPlugin
-
-HEADERS+= \
-    $$PWD/src/AutoPilotPlugin/CustomAutoPilotPlugin.h \
-    $$PWD/src/FirmwarePlugin/CustomFirmwarePlugin.h \
-    $$PWD/src/FirmwarePlugin/CustomFirmwarePluginFactory.h \
-
-SOURCES += \
-    $$PWD/src/AutoPilotPlugin/CustomAutoPilotPlugin.cc \
-    $$PWD/src/FirmwarePlugin/CustomFirmwarePlugin.cc \
-    $$PWD/src/FirmwarePlugin/CustomFirmwarePluginFactory.cc \
-
