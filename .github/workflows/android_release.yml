@@ -38,10 +38,12 @@ jobs:
            eabi: armeabi-v7a
            aqt-arch: android_armv7
            ARTIFACT: QGroundControl32.apk
+           ARTIFACT: TagTracker32.apk
          - architecture: 64bits
            eabi: arm64-v8a
            aqt-arch: android_arm64_v8a
            ARTIFACT: QGroundControl64.apk
+           ARTIFACT: TagTracker.apk
 
     steps:
       - name: Checkout repo

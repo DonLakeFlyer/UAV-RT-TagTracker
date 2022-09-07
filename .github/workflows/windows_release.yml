@@ -25,6 +25,8 @@ env:
   SOURCE_DIR:   ${{ github.workspace }}
   QT_VERSION:   6.6.1
   ARTIFACT:     QGroundControl-installer.exe
+  QT_VERSION:   5.15.2
+  ARTIFACT:     TagTracker-installer.exe
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
 
 jobs:
