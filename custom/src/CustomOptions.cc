@@ -3,7 +3,6 @@
 
 CustomOptions::CustomOptions(CustomPlugin* plugin, QObject* parent)
     : QGCOptions    (parent)
-    , _vhfQGCPlugin (plugin)
 {
 
 }
