@@ -139,8 +139,13 @@ void CustomPlugin::_handleVHFCommandAck(const mavlink_debug_float_array_t& debug
         _vhfCommandAckTimer.stop();
         qCDebug(CustomPluginLog) << "VHF command ack received - command:result" << _vhfCommandIdToText(vhfCommand) << result;
         if (result == 1) {
-            if (vhfCommand == COMMAND_ID_START_DETECTION) {
+            switch (vhfCommand) {
+            case COMMAND_ID_TAG:
+                _startDetection();
+                break;
+            case COMMAND_ID_START_DETECTION:
                 _startFlight();
+                break;
             }
         } else {
             _say(QStringLiteral("%1 command failed").arg(_vhfCommandIdToText(vhfCommand)));
@@ -264,6 +269,11 @@ void CustomPlugin::_startFlight(void)
 }
 
 void CustomPlugin::start(void)
+{
+    sendTag();
+}
+
+void CustomPlugin::_startDetection(void)
 {
     Vehicle*                    vehicle             = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     mavlink_message_t           msg;
