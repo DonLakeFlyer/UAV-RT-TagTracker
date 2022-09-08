@@ -1,10 +1,16 @@
 <RCC>
     <qresource prefix="/qml">
         <file alias="CustomSettings.qml">src/CustomSettings.qml</file>
+        <file alias="QGroundControl/FlightDisplay/FlyViewToolStripActionList.qml">src/CustomFlyViewToolStripActionList.qml</file>
+        <file alias="QGroundControl/FlightDisplay/GuidedActionsController.qml">src/CustomGuidedActionsController.qml</file>
+        <file alias="QGroundControl/FlightDisplay/CustomGuidedActionsController.qml">src/CustomGuidedActionsController.qml</file>
     </qresource>
     <qresource prefix="/res">
     </qresource>
     <qresource prefix="/json">
         <file alias="Custom.SettingsGroup.json">src/Custom.SettingsGroup.json</file>
+    </qresource>
+    <qresource prefix="/toolbar">
+        <file alias="PulseIndicator.qml">src/PulseIndicator.qml</file>
     </qresource>
 </RCC>

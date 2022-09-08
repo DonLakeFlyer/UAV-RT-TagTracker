@@ -99,6 +99,7 @@ private:
     void _handleSimulatedStopDetection  (const mavlink_debug_float_array_t& debug_float_array);
     QString _vhfCommandIdToText         (uint32_t vhfCommandId);
     void _sendSimulatedVHFCommandAck    (uint32_t vhfCommandId);
+    void _startDetection                (void);
     void _startFlight                   (void);
 
     QVariantList            _settingsPages;

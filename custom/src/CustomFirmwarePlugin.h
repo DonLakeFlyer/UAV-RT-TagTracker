@@ -11,6 +11,8 @@ public:
     CustomFirmwarePlugin(void);
 
     // FirmwarePlugin overrides
+    virtual const QVariantList& toolIndicators(const Vehicle* vehicle) final;
 
 private:
+    QVariantList _toolIndicatorList;
 };
