@@ -18,12 +18,12 @@ defaults:
 env:
   SOURCE_DIR:   ${{ github.workspace }}
   QT_VERSION:   5.15.2
-  ARTIFACT:     QGroundControl.AppImage
+  ARTIFACT:     TagTracker.AppImage
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
 
 jobs:
   build:
-    runs-on:  ubuntu-18.04
+    runs-on:  ubuntu-20.04
 
     steps:
       - name: Checkout repo
