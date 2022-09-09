@@ -2,13 +2,13 @@
 
 #include "QGCCorePlugin.h"
 #include "QmlObjectListModel.h"
-#include "SettingsFact.h"
 #include "CustomOptions.h"
-#include "QGCLoggingCategory.h"
+#include "FactSystem.h"
 
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
 #include <QTimer>
+#include <QLoggingCategory>
 
 class CustomSettings;
 
@@ -42,6 +42,7 @@ public:
     bool                mavlinkMessage          (Vehicle* vehicle, LinkInterface* link, mavlink_message_t message) final;
     QGCOptions*         options                 (void) final { return qobject_cast<QGCOptions*>(_customOptions); }
     bool                adjustSettingMetaData   (const QString& settingsGroup, FactMetaData& metaData) final;
+    QmlObjectListModel* customMapItems          (void) final;
 
     // Overrides from QGCTool
     void setToolbox(QGCToolbox* toolbox) final;
@@ -133,6 +134,7 @@ private:
     int                     _vehicleFrequency;
     int                     _lastPulseSendIndex;
     int                     _missedPulseCount;
+    QmlObjectListModel      _customMapItems;
 
     // Simulator values
     uint32_t    _simulatorTagId                 = 0;
@@ -144,4 +146,17 @@ private:
     uint32_t    _simulatorIntraPulseJitter;
     float       _simulatorMaxPulse;
 
+};
+
+class PulseRoseMapItem : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QString url MEMBER _url)
+
+public:
+    PulseRoseMapItem(QUrl& itemUrl, QObject* parent) : QObject(parent), _url(itemUrl.toString()) { }
+
+private:
+    QString _url;
 };

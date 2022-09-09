@@ -151,7 +151,7 @@ void CustomPlugin::_handleVHFCommandAck(const mavlink_debug_float_array_t& debug
             _say(QStringLiteral("%1 command failed").arg(_vhfCommandIdToText(vhfCommand)));
         }
     } else {
-        qWarning() << "_handleVHFCommandAck: Received unexpected ack expected:actual" << _vhfCommandAckExpected << vhfCommand;
+        qWarning() << "_handleVHFCommandAck: Received unexpected command id ack expected:actual" << _vhfCommandAckExpected << vhfCommand;
     }
 }
 
@@ -196,6 +196,8 @@ void CustomPlugin::cancelAndReturn(void)
 
 void CustomPlugin::_startFlight(void)
 {
+    qCDebug(CustomPluginLog) << "_startFlight";
+
     Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
 
     if (!vehicle) {
@@ -613,6 +615,7 @@ bool CustomPlugin::_setRTLFlightModeAndValidate(Vehicle* vehicle)
 
 void CustomPlugin::_resetStateAndRTL(void)
 {
+    qCDebug(CustomPluginLog) << "_resetStateAndRTL";
     _delayTimer.stop();
     _targetValueTimer.stop();
 
@@ -792,6 +795,8 @@ void CustomPlugin::_sendVHFCommand(Vehicle* vehicle, LinkInterface* link, uint32
 
 void CustomPlugin::sendTag(void)
 {
+    qCDebug(CustomPluginLog) << "sendTag";
+
     Vehicle*                    vehicle             = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     mavlink_message_t           msg;
     mavlink_debug_float_array_t debug_float_array;
@@ -821,4 +826,15 @@ void CustomPlugin::sendTag(void)
                     &debug_float_array);
         _sendVHFCommand(vehicle, sharedLink.get(), COMMAND_ID_TAG, msg);
     }
+}
+
+QmlObjectListModel* CustomPlugin::customMapItems(void)
+{
+    if (_customMapItems.count() == 0) {
+        QUrl url = QUrl::fromUserInput("qrc:/qml/CustomPulseRoseMapItem.qml");
+        PulseRoseMapItem* mapItem = new PulseRoseMapItem(url, this);
+        _customMapItems.append(mapItem);
+    }
+
+    return &_customMapItems;
 }
