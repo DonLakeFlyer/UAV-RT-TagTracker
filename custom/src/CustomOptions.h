@@ -9,5 +9,7 @@ class CustomOptions : public QGCOptions
 public:
     CustomOptions(CustomPlugin* plugin, QObject* parent = NULL);
 
-    //QUrl flyViewOverlay  (void) const { return QUrl::fromUserInput("qrc:/qml/VHFTrackerFlyViewOverlay.qml"); }
+    // QGCOptions overrides
+    virtual bool guidedBarShowOrbit () const final { return false; }
+    virtual bool guidedBarShowROI   () const final { return false; }
 };
