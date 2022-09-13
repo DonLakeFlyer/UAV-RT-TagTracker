@@ -8,4 +8,4 @@ export QT_IM_MODULE=qtvirtualkeyboard
 # hack until icon issue with AppImage is resolved
 mkdir -p ~/.icons && \cp -f ${HERE}/qgroundcontrol.png ~/.icons
 
-"${HERE}/CustomQGroundControl" "$@"
+"${HERE}/TagTracker" "$@"
