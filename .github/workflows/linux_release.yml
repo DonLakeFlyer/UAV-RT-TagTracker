@@ -28,6 +28,12 @@ env:
   QT_VERSION:   5.15.2
   ARTIFACT:     TagTracker.AppImage
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
+  SOURCE_DIR:             ${{ github.workspace }}
+  QT_VERSION:             5.15.2
+  ARTIFACT:               TagTracker.AppImage
+  QGC_CUSTOM_APP_NAME:    "Tag Tracker"
+  QGC_CUSTOM_BINARY_NAME: TagTracker
+  BUILD_TYPE:             ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
 
 jobs:
   build:
