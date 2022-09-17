@@ -411,7 +411,6 @@ Item {
             confirmDialog.title = takeoffTitle
             confirmDialog.message = takeoffMessage
             confirmDialog.hideTrigger = Qt.binding(function() { return !showTakeoff })
-            guidedValueSlider.visible = true
             break;
         case actionStartMission:
             showImmediate = false
@@ -547,7 +546,7 @@ Item {
             _activeVehicle.guidedModeLand()
             break
         case actionTakeoff:
-            _activeVehicle.guidedModeTakeoff(sliderOutputValue)
+            QGroundControl.corePlugin.start()
             break
         case actionResumeMission:
         case actionResumeMissionUploadFail:
