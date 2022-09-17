@@ -3,8 +3,6 @@
         <file alias="CustomSettings.qml">src/CustomSettings.qml</file>
         <file alias="CustomPulseRoseMapItem.qml">src/CustomPulseRoseMapItem.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewToolStripActionList.qml">src/CustomFlyViewToolStripActionList.qml</file>
-        <file alias="QGroundControl/FlightDisplay/GuidedActionsController.qml">src/CustomGuidedActionsController.qml</file>
-        <file alias="QGroundControl/FlightDisplay/CustomGuidedActionsController.qml">src/CustomGuidedActionsController.qml</file>
     </qresource>
     <qresource prefix="/res">
     </qresource>
