@@ -35,9 +35,10 @@ public:
     Q_PROPERTY(int              vehicleFrequency    MEMBER _vehicleFrequency        NOTIFY vehicleFrequencyChanged)
     Q_PROPERTY(int              missedPulseCount    MEMBER _missedPulseCount        NOTIFY missedPulseCountChanged)
 
-    Q_INVOKABLE void start          (void);
+    Q_INVOKABLE void startAndTakeoff(void);
     Q_INVOKABLE void cancelAndReturn(void);
     Q_INVOKABLE void sendTag        (void);
+    Q_INVOKABLE void startDetection (void);
 
     // Overrides from QGCCorePlugin
     QVariantList&       settingsPages           (void) final;
@@ -102,7 +103,6 @@ private:
     void _handleSimulatedStopDetection  (const mavlink_debug_float_array_t& debug_float_array);
     QString _vhfCommandIdToText         (uint32_t vhfCommandId);
     void _sendSimulatedVHFCommandAck    (uint32_t vhfCommandId);
-    void _startDetection                (void);
     void _startFlight                   (void);
 
     QVariantList            _settingsPages;
@@ -120,6 +120,7 @@ private:
     int                     _firstSlice;
     int                     _nextSlice;
     int                     _cSlice;
+    bool                    _startAndTakeoff = false;
 
     qreal                   _beepStrength;
     qreal                   _temp;
