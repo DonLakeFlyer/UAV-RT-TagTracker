@@ -139,16 +139,19 @@ void CustomPlugin::_handleVHFCommandAck(const mavlink_debug_float_array_t& debug
         _vhfCommandAckTimer.stop();
         qCDebug(CustomPluginLog) << "VHF command ack received - command:result" << _vhfCommandIdToText(vhfCommand) << result;
         if (result == 1) {
-            switch (vhfCommand) {
-            case COMMAND_ID_TAG:
-                _startDetection();
-                break;
-            case COMMAND_ID_START_DETECTION:
-                _startFlight();
-                break;
+            if (_startAndTakeoff) {
+                switch (vhfCommand) {
+                case COMMAND_ID_TAG:
+                    startDetection();
+                    break;
+                case COMMAND_ID_START_DETECTION:
+                    _startFlight();
+                    break;
+                }
             }
         } else {
             _say(QStringLiteral("%1 command failed").arg(_vhfCommandIdToText(vhfCommand)));
+            _startAndTakeoff = false;
         }
     } else {
         qWarning() << "_handleVHFCommandAck: Received unexpected command id ack expected:actual" << _vhfCommandAckExpected << vhfCommand;
@@ -191,6 +194,7 @@ void CustomPlugin::_updateFlightMachineActive(bool flightMachineActive)
 void CustomPlugin::cancelAndReturn(void)
 {
     _say("Cancelling flight.");
+    _startAndTakeoff = false;
     _resetStateAndRTL();
 }
 
@@ -270,12 +274,13 @@ void CustomPlugin::_startFlight(void)
     _nextVehicleState();
 }
 
-void CustomPlugin::start(void)
+void CustomPlugin::startAndTakeoff(void)
 {
+    _startAndTakeoff = true;
     sendTag();
 }
 
-void CustomPlugin::_startDetection(void)
+void CustomPlugin::startDetection(void)
 {
     Vehicle*                    vehicle             = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     mavlink_message_t           msg;
