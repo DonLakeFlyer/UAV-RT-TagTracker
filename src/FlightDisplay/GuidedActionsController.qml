@@ -546,7 +546,7 @@ Item {
             _activeVehicle.guidedModeLand()
             break
         case actionTakeoff:
-            QGroundControl.corePlugin.start()
+            QGroundControl.corePlugin.startAndTakeoff()
             break
         case actionResumeMission:
         case actionResumeMissionUploadFail:
