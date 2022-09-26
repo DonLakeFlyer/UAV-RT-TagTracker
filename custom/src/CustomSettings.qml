@@ -24,27 +24,50 @@ Rectangle {
     anchors.fill:       parent
     anchors.margins:    ScreenTools.defaultFontPixelWidth
 
+    property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+
     QGCFlickable {
         clip:               true
         anchors.fill:       parent
-        contentHeight:      grid.height
-        contentWidth:       grid.width
+        contentHeight:      column.height
+        contentWidth:       column.width
 
-        FactTextFieldGrid {
-            id: grid
+        Column {
+            id:         column
+            spacing:    ScreenTools.defaultFontPixelHeight
 
-            factList: [
-                QGroundControl.corePlugin.customSettings.altitude,
-                QGroundControl.corePlugin.customSettings.divisions,
-                QGroundControl.corePlugin.customSettings.tagId,
-                QGroundControl.corePlugin.customSettings.frequency,
-                QGroundControl.corePlugin.customSettings.frequencyDelta,
-                QGroundControl.corePlugin.customSettings.pulseDuration,
-                QGroundControl.corePlugin.customSettings.intraPulse1,
-                QGroundControl.corePlugin.customSettings.intraPulse2,
-                QGroundControl.corePlugin.customSettings.intraPulseUncertainty,
-                QGroundControl.corePlugin.customSettings.intraPulseJitter
-            ]
+            FactTextFieldGrid {
+                id: grid
+
+                factList: [
+                    QGroundControl.corePlugin.customSettings.altitude,
+                    QGroundControl.corePlugin.customSettings.divisions,
+                    QGroundControl.corePlugin.customSettings.tagId,
+                    QGroundControl.corePlugin.customSettings.frequency,
+                    QGroundControl.corePlugin.customSettings.frequencyDelta,
+                    QGroundControl.corePlugin.customSettings.pulseDuration,
+                    QGroundControl.corePlugin.customSettings.intraPulse1,
+                    QGroundControl.corePlugin.customSettings.intraPulse2,
+                    QGroundControl.corePlugin.customSettings.intraPulseUncertainty,
+                    QGroundControl.corePlugin.customSettings.intraPulseJitter
+                ]
+            }
+
+            Row {
+                spacing: ScreenTools.defaultFontPixelWidth * 5
+
+                QGCButton {
+                    text:       "Send Tag"
+                    enabled:    _activeVehicle
+                    onClicked:  QGroundControl.corePlugin.sendTag()
+                }
+
+                QGCButton {
+                    text:       "Start Detection"
+                    enabled:    _activeVehicle
+                    onClicked:  QGroundControl.corePlugin.startDetection()
+                }
+            }
         }
     }
 }
