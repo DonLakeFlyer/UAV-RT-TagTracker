@@ -109,6 +109,20 @@ Item {
     readonly property int actionChangeSpeed:                25
     readonly property int actionGripper:                    26
 
+    // Start UAV-RT mods
+    readonly property int actionStartDetection:             26
+    readonly property int actionStopDetection:              27
+    readonly property int actionStartRotation:              28
+
+    readonly property string startDetectionTitle:           qsTr("Start")
+    readonly property string stopDetectionTitle:            qsTr("Stop")
+    readonly property string startRotationTitle:            qsTr("Rotate")
+
+    readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag.")
+    readonly property string stopDetectionMessage:          qsTr("Stop all pulse detection.")
+    readonly property string startRotationMessage:          qsTr("Start rotation in place.")
+    // End UAV-RT mods
+
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
     property bool   _useChecklist:              QGroundControl.settingsManager.appSettings.useChecklist.rawValue && QGroundControl.corePlugin.options.preFlightChecklistUrl.toString().length
     property bool   _enforceChecklist:          _useChecklist && QGroundControl.settingsManager.appSettings.enforceChecklist.rawValue
@@ -400,6 +414,7 @@ Item {
             confirmDialog.title = takeoffTitle
             confirmDialog.message = takeoffMessage
             confirmDialog.hideTrigger = Qt.binding(function() { return !showTakeoff })
+            guidedValueSlider.visible = true
             break;
         case actionStartMission:
             showImmediate = false
@@ -526,7 +541,7 @@ Item {
             _activeVehicle.guidedModeLand()
             break
         case actionTakeoff:
-            QGroundControl.corePlugin.startAndTakeoff()
+            _activeVehicle.guidedModeTakeoff(sliderOutputValue)
             break
         case actionResumeMission:
         case actionResumeMissionUploadFail:

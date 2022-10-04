@@ -18,9 +18,11 @@ import QGroundControl.Palette           1.0
 import QGroundControl.ScreenTools       1.0
 
 MapQuickItem {
-    coordinate:     _activeVehicle ? _activeVehicle.coordinate : QtPositioning.coordinate()
+    coordinate:     customMapObject.rotationCenter
     anchorPoint.x:  mapRect.width / 2
     anchorPoint.y:  mapRect.height / 2
+
+    property var customMapObject
 
     property var    _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
     property var    _flightMap:     parent
@@ -28,10 +30,15 @@ MapQuickItem {
     property var    _vhfSettings:   _corePlugin.customSettings
     property var    _divisions:     _vhfSettings.divisions.rawValue
     property real   _sliceSize:     360 / _divisions
+    property int    _rotationIndex: customMapObject.rotationIndex
+    property real   _ratio:         _corePlugin.angleRatios.length - 1 == _rotationIndex ? _largeRatio : _smallRatio
+
+    readonly property real _largeRatio: 0.5
+    readonly property real _smallRatio: 0.3
 
     sourceItem: Rectangle {
         id:             mapRect
-        width:          _flightMap.height * 0.66
+        width:          _flightMap.height * _ratio
         height:         width
         radius:         width / 2
         color:          "transparent"
@@ -70,7 +77,7 @@ MapQuickItem {
                 property real centerX:          width / 2
                 property real centerY:          height / 2
                 property real arcRadians:       (Math.PI * 2) / _divisions
-                property real strengthRatio:    _corePlugin.angleRatios[index]
+                property real strengthRatio:    _corePlugin.angleRatios[_rotationIndex][index]
 
                 Connections {
                     target:                 _corePlugin
