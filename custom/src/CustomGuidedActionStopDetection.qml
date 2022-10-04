@@ -7,23 +7,13 @@
  *
  ****************************************************************************/
 
-import QtQml.Models 2.12
-
 import QGroundControl               1.0
-import QGroundControl.Controls      1.0
 import QGroundControl.FlightDisplay 1.0
 
-ToolStripActionList {
-    id: _root
-
-    signal displayPreFlightChecklist
-
-    model: [
-        GuidedActionTakeoff { },
-        GuidedActionLand { },
-        GuidedActionRTL { },
-        CustomGuidedActionStartDetection { },
-        CustomGuidedActionStopDetection { },
-        CustomGuidedActionStartRotation { }
-    ]
+GuidedToolStripAction {
+    text:       _guidedController.stopDetectionTitle
+    iconSource: "/res/action.svg"
+    visible:    true
+    enabled:    QGroundControl.multiVehicleManager.activeVehicle
+    actionID:   _guidedController.actionStopDetection
 }
