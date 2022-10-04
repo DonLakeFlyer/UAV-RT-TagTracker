@@ -19,6 +19,7 @@
 #define COMMAND_ID_START_DETECTION              3   // Start pulse detection
 #define COMMAND_ID_STOP_DETECTION               4   // Stop pulse detection
 #define COMMAND_ID_PULSE                        5   // Detected pulse value
+#define COMMAND_ID_DETECTION_STATUS				6	// Detection status: Sent once per second when running
 
 #define ACK_IDX_COMMAND                         0   // Command being acked
 #define ACK_IDX_RESULT                          1   // Command result - 1 success, 0 failure
@@ -41,13 +42,13 @@
 
 #define START_DETECTION_IDX_TAG_ID              0   // Tag to start detection on
 
+#define DETECTION_STATUS_IDX_STATUS				0	// 0: Running correctly, 1-N: Error condition
+
 QGC_LOGGING_CATEGORY(CustomPluginLog, "CustomPluginLog")
 
 CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     : QGCCorePlugin         (app, toolbox)
     , _vehicleStateIndex    (0)
-    , _strongestAngle       (0)
-    , _strongestPulsePct    (0)
     , _flightMachineActive  (false)
     , _beepStrength         (0)
     , _temp                 (0)
@@ -80,14 +81,6 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     QGCCorePlugin::setToolbox(toolbox);
     _customSettings = new CustomSettings(nullptr);
     _customOptions = new CustomOptions(this, nullptr);
-
-    int subDivisions = _customSettings->divisions()->rawValue().toInt();
-    _rgAngleStrengths.clear();
-    _rgAngleRatios.clear();
-    for (int i=0; i<subDivisions; i++) {
-        _rgAngleStrengths.append(qQNaN());
-        _rgAngleRatios.append(QVariant::fromValue(qQNaN()));
-    }
 }
 
 QVariantList& CustomPlugin::settingsPages(void)
@@ -121,6 +114,9 @@ bool CustomPlugin::mavlinkMessage(Vehicle*, LinkInterface*, mavlink_message_t me
         case COMMAND_ID_PULSE:
             _handleVHFPulse(debug_float_array);
             break;
+        case COMMAND_ID_DETECTION_STATUS:
+            _handleDetectionStatus(debug_float_array);
+            break;
         }
 
         return false;
@@ -138,20 +134,8 @@ void CustomPlugin::_handleVHFCommandAck(const mavlink_debug_float_array_t& debug
         _vhfCommandAckExpected = 0;
         _vhfCommandAckTimer.stop();
         qCDebug(CustomPluginLog) << "VHF command ack received - command:result" << _vhfCommandIdToText(vhfCommand) << result;
-        if (result == 1) {
-            if (_startAndTakeoff) {
-                switch (vhfCommand) {
-                case COMMAND_ID_TAG:
-                    startDetection();
-                    break;
-                case COMMAND_ID_START_DETECTION:
-                    _startFlight();
-                    break;
-                }
-            }
-        } else {
+        if (result != 1) {
             _say(QStringLiteral("%1 command failed").arg(_vhfCommandIdToText(vhfCommand)));
-            _startAndTakeoff = false;
         }
     } else {
         qWarning() << "_handleVHFCommandAck: Received unexpected command id ack expected:actual" << _vhfCommandAckExpected << vhfCommand;
@@ -170,6 +154,7 @@ void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_floa
 
     _beepStrength = pulseStrength;
     emit beepStrengthChanged(_beepStrength);
+
     _rgPulseValues.append(_beepStrength);
     if (_beepStrength == 0) {
         _elapsedTimer.invalidate();
@@ -185,6 +170,13 @@ void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_floa
     }
 }
 
+void CustomPlugin::_handleDetectionStatus(const mavlink_debug_float_array_t& debug_float_array)
+{
+    _detectionStatus = static_cast<int>(debug_float_array.data[DETECTION_STATUS_IDX_STATUS]);
+
+    emit detectionStatusChanged(_detectionStatus);
+}
+
 void CustomPlugin::_updateFlightMachineActive(bool flightMachineActive)
 {
     _flightMachineActive = flightMachineActive;
@@ -194,13 +186,12 @@ void CustomPlugin::_updateFlightMachineActive(bool flightMachineActive)
 void CustomPlugin::cancelAndReturn(void)
 {
     _say("Cancelling flight.");
-    _startAndTakeoff = false;
     _resetStateAndRTL();
 }
 
-void CustomPlugin::_startFlight(void)
+void CustomPlugin::startRotation(void)
 {
-    qCDebug(CustomPluginLog) << "_startFlight";
+    qCDebug(CustomPluginLog) << "startRotation";
 
     Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
 
@@ -210,24 +201,26 @@ void CustomPlugin::_startFlight(void)
 
     _updateFlightMachineActive(true);
 
+    // Setup new rotation data
+    _rgPulseValues.clear();
+    _rgAngleStrengths.append(QList<double>());
+    _rgAngleRatios.append(QList<double>());
+
+    QList<double>&  angleStrengths =    _rgAngleStrengths.last();
+    QList<double>&  angleRatios =       _rgAngleRatios.last();
+
     // Prime angle strengths with no values
     _cSlice = _customSettings->divisions()->rawValue().toInt();
-    _rgAngleStrengths.clear();
-    _rgAngleRatios.clear();
     for (int i=0; i<_cSlice; i++) {
-        _rgAngleStrengths.append(qQNaN());
-        _rgAngleRatios.append(QVariant::fromValue(qQNaN()));
+        angleStrengths.append(qQNaN());
+        angleRatios.append(qQNaN());
     }
     emit angleRatiosChanged();
 
-    _strongestAngle = _strongestPulsePct = 0;
-    emit strongestAngleChanged(0);
-    emit strongestPulsePctChanged(0);
-
-    if (!_armVehicleAndValidate(vehicle)) {
-        _resetStateAndRTL();
-        return;
-    }
+    // Create compass rose ui on map
+    QUrl url = QUrl::fromUserInput("qrc:/qml/CustomPulseRoseMapItem.qml");
+    PulseRoseMapItem* mapItem = new PulseRoseMapItem(url, _rgAngleStrengths.count() - 1, vehicle->coordinate(), this);
+    _customMapItems.append(mapItem);
 
     // First heading is adjusted to be at the center of the closest subdivision
     double vehicleHeading = vehicle->heading()->rawValue().toDouble();
@@ -235,24 +228,15 @@ void CustomPlugin::_startFlight(void)
     _firstSlice = _nextSlice = static_cast<int>((vehicleHeading + (divisionDegrees / 2.0)) / divisionDegrees);
     _firstHeading = divisionDegrees * _firstSlice;
 
-    VehicleState_t vehicleState;
-    double targetAltitude = _customSettings->altitude()->rawValue().toDouble();
-
     _vehicleStates.clear();
     _vehicleStateIndex = 0;
-
-    // Reach target height
-    vehicleState.command =              CommandTakeoff;
-    vehicleState.fact =                 vehicle->altitudeRelative();
-    vehicleState.targetValueWaitSecs =  120;
-    vehicleState.targetValue =          targetAltitude;
-    vehicleState.targetVariance =       0.3;
-    _vehicleStates.append(vehicleState);
 
     // Rotate
     double headingIncrement = 360.0 / _cSlice;
     double nextHeading = _firstHeading - headingIncrement;
     for (int i=0; i<_cSlice; i++) {
+        VehicleState_t vehicleState;
+
         nextHeading += headingIncrement;
         if (nextHeading >= 360) {
             nextHeading -= 360;
@@ -274,15 +258,13 @@ void CustomPlugin::_startFlight(void)
     _nextVehicleState();
 }
 
-void CustomPlugin::startAndTakeoff(void)
-{
-    _startAndTakeoff = true;
-    sendTag();
-}
-
 void CustomPlugin::startDetection(void)
 {
-    Vehicle*                    vehicle             = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        qCDebug(CustomPluginLog) << "startDetection called with no vehicle active";
+    }
+
     mavlink_message_t           msg;
     mavlink_debug_float_array_t debug_float_array;
     MAVLinkProtocol*            mavlink             = qgcApp()->toolbox()->mavlinkProtocol();
@@ -303,6 +285,35 @@ void CustomPlugin::startDetection(void)
                     &msg,
                     &debug_float_array);
         _sendVHFCommand(vehicle, sharedLink.get(), COMMAND_ID_START_DETECTION, msg);
+    }
+}
+
+void CustomPlugin::stopDetection(void)
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        qCDebug(CustomPluginLog) << "stopDetection called with no vehicle active";
+    }
+
+    mavlink_message_t           msg;
+    mavlink_debug_float_array_t debug_float_array;
+    MAVLinkProtocol*            mavlink             = qgcApp()->toolbox()->mavlinkProtocol();
+    WeakLinkInterfacePtr        weakPrimaryLink     = vehicle->vehicleLinkManager()->primaryLink();
+
+    if (!weakPrimaryLink.expired()) {
+        SharedLinkInterfacePtr sharedLink = weakPrimaryLink.lock();
+
+        memset(&debug_float_array, 0, sizeof(debug_float_array));
+
+        debug_float_array.array_id = COMMAND_ID_STOP_DETECTION;
+
+        mavlink_msg_debug_float_array_encode_chan(
+                    static_cast<uint8_t>(mavlink->getSystemId()),
+                    static_cast<uint8_t>(mavlink->getComponentId()),
+                    sharedLink->mavlinkChannel(),
+                    &msg,
+                    &debug_float_array);
+        _sendVHFCommand(vehicle, sharedLink.get(), COMMAND_ID_STOP_DETECTION, msg);
     }
 }
 
@@ -408,9 +419,7 @@ void CustomPlugin::_nextVehicleState(void)
     }
 
     if (_vehicleStateIndex >= _vehicleStates.count()) {
-        _say(QStringLiteral("Collection complete. returning."));
-        _resetStateAndRTL();
-        _detectComplete();
+        _say(QStringLiteral("Collection complete."));
         return;
     }
 
@@ -485,33 +494,23 @@ void CustomPlugin::_delayComplete(void)
         maxPulse = qMax(maxPulse, pulse);
     }
     qCDebug(CustomPluginLog) << "_delayComplete" << maxPulse << _rgPulseValues;
-    _rgPulseValues.clear();
-    _rgAngleStrengths[_nextSlice] = maxPulse;
+    _rgAngleStrengths.last()[_nextSlice] = maxPulse;
 
     if (++_nextSlice >= _cSlice) {
         _nextSlice = 0;
     }
 
     maxPulse = 0;
-    int strongestSlice = 0;
     for (int i=0; i<_cSlice; i++) {
-        if (_rgAngleStrengths[i] > maxPulse) {
-            maxPulse = _rgAngleStrengths[i];
-            strongestSlice = i;
+        if (_rgAngleStrengths.last()[i] > maxPulse) {
+            maxPulse = _rgAngleStrengths.last()[i];
         }
     }
 
-    _strongestPulsePct = maxPulse;
-    emit strongestPulsePctChanged(_strongestPulsePct);
-
-    double sliceAngle = 360 / _customSettings->divisions()->rawValue().toDouble();
-    _strongestAngle = static_cast<int>(strongestSlice * sliceAngle);
-    emit strongestAngleChanged(_strongestAngle);
-
     for (int i=0; i<_cSlice; i++) {
-        double angleStrength = _rgAngleStrengths[i];
+        double angleStrength = _rgAngleStrengths.last()[i];
         if (!qIsNaN(angleStrength)) {
-            _rgAngleRatios[i] = _rgAngleStrengths[i] / maxPulse;
+            _rgAngleRatios.last()[i] = _rgAngleStrengths.last()[i] / maxPulse;
         }
     }
     emit angleRatiosChanged();
@@ -523,31 +522,6 @@ void CustomPlugin::_targetValueFailed(void)
 {
     _say("Failed to reach target.");
     cancelAndReturn();
-}
-
-void CustomPlugin::_detectComplete(void)
-{
-    Vehicle*                    vehicle             = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
-    mavlink_message_t           msg;
-    mavlink_debug_float_array_t debug_float_array;
-    MAVLinkProtocol*            mavlink             = qgcApp()->toolbox()->mavlinkProtocol();
-    WeakLinkInterfacePtr        weakPrimaryLink     = vehicle->vehicleLinkManager()->primaryLink();
-
-    if (!weakPrimaryLink.expired()) {
-        SharedLinkInterfacePtr sharedLink = weakPrimaryLink.lock();
-
-        memset(&debug_float_array, 0, sizeof(debug_float_array));
-
-        debug_float_array.array_id = COMMAND_ID_STOP_DETECTION;
-
-        mavlink_msg_debug_float_array_encode_chan(
-                    static_cast<uint8_t>(mavlink->getSystemId()),
-                    static_cast<uint8_t>(mavlink->getComponentId()),
-                    sharedLink->mavlinkChannel(),
-                    &msg,
-                    &debug_float_array);
-        _sendVHFCommand(vehicle, sharedLink.get(), COMMAND_ID_STOP_DETECTION, msg);
-    }
 }
 
 bool CustomPlugin::_armVehicleAndValidate(Vehicle* vehicle)
@@ -835,11 +809,5 @@ void CustomPlugin::sendTag(void)
 
 QmlObjectListModel* CustomPlugin::customMapItems(void)
 {
-    if (_customMapItems.count() == 0) {
-        QUrl url = QUrl::fromUserInput("qrc:/qml/CustomPulseRoseMapItem.qml");
-        PulseRoseMapItem* mapItem = new PulseRoseMapItem(url, this);
-        _customMapItems.append(mapItem);
-    }
-
     return &_customMapItems;
 }

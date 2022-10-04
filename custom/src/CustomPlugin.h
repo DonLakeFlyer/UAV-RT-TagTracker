@@ -28,17 +28,17 @@ public:
     Q_PROPERTY(qreal            beepStrength        MEMBER _beepStrength            NOTIFY beepStrengthChanged)
     Q_PROPERTY(qreal            temp                MEMBER _temp                    NOTIFY tempChanged)
     Q_PROPERTY(int              bpm                 MEMBER _bpm                     NOTIFY bpmChanged)
-    Q_PROPERTY(QVariantList     angleRatios         MEMBER _rgAngleRatios           NOTIFY angleRatiosChanged)
-    Q_PROPERTY(int              strongestAngle      MEMBER _strongestAngle          NOTIFY strongestAngleChanged)
-    Q_PROPERTY(int              strongestPulsePct   MEMBER _strongestPulsePct       NOTIFY strongestPulsePctChanged)
+    Q_PROPERTY(QList<QList<double>> angleRatios         MEMBER _rgAngleRatios           NOTIFY angleRatiosChanged)
     Q_PROPERTY(bool             flightMachineActive MEMBER _flightMachineActive     NOTIFY flightMachineActiveChanged)
     Q_PROPERTY(int              vehicleFrequency    MEMBER _vehicleFrequency        NOTIFY vehicleFrequencyChanged)
     Q_PROPERTY(int              missedPulseCount    MEMBER _missedPulseCount        NOTIFY missedPulseCountChanged)
+    Q_PROPERTY(int              detectionStatus     MEMBER _detectionStatus         NOTIFY detectionStatusChanged)
 
-    Q_INVOKABLE void startAndTakeoff(void);
+    Q_INVOKABLE void startRotation  (void);
     Q_INVOKABLE void cancelAndReturn(void);
     Q_INVOKABLE void sendTag        (void);
     Q_INVOKABLE void startDetection (void);
+    Q_INVOKABLE void stopDetection  (void);
 
     // Overrides from QGCCorePlugin
     QVariantList&       settingsPages           (void) final;
@@ -55,16 +55,14 @@ signals:
     void tempChanged                (qreal temp);
     void bpmChanged                 (int bpm);
     void angleRatiosChanged         (void);
-    void strongestAngleChanged      (int strongestAngle);
-    void strongestPulsePctChanged   (int strongestPulsePct);
     void flightMachineActiveChanged (bool flightMachineActive);
     void vehicleFrequencyChanged    (int vehicleFrequency);
     void missedPulseCountChanged    (int missedPulseCount);
+    void detectionStatusChanged     (int detectionStatus);
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
     void _nextVehicleState              (void);
-    void _detectComplete                (void);
     void _delayComplete                 (void);
     void _targetValueFailed             (void);
     void _updateFlightMachineActive     (bool flightMachineActive);
@@ -89,6 +87,7 @@ private:
 
     void _handleVHFCommandAck           (const mavlink_debug_float_array_t& debug_float_array);
     void _handleVHFPulse                (const mavlink_debug_float_array_t& debug_float_array);
+    void _handleDetectionStatus         (const mavlink_debug_float_array_t& debug_float_array);
     void _rotateVehicle                 (Vehicle* vehicle, double headingDegrees);
     void _say                           (QString text);
     bool _armVehicleAndValidate         (Vehicle* vehicle);
@@ -103,24 +102,20 @@ private:
     void _handleSimulatedStopDetection  (const mavlink_debug_float_array_t& debug_float_array);
     QString _vhfCommandIdToText         (uint32_t vhfCommandId);
     void _sendSimulatedVHFCommandAck    (uint32_t vhfCommandId);
-    void _startFlight                   (void);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
     int                     _vehicleStateIndex;
     QList<VehicleState_t>   _vehicleStates;
     QList<double>           _rgPulseValues;
-    QList<double>           _rgAngleStrengths;
-    QVariantList            _rgAngleRatios;
-    QStringList             _rgStringAngleStrengths;
-    int                     _strongestAngle;
-    int                     _strongestPulsePct;
+    QList<QList<double>>    _rgAngleStrengths;
+    QList<QList<double>>    _rgAngleRatios;
     bool                    _flightMachineActive;
     double                  _firstHeading;
     int                     _firstSlice;
     int                     _nextSlice;
     int                     _cSlice;
-    bool                    _startAndTakeoff = false;
+    int                     _detectionStatus = -1;
 
     qreal                   _beepStrength;
     qreal                   _temp;
@@ -155,11 +150,20 @@ class PulseRoseMapItem : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString url MEMBER _url)
+    Q_PROPERTY(QString          url             MEMBER _url)
+    Q_PROPERTY(int              rotationIndex   MEMBER _rotationIndex)
+    Q_PROPERTY(QGeoCoordinate   rotationCenter  MEMBER _rotationCenter)
 
 public:
-    PulseRoseMapItem(QUrl& itemUrl, QObject* parent) : QObject(parent), _url(itemUrl.toString()) { }
+    PulseRoseMapItem(QUrl& itemUrl, int rotationIndex, QGeoCoordinate rotationCenter, QObject* parent)
+        : QObject(parent)
+        , _url(itemUrl.toString())
+        , _rotationIndex(rotationIndex)
+        , _rotationCenter(rotationCenter)
+    { }
 
 private:
-    QString _url;
+    QString         _url;
+    int             _rotationIndex;
+    QGeoCoordinate  _rotationCenter;
 };

@@ -112,6 +112,20 @@ Item {
     readonly property int actionGripper:                    26
     readonly property int actionSetHome:                    27
 
+    // Start UAV-RT mods
+    readonly property int actionStartDetection:             26
+    readonly property int actionStopDetection:              27
+    readonly property int actionStartRotation:              28
+
+    readonly property string startDetectionTitle:           qsTr("Start")
+    readonly property string stopDetectionTitle:            qsTr("Stop")
+    readonly property string startRotationTitle:            qsTr("Rotate")
+
+    readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag.")
+    readonly property string stopDetectionMessage:          qsTr("Stop all pulse detection.")
+    readonly property string startRotationMessage:          qsTr("Start rotation in place.")
+    // End UAV-RT mods
+
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
     property bool   _useChecklist:              QGroundControl.settingsManager.appSettings.useChecklist.rawValue && QGroundControl.corePlugin.options.preFlightChecklistUrl.toString().length
     property bool   _enforceChecklist:          _useChecklist && QGroundControl.settingsManager.appSettings.enforceChecklist.rawValue
@@ -406,6 +420,7 @@ Item {
             confirmDialog.title = takeoffTitle
             confirmDialog.message = takeoffMessage
             confirmDialog.hideTrigger = Qt.binding(function() { return !showTakeoff })
+            guidedValueSlider.visible = true
             break;
         case actionStartMission:
             showImmediate = false
@@ -518,6 +533,23 @@ Item {
             confirmDialog.message = setHomeMessage
             confirmDialog.hideTrigger = Qt.binding(function() { return !showSetHome })
             break
+        // Start UAV-RT mods
+        case actionStartDetection:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = startDetectionTitle
+            confirmDialog.message = startDetectionMessage
+            break
+        case actionStopDetection:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = stopDetectionTitle
+            confirmDialog.message = stopDetectionMessage
+            break
+        case actionStartRotation:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = startRotationTitle
+            confirmDialog.message = startRotationMessage
+            break
+        // End UAV-RT modes
         default:
             console.warn("Unknown actionCode", actionCode)
             return
@@ -537,7 +569,7 @@ Item {
             _activeVehicle.guidedModeLand()
             break
         case actionTakeoff:
-            QGroundControl.corePlugin.startAndTakeoff()
+            _activeVehicle.guidedModeTakeoff(sliderOutputValue)
             break
         case actionResumeMission:
         case actionResumeMissionUploadFail:
@@ -615,6 +647,17 @@ Item {
         case actionSetHome:
             _activeVehicle.doSetHome(actionData)
             break
+        // Start UAV-RT mods
+        case actionStartDetection:
+            QGroundControl.corePlugin.sendTag()
+            break
+        case actionStopDetection:
+            QGroundControl.corePlugin.stopDetection()
+            break
+        case actionStartRotation:
+            QGroundControl.corePlugin.startRotation()
+            break
+        // End UAV-RT modes
         default:
             console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
             break
