@@ -14,36 +14,6 @@
 //  time_usec - send index (used to detect lost telemetry)
 //  array_id - command id
 
-#define COMMAND_ID_ACK                          1   // Ack response to command
-#define COMMAND_ID_TAG                          2   // Tag info
-#define COMMAND_ID_START_DETECTION              3   // Start pulse detection
-#define COMMAND_ID_STOP_DETECTION               4   // Stop pulse detection
-#define COMMAND_ID_PULSE                        5   // Detected pulse value
-#define COMMAND_ID_DETECTION_STATUS				6	// Detection status: Sent once per second when running
-
-#define ACK_IDX_COMMAND                         0   // Command being acked
-#define ACK_IDX_RESULT                          1   // Command result - 1 success, 0 failure
-
-#define PULSE_IDX_DETECTION_STATUS              0   // Detection status (uint 32)
-#define PULSE_IDX_STRENGTH                      1   // Pulse strength [0-100] (float)
-#define PULSE_IDX_GROUP_INDEX                   2   // Group index 0/1/2 (uint 32)
-
-#define PULSE_DETECTION_STATUS_SUPER_THRESHOLD  1
-#define PULSE_DETECTION_STATUS_CONFIRMED        2
-
-#define TAG_IDX_ID                              0   // Tag id (uint 32)
-#define TAG_IDX_FREQUENCY                       1   // Frequency - 6 digits shifted by three decimals, NNNNNN means NNN.NNN000 Mhz (uint 32)
-#define TAG_IDX_DURATION_MSECS                  2   // Pulse duration
-#define TAG_IDX_INTRA_PULSE1_MSECS              3   // Intra-pulse duration 1
-#define TAG_IDX_INTRA_PULSE2_MSECS              4   // Intra-pulse duration 2
-#define TAG_IDX_INTRA_PULSE_UNCERTAINTY         5   // Intra-pulse uncertainty
-#define TAG_IDX_INTRA_PULSE_JITTER              6   // Intra-pulse jitter
-#define TAG_IDX_MAX_PULSE                       7   // Max pulse value
-
-#define START_DETECTION_IDX_TAG_ID              0   // Tag to start detection on
-
-#define DETECTION_STATUS_IDX_STATUS				0	// 0: Running correctly, 1-N: Error condition
-
 QGC_LOGGING_CATEGORY(CustomPluginLog, "CustomPluginLog")
 
 CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
@@ -68,7 +38,7 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     connect(&_delayTimer,           &QTimer::timeout, this, &CustomPlugin::_delayComplete);
     connect(&_targetValueTimer,     &QTimer::timeout, this, &CustomPlugin::_targetValueFailed);
     connect(&_simPulseTimer,        &QTimer::timeout, this, &CustomPlugin::_simulatePulse);
-    connect(&_vhfCommandAckTimer,      &QTimer::timeout, this, &CustomPlugin::_vhfCommandAckFailed);
+    connect(&_vhfCommandAckTimer,   &QTimer::timeout, this, &CustomPlugin::_vhfCommandAckFailed);
 }
 
 CustomPlugin::~CustomPlugin()
@@ -105,17 +75,22 @@ bool CustomPlugin::mavlinkMessage(Vehicle*, LinkInterface*, mavlink_message_t me
 
         mavlink_msg_debug_float_array_decode(&message, &debug_float_array);
 
-        uint32_t messageId = static_cast<uint32_t>(debug_float_array.array_id);
+        CommandID commandId = static_cast<CommandID>(debug_float_array.array_id);
 
-        switch (messageId) {
-        case COMMAND_ID_ACK:
+        switch (commandId) {
+        case CommandID::CommandIDAck:
             _handleVHFCommandAck(debug_float_array);
             break;
-        case COMMAND_ID_PULSE:
+        case CommandID::CommandIDPulse:
             _handleVHFPulse(debug_float_array);
             break;
-        case COMMAND_ID_DETECTION_STATUS:
+#if 0
+        case CommandID::CommandIDDetectionStatus:
             _handleDetectionStatus(debug_float_array);
+            break;
+#endif
+        default:
+            // Not all commands handled
             break;
         }
 
@@ -127,24 +102,24 @@ bool CustomPlugin::mavlinkMessage(Vehicle*, LinkInterface*, mavlink_message_t me
 
 void CustomPlugin::_handleVHFCommandAck(const mavlink_debug_float_array_t& debug_float_array)
 {
-    uint32_t vhfCommand = static_cast<uint32_t>(debug_float_array.data[ACK_IDX_COMMAND]);
-    uint32_t result     = static_cast<uint32_t>(debug_float_array.data[ACK_IDX_RESULT]);
+    CommandID vhfCommand    = static_cast<CommandID>(debug_float_array.data[static_cast<uint32_t>(AckIndex::AckIndexCommand)]);
+    uint32_t result         = static_cast<uint32_t>(debug_float_array.data[static_cast<uint32_t>(AckIndex::AckIndexResult)]);
 
     if (vhfCommand == _vhfCommandAckExpected) {
-        _vhfCommandAckExpected = 0;
+        _vhfCommandAckExpected = static_cast<CommandID>(0);
         _vhfCommandAckTimer.stop();
         qCDebug(CustomPluginLog) << "VHF command ack received - command:result" << _vhfCommandIdToText(vhfCommand) << result;
         if (result != 1) {
             _say(QStringLiteral("%1 command failed").arg(_vhfCommandIdToText(vhfCommand)));
         }
     } else {
-        qWarning() << "_handleVHFCommandAck: Received unexpected command id ack expected:actual" << _vhfCommandAckExpected << vhfCommand;
+        qWarning() << "_handleVHFCommandAck: Received unexpected command id ack expected:actual" << _vhfCommandIdToText(_vhfCommandAckExpected) << _vhfCommandIdToText(vhfCommand);
     }
 }
 
 void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_float_array)
 {
-    double pulseStrength = static_cast<double>(debug_float_array.data[PULSE_IDX_STRENGTH]);
+    double pulseStrength = static_cast<double>(debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexStrength)]);
 
     if (pulseStrength < 0 || pulseStrength > 100) {
         qCDebug(CustomPluginLog) << "PULSE outside range";
@@ -170,12 +145,14 @@ void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_floa
     }
 }
 
+#if 0
 void CustomPlugin::_handleDetectionStatus(const mavlink_debug_float_array_t& debug_float_array)
 {
     _detectionStatus = static_cast<int>(debug_float_array.data[DETECTION_STATUS_IDX_STATUS]);
 
     emit detectionStatusChanged(_detectionStatus);
 }
+#endif
 
 void CustomPlugin::_updateFlightMachineActive(bool flightMachineActive)
 {
@@ -263,6 +240,7 @@ void CustomPlugin::startDetection(void)
     Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     if (!vehicle) {
         qCDebug(CustomPluginLog) << "startDetection called with no vehicle active";
+        return;
     }
 
     mavlink_message_t           msg;
@@ -275,8 +253,7 @@ void CustomPlugin::startDetection(void)
 
         memset(&debug_float_array, 0, sizeof(debug_float_array));
 
-        debug_float_array.array_id                              = COMMAND_ID_START_DETECTION;
-        debug_float_array.data[START_DETECTION_IDX_TAG_ID]      = _customSettings->tagId()->rawValue().toFloat();
+        debug_float_array.array_id = static_cast<uint16_t>(CommandID::CommandIDStart);
 
         mavlink_msg_debug_float_array_encode_chan(
                     static_cast<uint8_t>(mavlink->getSystemId()),
@@ -284,7 +261,7 @@ void CustomPlugin::startDetection(void)
                     sharedLink->mavlinkChannel(),
                     &msg,
                     &debug_float_array);
-        _sendVHFCommand(vehicle, sharedLink.get(), COMMAND_ID_START_DETECTION, msg);
+        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDStart, msg);
     }
 }
 
@@ -293,6 +270,7 @@ void CustomPlugin::stopDetection(void)
     Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     if (!vehicle) {
         qCDebug(CustomPluginLog) << "stopDetection called with no vehicle active";
+        return;
     }
 
     mavlink_message_t           msg;
@@ -305,7 +283,7 @@ void CustomPlugin::stopDetection(void)
 
         memset(&debug_float_array, 0, sizeof(debug_float_array));
 
-        debug_float_array.array_id = COMMAND_ID_STOP_DETECTION;
+        debug_float_array.array_id = static_cast<uint16_t>(CommandID::CommandIDStart);
 
         mavlink_msg_debug_float_array_encode_chan(
                     static_cast<uint8_t>(mavlink->getSystemId()),
@@ -313,7 +291,7 @@ void CustomPlugin::stopDetection(void)
                     sharedLink->mavlinkChannel(),
                     &msg,
                     &debug_float_array);
-        _sendVHFCommand(vehicle, sharedLink.get(), COMMAND_ID_STOP_DETECTION, msg);
+        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDStart, msg);
     }
 }
 
@@ -661,8 +639,8 @@ void CustomPlugin::_simulatePulse(void)
             mavlink_message_t           msg;
             mavlink_debug_float_array_t debug_float_array;
 
-            debug_float_array.array_id = COMMAND_ID_PULSE;
-            debug_float_array.data[PULSE_IDX_STRENGTH] = pulse;
+            debug_float_array.array_id = static_cast<uint16_t>(CommandID::CommandIDPulse);
+            debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexStrength)] = pulse;
             mavlink_msg_debug_float_array_encode(static_cast<uint8_t>(vehicle->id()), MAV_COMP_ID_AUTOPILOT1, &msg, &debug_float_array);
 
             mavlinkMessage(vehicle, sharedLink.get(), msg);
@@ -672,14 +650,14 @@ void CustomPlugin::_simulatePulse(void)
 
 void CustomPlugin::_handleSimulatedTagCommand(const mavlink_debug_float_array_t& debug_float_array)
 {
-    _simulatorTagId                 = static_cast<uint32_t>(debug_float_array.data[TAG_IDX_ID]);
-    _simulatorFrequency             = static_cast<uint32_t>(debug_float_array.data[TAG_IDX_FREQUENCY]);
-    _simulatorPulseDuration         = static_cast<uint32_t>(debug_float_array.data[TAG_IDX_DURATION_MSECS]);
-    _simulatorIntraPulse1           = static_cast<uint32_t>(debug_float_array.data[TAG_IDX_INTRA_PULSE1_MSECS]);
-    _simulatorIntraPulse2           = static_cast<uint32_t>(debug_float_array.data[TAG_IDX_INTRA_PULSE2_MSECS]);
-    _simulatorIntraPulseUncertainty = static_cast<uint32_t>(debug_float_array.data[TAG_IDX_INTRA_PULSE_UNCERTAINTY]);
-    _simulatorIntraPulseJitter      = static_cast<uint32_t>(debug_float_array.data[TAG_IDX_INTRA_PULSE_JITTER]);
-    _simulatorMaxPulse              = debug_float_array.data[TAG_IDX_MAX_PULSE];
+    _simulatorTagId                 = static_cast<uint32_t>(debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexID)]);
+    _simulatorFrequency             = static_cast<uint32_t>(debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexFrequency)]);
+    _simulatorPulseDuration         = static_cast<uint32_t>(debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexDurationMSecs)]);
+    _simulatorIntraPulse1           = static_cast<uint32_t>(debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexIntraPulse1MSecs)]);
+    _simulatorIntraPulse2           = static_cast<uint32_t>(debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexIntraPulse2MSecs)]);
+    _simulatorIntraPulseUncertainty = static_cast<uint32_t>(debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexIntraPulseUncertainty)]);
+    _simulatorIntraPulseJitter      = static_cast<uint32_t>(debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexIntraPulseJitter)]);
+    _simulatorMaxPulse              = debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexMaxPulse)];
 }
 
 void CustomPlugin::_handleSimulatedStartDetection(const mavlink_debug_float_array_t&)
@@ -692,17 +670,17 @@ void CustomPlugin::_handleSimulatedStopDetection(const mavlink_debug_float_array
     _simPulseTimer.stop();
 }
 
-QString CustomPlugin::_vhfCommandIdToText(uint32_t vhfCommandId)
+QString CustomPlugin::_vhfCommandIdToText(CommandID vhfCommandId)
 {
     switch (vhfCommandId) {
-    case COMMAND_ID_TAG:
+    case CommandID::CommandIDTag:
         return QStringLiteral("tag");
-    case COMMAND_ID_START_DETECTION:
+    case CommandID::CommandIDStart:
         return QStringLiteral("start detection");
-    case COMMAND_ID_STOP_DETECTION:
+    case CommandID::CommandIDStop:
         return QStringLiteral("stop detection");
     default:
-        return QStringLiteral("unknown command");
+        return QStringLiteral("unknown command:%1").arg(static_cast<uint32_t>(vhfCommandId));
     }
 }
 
@@ -710,10 +688,10 @@ QString CustomPlugin::_vhfCommandIdToText(uint32_t vhfCommandId)
 void CustomPlugin::_vhfCommandAckFailed(void)
 {
     _say(QStringLiteral("%1 failed. no response from vehicle.").arg(_vhfCommandIdToText(_vhfCommandAckExpected)));
-    _vhfCommandAckExpected = 0;
+    _vhfCommandAckExpected = static_cast<CommandID>(0);
 }
 
-void CustomPlugin::_sendSimulatedVHFCommandAck(uint32_t vhfCommandId)
+void CustomPlugin::_sendSimulatedVHFCommandAck(CommandID vhfCommandId)
 {
     Vehicle*                    vehicle             = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     mavlink_message_t           msg;
@@ -726,9 +704,9 @@ void CustomPlugin::_sendSimulatedVHFCommandAck(uint32_t vhfCommandId)
 
         memset(&debug_float_array, 0, sizeof(debug_float_array));
 
-        debug_float_array.array_id              = COMMAND_ID_ACK;
-        debug_float_array.data[ACK_IDX_COMMAND] = vhfCommandId;
-        debug_float_array.data[ACK_IDX_RESULT]  = 1;
+        debug_float_array.array_id                                                  = static_cast<uint16_t>(CommandID::CommandIDAck);
+        debug_float_array.data[static_cast<uint32_t>(AckIndex::AckIndexCommand)]    = static_cast<float>(vhfCommandId);
+        debug_float_array.data[static_cast<uint32_t>(AckIndex::AckIndexResult)]     = 1;
 
         mavlink_msg_debug_float_array_encode_chan(
                     static_cast<uint8_t>(mavlink->getSystemId()),
@@ -741,7 +719,7 @@ void CustomPlugin::_sendSimulatedVHFCommandAck(uint32_t vhfCommandId)
     }
 }
 
-void CustomPlugin::_sendVHFCommand(Vehicle* vehicle, LinkInterface* link, uint32_t vhfCommandId, const mavlink_message_t& msg)
+void CustomPlugin::_sendVHFCommand(Vehicle* vehicle, LinkInterface* link, CommandID vhfCommandId, const mavlink_message_t& msg)
 {
     _vhfCommandAckExpected = vhfCommandId;
     _vhfCommandAckTimer.start();
@@ -751,21 +729,22 @@ void CustomPlugin::_sendVHFCommand(Vehicle* vehicle, LinkInterface* link, uint32
 
         mavlink_msg_debug_float_array_decode(&msg, &debug_float_array);
 
-        switch (debug_float_array.array_id) {
-        case COMMAND_ID_TAG:
+        switch (static_cast<CommandID>(debug_float_array.array_id)) {
+        case CommandID::CommandIDTag:
             _handleSimulatedTagCommand(debug_float_array);
-            _sendSimulatedVHFCommandAck(COMMAND_ID_TAG);
+            _sendSimulatedVHFCommandAck(CommandID::CommandIDTag);
             break;
-        case COMMAND_ID_START_DETECTION:
+        case CommandID::CommandIDStart:
             _handleSimulatedStartDetection(debug_float_array);
-            _sendSimulatedVHFCommandAck(COMMAND_ID_START_DETECTION);
+            _sendSimulatedVHFCommandAck(CommandID::CommandIDStart);
             break;
-        case COMMAND_ID_STOP_DETECTION:
+        case CommandID::CommandIDStop:
             _handleSimulatedStopDetection(debug_float_array);
-            _sendSimulatedVHFCommandAck(COMMAND_ID_STOP_DETECTION);
+            _sendSimulatedVHFCommandAck(CommandID::CommandIDStop);
             break;
         default:
             qWarning() << "Internal error: Unknown command id" << debug_float_array.array_id;
+            break;
         }
     } else {
         vehicle->sendMessageOnLinkThreadSafe(link, msg);
@@ -787,15 +766,15 @@ void CustomPlugin::sendTag(void)
 
         memset(&debug_float_array, 0, sizeof(debug_float_array));
 
-        debug_float_array.array_id                              = COMMAND_ID_TAG;
-        debug_float_array.data[TAG_IDX_ID]                      = _customSettings->tagId()->rawValue().toFloat();
-        debug_float_array.data[TAG_IDX_FREQUENCY]               = _customSettings->frequency()->rawValue().toFloat() -  _customSettings->frequencyDelta()->rawValue().toFloat();
-        debug_float_array.data[TAG_IDX_DURATION_MSECS]          = _customSettings->pulseDuration()->rawValue().toFloat();
-        debug_float_array.data[TAG_IDX_INTRA_PULSE1_MSECS]      = _customSettings->intraPulse1()->rawValue().toFloat();
-        debug_float_array.data[TAG_IDX_INTRA_PULSE2_MSECS]      = _customSettings->intraPulse2()->rawValue().toFloat();
-        debug_float_array.data[TAG_IDX_INTRA_PULSE_UNCERTAINTY] = _customSettings->intraPulseUncertainty()->rawValue().toFloat();
-        debug_float_array.data[TAG_IDX_INTRA_PULSE_JITTER]      = _customSettings->intraPulseJitter()->rawValue().toFloat();
-        debug_float_array.data[TAG_IDX_MAX_PULSE]               = _customSettings->maxPulse()->rawValue().toFloat();
+        debug_float_array.array_id                                                              = static_cast<uint16_t>(CommandID::CommandIDTag);
+        debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexID)]                     = _customSettings->tagId()->rawValue().toFloat();
+        debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexFrequency)]              = _customSettings->frequency()->rawValue().toFloat() -  _customSettings->frequencyDelta()->rawValue().toFloat();
+        debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexDurationMSecs)]          = _customSettings->pulseDuration()->rawValue().toFloat();
+        debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexIntraPulse1MSecs)]       = _customSettings->intraPulse1()->rawValue().toFloat();
+        debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexIntraPulse2MSecs)]       = _customSettings->intraPulse2()->rawValue().toFloat();
+        debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexIntraPulseUncertainty)]  = _customSettings->intraPulseUncertainty()->rawValue().toFloat();
+        debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexIntraPulseJitter)]       = _customSettings->intraPulseJitter()->rawValue().toFloat();
+        debug_float_array.data[static_cast<uint32_t>(TagIndex::TagIndexMaxPulse)]               = _customSettings->maxPulse()->rawValue().toFloat();
 
         mavlink_msg_debug_float_array_encode_chan(
                     static_cast<uint8_t>(mavlink->getSystemId()),
@@ -803,7 +782,7 @@ void CustomPlugin::sendTag(void)
                     sharedLink->mavlinkChannel(),
                     &msg,
                     &debug_float_array);
-        _sendVHFCommand(vehicle, sharedLink.get(), COMMAND_ID_TAG, msg);
+        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDTag, msg);
     }
 }
 
