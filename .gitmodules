@@ -31,3 +31,7 @@
 [submodule "custom/matlab-coder-utils"]
 	path = custom/matlab-coder-utils
 	url = https://github.com/DonLakeFlyer/matlab-coder-utils.git
+[submodule "custom/uavrt_interfaces"]
+	path = custom/uavrt_interfaces
+	url = https://github.com/dynamic-and-active-systems-lab/uavrt_interfaces.git
+
