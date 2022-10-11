@@ -5,6 +5,9 @@
 #include "CustomOptions.h"
 #include "FactSystem.h"
 
+#include "uavrt_interfaces/qgc_enum_class_definitions.hpp"
+using namespace uavrt_interfaces;
+
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
 #include <QTimer>
@@ -87,7 +90,7 @@ private:
 
     void _handleVHFCommandAck           (const mavlink_debug_float_array_t& debug_float_array);
     void _handleVHFPulse                (const mavlink_debug_float_array_t& debug_float_array);
-    void _handleDetectionStatus         (const mavlink_debug_float_array_t& debug_float_array);
+    //void _handleDetectionStatus         (const mavlink_debug_float_array_t& debug_float_array);
     void _rotateVehicle                 (Vehicle* vehicle, double headingDegrees);
     void _say                           (QString text);
     bool _armVehicleAndValidate         (Vehicle* vehicle);
@@ -96,12 +99,12 @@ private:
     void _takeoff                       (Vehicle* vehicle, double takeoffAltRel);
     void _resetStateAndRTL              (void);
     int  _rawPulseToPct                 (double rawPulse);
-    void _sendVHFCommand                (Vehicle* vehicle, LinkInterface* link, uint32_t vhfCommandId, const mavlink_message_t& msg);
+    void _sendVHFCommand                (Vehicle* vehicle, LinkInterface* link, CommandID vhfCommandId, const mavlink_message_t& msg);
     void _handleSimulatedTagCommand     (const mavlink_debug_float_array_t& debug_float_array);
     void _handleSimulatedStartDetection (const mavlink_debug_float_array_t& debug_float_array);
     void _handleSimulatedStopDetection  (const mavlink_debug_float_array_t& debug_float_array);
-    QString _vhfCommandIdToText         (uint32_t vhfCommandId);
-    void _sendSimulatedVHFCommandAck    (uint32_t vhfCommandId);
+    QString _vhfCommandIdToText         (CommandID vhfCommandId);
+    void _sendSimulatedVHFCommandAck    (CommandID vhfCommandId);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -126,7 +129,7 @@ private:
     bool                    _simulate;
     QTimer                  _simPulseTimer;
     QTimer                  _vhfCommandAckTimer;
-    uint32_t                _vhfCommandAckExpected;
+    CommandID               _vhfCommandAckExpected;
     CustomOptions*          _customOptions;
     CustomSettings*         _customSettings;
     int                     _vehicleFrequency;
