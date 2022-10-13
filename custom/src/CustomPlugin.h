@@ -12,6 +12,7 @@ using namespace uavrt_interfaces;
 #include <QGeoCoordinate>
 #include <QTimer>
 #include <QLoggingCategory>
+#include <QFile>
 
 class CustomSettings;
 
@@ -103,6 +104,8 @@ private:
     void _handleSimulatedStopDetection  (const mavlink_debug_float_array_t& debug_float_array);
     QString _vhfCommandIdToText         (CommandID vhfCommandId);
     void _sendSimulatedVHFCommandAck    (CommandID vhfCommandId);
+    void _logPulseToFile                (const mavlink_debug_float_array_t& debug_float_array);
+    void _logRotateStartStopToFile      (bool start);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -134,6 +137,7 @@ private:
     int                     _lastPulseSendIndex;
     int                     _missedPulseCount;
     QmlObjectListModel      _customMapItems;
+    QFile                   _pulseLogFile;
 
     // Simulator values
     uint32_t    _simulatorTagId                 = 0;
