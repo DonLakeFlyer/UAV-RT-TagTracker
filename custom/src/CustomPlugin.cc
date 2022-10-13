@@ -2,6 +2,7 @@
 #include "Vehicle.h"
 #include "CustomSettings.h"
 #include "QGCApplication.h"
+#include "SettingsManager.h"
 #include "AppSettings.h"
 #include "FlyViewSettings.h"
 #include "QmlComponentInfo.h"
@@ -43,7 +44,9 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
 
 CustomPlugin::~CustomPlugin()
 {
-
+    if (_pulseLogFile.isOpen()) {
+        _pulseLogFile.close();
+    }
 }
 
 void CustomPlugin::setToolbox(QGCToolbox* toolbox)
@@ -121,6 +124,8 @@ void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_floa
 {
     double pulseStrength = static_cast<double>(debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexStrength)]);
 
+    _logPulseToFile(debug_float_array);
+
     if (pulseStrength < 0 || pulseStrength > 100) {
         qCDebug(CustomPluginLog) << "PULSE outside range";
     }
@@ -143,6 +148,45 @@ void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_floa
         }
         _elapsedTimer.restart();
     }
+}
+
+void CustomPlugin::_logPulseToFile(const mavlink_debug_float_array_t& debug_float_array)
+{
+    if (!_pulseLogFile.isOpen()) {
+        _pulseLogFile.setFileName(QString("%1/Pulse-%2.csv").arg(qgcApp()->toolbox()->settingsManager()->appSettings()->logSavePath(),
+                                                                 QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data()));
+        qCDebug(CustomPluginLog) << "Pulse logging to:" << _pulseLogFile;
+        if (!_pulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            qCWarning(CustomPluginLog) << "Unable to open pulse log file";
+            return;
+        }
+    }
+
+    _pulseLogFile.write(QString("1,%1,").arg(debug_float_array.time_usec).toUtf8());
+    for (int i=0; i<25; i++) {
+        _pulseLogFile.write(QString("%1,").arg(debug_float_array.data[i]).toUtf8());
+    }
+    _pulseLogFile.write("\n");
+}
+
+void CustomPlugin::_logRotateStartStopToFile(bool start)
+{
+    if (!_pulseLogFile.isOpen()) {
+        qCWarning(CustomPluginLog) << "_logRotateStartStopToFile called before detection started";
+        return;
+    }
+
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        return;
+    }
+
+    QGeoCoordinate coord = vehicle->coordinate();
+    _pulseLogFile.write(QString("%1,%2,%3,%4\n").arg(start ? 2 : 3)
+                        .arg(coord.latitude())
+                        .arg(coord.longitude())
+                        .arg(vehicle->altitudeAMSL()->rawValue().toDouble())
+                        .toLocal8Bit().data());
 }
 
 #if 0
@@ -175,6 +219,8 @@ void CustomPlugin::startRotation(void)
     if (!vehicle) {
         return;
     }
+
+    _logRotateStartStopToFile(true /* start */);
 
     _updateFlightMachineActive(true);
 
@@ -283,7 +329,7 @@ void CustomPlugin::stopDetection(void)
 
         memset(&debug_float_array, 0, sizeof(debug_float_array));
 
-        debug_float_array.array_id = static_cast<uint16_t>(CommandID::CommandIDStart);
+        debug_float_array.array_id = static_cast<uint16_t>(CommandID::CommandIDStop);
 
         mavlink_msg_debug_float_array_encode_chan(
                     static_cast<uint8_t>(mavlink->getSystemId()),
@@ -393,11 +439,14 @@ void CustomPlugin::_nextVehicleState(void)
     if (_vehicleStateIndex != 0 && vehicle->flightMode() != "Takeoff" && vehicle->flightMode() != "Hold") {
         // User cancel
         _updateFlightMachineActive(false);
+        _logRotateStartStopToFile(false /* stop */);
         return;
     }
 
     if (_vehicleStateIndex >= _vehicleStates.count()) {
         _say(QStringLiteral("Collection complete."));
+        _updateFlightMachineActive(false);
+        _logRotateStartStopToFile(false /* stop */);
         return;
     }
 
