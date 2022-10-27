@@ -6,6 +6,7 @@
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStartDetection.qml">src/CustomGuidedActionStartDetection.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStopDetection.qml">src/CustomGuidedActionStopDetection.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStartRotation.qml">src/CustomGuidedActionStartRotation.qml</file>
+        <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
     </qresource>
     <qresource prefix="/res">
     </qresource>

@@ -53,12 +53,12 @@ Item {
         leftEdgeTopInset:       toolStrip.leftInset
         leftEdgeCenterInset:    toolStrip.leftInset
         leftEdgeBottomInset:    parentToolInsets.leftEdgeBottomInset
-        rightEdgeTopInset:      parentToolInsets.rightEdgeTopInset
+        rightEdgeTopInset:      _root.width - instrumentPanel.x
         rightEdgeCenterInset:   parentToolInsets.rightEdgeCenterInset
         rightEdgeBottomInset:   parentToolInsets.rightEdgeBottomInset
         topEdgeLeftInset:       parentToolInsets.topEdgeLeftInset
         topEdgeCenterInset:     parentToolInsets.topEdgeCenterInset
-        topEdgeRightInset:      parentToolInsets.topEdgeRightInset
+        topEdgeRightInset:      instrumentPanel.y + instrumentPanel.height
         bottomEdgeLeftInset:    parentToolInsets.bottomEdgeLeftInset
         bottomEdgeCenterInset:  mapScale.centerInset
         bottomEdgeRightInset:   0
