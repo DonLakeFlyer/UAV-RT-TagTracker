@@ -28,8 +28,11 @@ public:
     CustomPlugin(QGCApplication* app, QGCToolbox* toolbox);
     ~CustomPlugin();
 
-    Q_PROPERTY(CustomSettings*  customSettings         MEMBER _customSettings             CONSTANT)
+    Q_PROPERTY(CustomSettings*  customSettings      MEMBER _customSettings          CONSTANT)
     Q_PROPERTY(qreal            beepStrength        MEMBER _beepStrength            NOTIFY beepStrengthChanged)
+    Q_PROPERTY(double           pulseTimeSeconds    MEMBER _pulseTimeSeconds        NOTIFY pulseReceived)
+    Q_PROPERTY(double           pulseSNR            MEMBER _pulseSNR                NOTIFY pulseReceived)
+    Q_PROPERTY(bool             pulseConfirmed      MEMBER _pulseConfirmed          NOTIFY pulseReceived)
     Q_PROPERTY(qreal            temp                MEMBER _temp                    NOTIFY tempChanged)
     Q_PROPERTY(int              bpm                 MEMBER _bpm                     NOTIFY bpmChanged)
     Q_PROPERTY(QList<QList<double>> angleRatios         MEMBER _rgAngleRatios           NOTIFY angleRatiosChanged)
@@ -63,6 +66,7 @@ signals:
     void vehicleFrequencyChanged    (int vehicleFrequency);
     void missedPulseCountChanged    (int missedPulseCount);
     void detectionStatusChanged     (int detectionStatus);
+    void pulseReceived              (void);
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
@@ -140,6 +144,10 @@ private:
     int                     _missedPulseCount;
     QmlObjectListModel      _customMapItems;
     QFile                   _pulseLogFile;
+
+    double                  _pulseTimeSeconds;
+    double                  _pulseSNR;
+    bool                    _pulseConfirmed;
 
     // Simulator values
     uint32_t    _simulatorTagId                 = 0;
