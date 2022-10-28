@@ -122,18 +122,23 @@ void CustomPlugin::_handleVHFCommandAck(const mavlink_debug_float_array_t& debug
 
 void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_float_array)
 {
-    double pulseStrength = static_cast<double>(debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexStrength)]);
+    double pulseStrength = static_cast<double>(debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexStrengthLEGACY)]);
 
     _logPulseToFile(debug_float_array);
 
     if (pulseStrength < 0 || pulseStrength > 100) {
         qCDebug(CustomPluginLog) << "PULSE outside range";
     }
-    qCDebug(CustomPluginLog) << "PULSE strength" << pulseStrength;
     pulseStrength = qMax(0.0, qMin(100.0, pulseStrength));
 
     _beepStrength = pulseStrength;
     emit beepStrengthChanged(_beepStrength);
+
+    _pulseTimeSeconds   = debug_float_array.time_usec / 1000000.0;
+    _pulseSNR           = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexSNR)];
+    _pulseConfirmed     = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)];
+    qCDebug(CustomPluginLog) << "PULSE time:snr" << _pulseTimeSeconds << _pulseSNR;
+    emit pulseReceived();
 
     _rgPulseValues.append(_beepStrength);
     if (_beepStrength == 0) {
@@ -163,8 +168,8 @@ void CustomPlugin::_logPulseToFile(const mavlink_debug_float_array_t& debug_floa
     }
 
     _pulseLogFile.write(QString("1,%1,").arg(debug_float_array.time_usec).toUtf8());
-    for (int i=0; i<25; i++) {
-        _pulseLogFile.write(QString("%1,").arg(debug_float_array.data[i]).toUtf8());
+    for (int i=0; i <= static_cast<int>(PulseIndex::PulseIndexLast); i++) {
+        _pulseLogFile.write(QString("%1,").arg(static_cast<double>(debug_float_array.data[i]), 0, 'f', 6).toUtf8());
     }
     _pulseLogFile.write("\n");
 }
@@ -183,10 +188,10 @@ void CustomPlugin::_logRotateStartStopToFile(bool start)
 
     QGeoCoordinate coord = vehicle->coordinate();
     _pulseLogFile.write(QString("%1,%2,%3,%4\n").arg(start ? 2 : 3)
-                        .arg(coord.latitude())
-                        .arg(coord.longitude())
-                        .arg(vehicle->altitudeAMSL()->rawValue().toDouble())
-                        .toLocal8Bit().data());
+                        .arg(coord.latitude(), 0, 'f', 6)
+                        .arg(coord.longitude(), 0, 'f', 6)
+                        .arg(vehicle->altitudeAMSL()->rawValue().toDouble(), 0, 'f', 6)
+                        .toUtf8());
 }
 
 #if 0
@@ -689,7 +694,7 @@ void CustomPlugin::_simulatePulse(void)
             mavlink_debug_float_array_t debug_float_array;
 
             debug_float_array.array_id = static_cast<uint16_t>(CommandID::CommandIDPulse);
-            debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexStrength)] = pulse;
+            debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexStrengthLEGACY)] = pulse;
             mavlink_msg_debug_float_array_encode(static_cast<uint8_t>(vehicle->id()), MAV_COMP_ID_AUTOPILOT1, &msg, &debug_float_array);
 
             mavlinkMessage(vehicle, sharedLink.get(), msg);

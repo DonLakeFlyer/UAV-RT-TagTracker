@@ -204,7 +204,6 @@
 		<file alias="QGroundControl/FlightDisplay/FlightDisplayViewWidgets.qml">../src/FlightDisplay/FlightDisplayViewWidgets.qml</file>
 		<file alias="QGroundControl/FlightDisplay/FlyViewAirspaceIndicator.qml">../src/FlightDisplay/FlyViewAirspaceIndicator.qml</file>
 		<file alias="QGroundControl/FlightDisplay/FlyView.qml">../src/FlightDisplay/FlyView.qml</file>
-		<file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">../src/FlightDisplay/FlyViewCustomLayer.qml</file>
 		<file alias="QGroundControl/FlightDisplay/FlyViewInstrumentPanel.qml">../src/FlightDisplay/FlyViewInstrumentPanel.qml</file>
 		<file alias="QGroundControl/FlightDisplay/FlyViewMap.qml">../src/FlightDisplay/FlyViewMap.qml</file>
 		<file alias="QGroundControl/FlightDisplay/FlyViewMissionCompleteDialog.qml">../src/FlightDisplay/FlyViewMissionCompleteDialog.qml</file>
@@ -348,6 +347,7 @@
 		<file alias="General.MetaData.json.xz">../src/comm/MockLink.General.MetaData.json.xz</file>
 		<file alias="Parameter.MetaData.json.xz">../src/comm/MockLink.Parameter.MetaData.json.xz</file>
 		<file alias="Parameter.MetaData.json">../src/comm/MockLink.Parameter.MetaData.json</file>
+		<file alias="Arduplane.params.ftp.bin">../src/comm/Mocklink.Arduplane.params.ftp.bin</file>
 	</qresource>
 	<qresource prefix="/qml">
 		<file alias="QGroundControl/Controls/MockLinkOptionsDlg.qml">../src/comm/MockLinkOptionsDlg.qml</file>
