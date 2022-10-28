@@ -168,7 +168,7 @@ void CustomPlugin::_logPulseToFile(const mavlink_debug_float_array_t& debug_floa
     }
 
     _pulseLogFile.write(QString("1,%1,").arg(debug_float_array.time_usec).toUtf8());
-    for (int i=0; i<25; i++) {
+    for (int i=0; i <= static_cast<int>(PulseIndex::PulseIndexLast); i++) {
         _pulseLogFile.write(QString("%1,").arg(static_cast<double>(debug_float_array.data[i]), 0, 'f', 6).toUtf8());
     }
     _pulseLogFile.write("\n");
