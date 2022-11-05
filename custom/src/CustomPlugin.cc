@@ -29,8 +29,6 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _lastPulseSendIndex   (-1)
     , _missedPulseCount     (0)
 {
-    _showAdvancedUI = false;
-
     _delayTimer.setSingleShot(true);
     _targetValueTimer.setSingleShot(true);
     _vhfCommandAckTimer.setSingleShot(true);
@@ -54,6 +52,16 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     QGCCorePlugin::setToolbox(toolbox);
     _customSettings = new CustomSettings(nullptr);
     _customOptions = new CustomOptions(this, nullptr);
+
+    connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
+}
+
+void CustomPlugin::_activeVehicleChanged(Vehicle* activeVehicle)
+{
+    // PX4 firmware streams DEBUG_FLOAT_ARRAY messages for some reason. This in turns screws up our usage of the messages for comms.
+    // So we turn off streaming for that once we see the vehicle connection.
+    disconnect(_toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
+    activeVehicle->sendCommand(MAV_COMP_ID_AUTOPILOT1, MAV_CMD_SET_MESSAGE_INTERVAL, true /* showError */, MAVLINK_MSG_ID_DEBUG_FLOAT_ARRAY, -1 /* disable */, 0 /* flight stack */);
 }
 
 QVariantList& CustomPlugin::settingsPages(void)
@@ -136,8 +144,8 @@ void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_floa
 
     _pulseTimeSeconds   = debug_float_array.time_usec / 1000000.0;
     _pulseSNR           = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexSNR)];
-    _pulseConfirmed     = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)];
-    qCDebug(CustomPluginLog) << "PULSE time:snr" << _pulseTimeSeconds << _pulseSNR;
+    _pulseConfirmed     = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)] > 0;
+    qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) << "PULSE time:snr" << _pulseTimeSeconds << _pulseSNR << debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)];
     emit pulseReceived();
 
     _rgPulseValues.append(_beepStrength);
