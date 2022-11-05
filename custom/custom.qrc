@@ -13,7 +13,4 @@
     <qresource prefix="/json">
         <file alias="Custom.SettingsGroup.json">src/Custom.SettingsGroup.json</file>
     </qresource>
-    <qresource prefix="/toolbar">
-        <file alias="PulseIndicator.qml">src/PulseIndicator.qml</file>
-    </qresource>
 </RCC>
