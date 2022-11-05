@@ -52,6 +52,16 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     QGCCorePlugin::setToolbox(toolbox);
     _customSettings = new CustomSettings(nullptr);
     _customOptions = new CustomOptions(this, nullptr);
+
+    connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
+}
+
+void CustomPlugin::_activeVehicleChanged(Vehicle* activeVehicle)
+{
+    // PX4 firmware streams DEBUG_FLOAT_ARRAY messages for some reason. This in turns screws up our usage of the messages for comms.
+    // So we turn off streaming for that once we see the vehicle connection.
+    disconnect(_toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
+    activeVehicle->sendCommand(MAV_COMP_ID_AUTOPILOT1, MAV_CMD_SET_MESSAGE_INTERVAL, true /* showError */, MAVLINK_MSG_ID_DEBUG_FLOAT_ARRAY, -1 /* disable */, 0 /* flight stack */);
 }
 
 QVariantList& CustomPlugin::settingsPages(void)

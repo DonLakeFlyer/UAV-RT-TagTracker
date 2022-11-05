@@ -77,6 +77,7 @@ private slots:
     void _mavCommandResult              (int vehicleId, int component, int command, int result, bool noResponseFromVehicle);
     void _simulatePulse                 (void);
     void _vhfCommandAckFailed           (void);
+    void _activeVehicleChanged          (Vehicle* activeVehicle);
 
 private:
     typedef enum {
