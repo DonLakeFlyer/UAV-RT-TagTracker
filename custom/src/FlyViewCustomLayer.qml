@@ -95,15 +95,25 @@ Item {
             }
 
             ScatterSeries {
-                id: pulseSeries
-                axisX: axisX
-                axisY: axisY
+                id:             confirmedSeries
+                axisX:          axisX
+                axisY:          axisY
+                markerShape:    ScatterSeries.MarkerShapeCircle
+            }
+
+            ScatterSeries {
+                id:             unConfirmedSeries
+                axisX:          axisX
+                axisY:          axisY
+                markerShape:    ScatterSeries.MarkerShapeRectangle
+                markerSize:     confirmedSeries.markerSize * 0.75
             }
 
             Timer {
-                interval: 100
-                repeat: true
-                running: true
+                id:         updateTimer
+                interval:   100
+                repeat:     true
+                running:    true
                 onTriggered: {
                     axisY.min = axisY.min + 0.1
                     axisY.max = axisY.max + 0.1
@@ -119,10 +129,15 @@ Item {
                 function onPulseReceived() {
                     if (firstPulse) {
                         firstPulse = false
-                        timeAdjustment = _corePlugin.pulseTimeSeconds + axisY.min
+                        timeAdjustment = _corePlugin.pulseTimeSeconds - axisY.max
                     }
-                    console.log("pulse received", _corePlugin.pulseTimeSeconds, timeAdjustment)
-                    pulseSeries.append(_corePlugin.pulseSNR, _corePlugin.pulseTimeSeconds - timeAdjustment);
+                    var adjustedTimeValue = _corePlugin.pulseTimeSeconds - timeAdjustment
+                    if (_corePlugin.pulseConfirmed) {
+                        confirmedSeries.append(_corePlugin.pulseSNR, adjustedTimeValue);
+                    } else {
+                        unConfirmedSeries.append(_corePlugin.pulseSNR, adjustedTimeValue);
+                    }
+
                 }
             }
         }
