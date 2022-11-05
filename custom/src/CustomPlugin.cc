@@ -29,8 +29,6 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _lastPulseSendIndex   (-1)
     , _missedPulseCount     (0)
 {
-    _showAdvancedUI = false;
-
     _delayTimer.setSingleShot(true);
     _targetValueTimer.setSingleShot(true);
     _vhfCommandAckTimer.setSingleShot(true);
@@ -136,8 +134,8 @@ void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_floa
 
     _pulseTimeSeconds   = debug_float_array.time_usec / 1000000.0;
     _pulseSNR           = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexSNR)];
-    _pulseConfirmed     = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)];
-    qCDebug(CustomPluginLog) << "PULSE time:snr" << _pulseTimeSeconds << _pulseSNR;
+    _pulseConfirmed     = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)] > 0;
+    qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) << "PULSE time:snr" << _pulseTimeSeconds << _pulseSNR << debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)];
     emit pulseReceived();
 
     _rgPulseValues.append(_beepStrength);
