@@ -7,6 +7,10 @@ CUSTOM_QGC_VER_MAJOR = 0
 CUSTOM_QGC_VER_MINOR = 0
 CUSTOM_QGC_VER_FIRST_BUILD = 0
 
+linux {
+    QMAKE_CXXFLAGS_WARN_ON += -Wno-strict-aliasing
+}
+
 # Build number is automatic
 # Uses the current branch. This way it works on any branch including build-server's PR branches
 CUSTOM_QGC_VER_BUILD = $$system(git --git-dir ../.git rev-list $$GIT_BRANCH --first-parent --count)

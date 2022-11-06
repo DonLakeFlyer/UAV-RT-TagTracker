@@ -125,6 +125,7 @@ private:
     int                     _nextSlice;
     int                     _cSlice;
     int                     _detectionStatus = -1;
+    double                  _lastPulseTime = 0;
 
     qreal                   _beepStrength;
     qreal                   _temp;
