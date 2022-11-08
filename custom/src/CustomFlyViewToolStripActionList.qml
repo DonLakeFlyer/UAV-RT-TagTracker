@@ -24,6 +24,8 @@ ToolStripActionList {
         GuidedActionRTL { },
         CustomGuidedActionStartDetection { },
         CustomGuidedActionStopDetection { },
-        CustomGuidedActionStartRotation { }
+        CustomGuidedActionStartRotation { },
+        CustomGuidedActionAirspyHF { },
+        CustomGuidedActionAirspyMini { }
     ]
 }
