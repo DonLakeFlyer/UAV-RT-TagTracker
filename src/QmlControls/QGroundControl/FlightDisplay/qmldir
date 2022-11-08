@@ -24,6 +24,8 @@ GuidedActionGripper             1.0 GuidedActionGripper.qml
 CustomGuidedActionStartDetection      1.0 CustomGuidedActionStartDetection.qml
 CustomGuidedActionStopDetection       1.0 CustomGuidedActionStopDetection.qml
 CustomGuidedActionStartRotation       1.0 CustomGuidedActionStartRotation.qml
+CustomGuidedActionAirspyHF      1.0 CustomGuidedActionAirspyHF.qml
+CustomGuidedActionAirspyMini      1.0 CustomGuidedActionAirspyMini.qml
 GuidedToolStripAction           1.0 GuidedToolStripAction.qml
 MultiVehicleList                1.0 MultiVehicleList.qml
 PreFlightBatteryCheck           1.0 PreFlightBatteryCheck.qml

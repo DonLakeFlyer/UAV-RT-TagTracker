@@ -113,14 +113,20 @@ Item {
     readonly property int actionStartDetection:             26
     readonly property int actionStopDetection:              27
     readonly property int actionStartRotation:              28
+    readonly property int actionAirspyHF:                   29
+    readonly property int actionAirspyMini:                 30
 
     readonly property string startDetectionTitle:           qsTr("Start")
     readonly property string stopDetectionTitle:            qsTr("Stop")
     readonly property string startRotationTitle:            qsTr("Rotate")
+    readonly property string airspyHFTitle:                 qsTr("HF+")
+    readonly property string airspyMiniTitle:               qsTr("Mini")
 
     readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag.")
     readonly property string stopDetectionMessage:          qsTr("Stop all pulse detection.")
     readonly property string startRotationMessage:          qsTr("Start rotation in place.")
+    readonly property string airspyHFMessage:               qsTr("Start capture Airspy HF+.")
+    readonly property string airspyMiniMessage:             qsTr("Start capture Airspy Mini.")
     // End UAV-RT mods
 
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
@@ -522,6 +528,33 @@ Item {
             confirmDialog.message = gripperMessage
             _widgetLayer._gripperMenu.createObject(mainWindow).open()
             break
+        // Start UAV-RT mods
+        case actionStartDetection:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = startDetectionTitle
+            confirmDialog.message = startDetectionMessage
+            break
+        case actionStopDetection:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = stopDetectionTitle
+            confirmDialog.message = stopDetectionMessage
+            break
+        case actionStartRotation:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = startRotationTitle
+            confirmDialog.message = startRotationMessage
+            break
+        case actionAirspyHF:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = airspyHFTitle
+            confirmDialog.message = airspyHFMessage
+            break
+        case actionAirspyMini:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = airspyMiniTitle
+            confirmDialog.message = airspyMiniMessage
+            break
+        // End UAV-RT modes
         default:
             console.warn("Unknown actionCode", actionCode)
             return
@@ -614,6 +647,16 @@ Item {
         case actionGripper:           
             _gripperFunction === undefined ? _activeVehicle.sendGripperAction(Vehicle.Invalid_option) : _activeVehicle.sendGripperAction(_gripperFunction)
             break
+<<<<<<< HEAD
+=======
+        case actionAirspyHF:
+            QGroundControl.corePlugin.airspyHFCapture()
+            break
+        case actionAirspyMini:
+            QGroundControl.corePlugin.airspyMiniCapture()
+            break
+        // End UAV-RT modes
+>>>>>>> Airspy capture
         default:
             console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
             break
