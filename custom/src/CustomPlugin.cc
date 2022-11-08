@@ -388,7 +388,7 @@ void CustomPlugin::airspyHFCapture(void)
                     sharedLink->mavlinkChannel(),
                     &msg,
                     &debug_float_array);
-        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDStop, msg);
+        _sendVHFCommand(vehicle, sharedLink.get(), static_cast<CommandID>(6), msg);
     }
 }
 
@@ -418,7 +418,7 @@ void CustomPlugin::airspyMiniCapture(void)
                     sharedLink->mavlinkChannel(),
                     &msg,
                     &debug_float_array);
-        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDStop, msg);
+        _sendVHFCommand(vehicle, sharedLink.get(), static_cast<CommandID>(7), msg);
     }
 }
 
