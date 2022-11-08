@@ -362,6 +362,66 @@ void CustomPlugin::stopDetection(void)
     }
 }
 
+void CustomPlugin::airspyHFCapture(void)
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        qCDebug(CustomPluginLog) << "stopDetection called with no vehicle active";
+        return;
+    }
+
+    mavlink_message_t           msg;
+    mavlink_debug_float_array_t debug_float_array;
+    MAVLinkProtocol*            mavlink             = qgcApp()->toolbox()->mavlinkProtocol();
+    WeakLinkInterfacePtr        weakPrimaryLink     = vehicle->vehicleLinkManager()->primaryLink();
+
+    if (!weakPrimaryLink.expired()) {
+        SharedLinkInterfacePtr sharedLink = weakPrimaryLink.lock();
+
+        memset(&debug_float_array, 0, sizeof(debug_float_array));
+
+        debug_float_array.array_id = 6;
+
+        mavlink_msg_debug_float_array_encode_chan(
+                    static_cast<uint8_t>(mavlink->getSystemId()),
+                    static_cast<uint8_t>(mavlink->getComponentId()),
+                    sharedLink->mavlinkChannel(),
+                    &msg,
+                    &debug_float_array);
+        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDStop, msg);
+    }
+}
+
+void CustomPlugin::airspyMiniCapture(void)
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        qCDebug(CustomPluginLog) << "stopDetection called with no vehicle active";
+        return;
+    }
+
+    mavlink_message_t           msg;
+    mavlink_debug_float_array_t debug_float_array;
+    MAVLinkProtocol*            mavlink             = qgcApp()->toolbox()->mavlinkProtocol();
+    WeakLinkInterfacePtr        weakPrimaryLink     = vehicle->vehicleLinkManager()->primaryLink();
+
+    if (!weakPrimaryLink.expired()) {
+        SharedLinkInterfacePtr sharedLink = weakPrimaryLink.lock();
+
+        memset(&debug_float_array, 0, sizeof(debug_float_array));
+
+        debug_float_array.array_id = 7;
+
+        mavlink_msg_debug_float_array_encode_chan(
+                    static_cast<uint8_t>(mavlink->getSystemId()),
+                    static_cast<uint8_t>(mavlink->getComponentId()),
+                    sharedLink->mavlinkChannel(),
+                    &msg,
+                    &debug_float_array);
+        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDStop, msg);
+    }
+}
+
 void CustomPlugin::_sendCommandAndVerify(Vehicle* vehicle, MAV_CMD command, double param1, double param2, double param3, double param4, double param5, double param6, double param7)
 {
     connect(vehicle, &Vehicle::mavCommandResult, this, &CustomPlugin::_mavCommandResult);
