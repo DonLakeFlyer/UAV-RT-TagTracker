@@ -58,10 +58,11 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
 
 void CustomPlugin::_activeVehicleChanged(Vehicle* activeVehicle)
 {
-    // PX4 firmware streams DEBUG_FLOAT_ARRAY messages for some reason. This in turns screws up our usage of the messages for comms.
-    // So we turn off streaming for that once we see the vehicle connection.
+    // PX4 firmware streams DEBUG_FLOAT_ARRAY messages for some reason. This seems to be the only reliable way to get the message to
+    // flow through the Skynode UDP connection out a SiK radio. We need to up the rate so we don't lose messages.
+    // When connected over non-SiK radio this causes duplicates to be sent. So we need to remove those later.
     disconnect(_toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
-    activeVehicle->sendCommand(MAV_COMP_ID_AUTOPILOT1, MAV_CMD_SET_MESSAGE_INTERVAL, true /* showError */, MAVLINK_MSG_ID_DEBUG_FLOAT_ARRAY, -1 /* disable */, 0 /* flight stack */);
+    activeVehicle->sendCommand(MAV_COMP_ID_AUTOPILOT1, MAV_CMD_SET_MESSAGE_INTERVAL, true /* showError */, MAVLINK_MSG_ID_DEBUG_FLOAT_ARRAY, 100000 /* disable */, 0 /* flight stack */);
 }
 
 QVariantList& CustomPlugin::settingsPages(void)
@@ -142,11 +143,18 @@ void CustomPlugin::_handleVHFPulse(const mavlink_debug_float_array_t& debug_floa
     _beepStrength = pulseStrength;
     emit beepStrengthChanged(_beepStrength);
 
-    _pulseTimeSeconds   = debug_float_array.time_usec / 1000000.0;
+    _pulseTimeSeconds   = *((double *)&debug_float_array.data[0]);
     _pulseSNR           = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexSNR)];
     _pulseConfirmed     = debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)] > 0;
-    qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) << "PULSE time:snr" << _pulseTimeSeconds << _pulseSNR << debug_float_array.data[static_cast<uint32_t>(PulseIndex::PulseIndexConfirmedStatus)];
-    emit pulseReceived();
+
+    if (qFuzzyCompare(_lastPulseTime, _pulseTimeSeconds)) {
+        // Remove duplicates cause by double forwarding or detection boundary case
+        return;
+    } else {
+        qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) << "PULSE time:snr" << _pulseTimeSeconds << _pulseSNR << _pulseConfirmed;
+        emit pulseReceived();
+    }
+    _lastPulseTime = _pulseTimeSeconds;
 
     _rgPulseValues.append(_beepStrength);
     if (_beepStrength == 0) {
@@ -350,7 +358,67 @@ void CustomPlugin::stopDetection(void)
                     sharedLink->mavlinkChannel(),
                     &msg,
                     &debug_float_array);
-        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDStart, msg);
+        _sendVHFCommand(vehicle, sharedLink.get(), CommandID::CommandIDStop, msg);
+    }
+}
+
+void CustomPlugin::airspyHFCapture(void)
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        qCDebug(CustomPluginLog) << "stopDetection called with no vehicle active";
+        return;
+    }
+
+    mavlink_message_t           msg;
+    mavlink_debug_float_array_t debug_float_array;
+    MAVLinkProtocol*            mavlink             = qgcApp()->toolbox()->mavlinkProtocol();
+    WeakLinkInterfacePtr        weakPrimaryLink     = vehicle->vehicleLinkManager()->primaryLink();
+
+    if (!weakPrimaryLink.expired()) {
+        SharedLinkInterfacePtr sharedLink = weakPrimaryLink.lock();
+
+        memset(&debug_float_array, 0, sizeof(debug_float_array));
+
+        debug_float_array.array_id = 6;
+
+        mavlink_msg_debug_float_array_encode_chan(
+                    static_cast<uint8_t>(mavlink->getSystemId()),
+                    static_cast<uint8_t>(mavlink->getComponentId()),
+                    sharedLink->mavlinkChannel(),
+                    &msg,
+                    &debug_float_array);
+        _sendVHFCommand(vehicle, sharedLink.get(), static_cast<CommandID>(6), msg);
+    }
+}
+
+void CustomPlugin::airspyMiniCapture(void)
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        qCDebug(CustomPluginLog) << "stopDetection called with no vehicle active";
+        return;
+    }
+
+    mavlink_message_t           msg;
+    mavlink_debug_float_array_t debug_float_array;
+    MAVLinkProtocol*            mavlink             = qgcApp()->toolbox()->mavlinkProtocol();
+    WeakLinkInterfacePtr        weakPrimaryLink     = vehicle->vehicleLinkManager()->primaryLink();
+
+    if (!weakPrimaryLink.expired()) {
+        SharedLinkInterfacePtr sharedLink = weakPrimaryLink.lock();
+
+        memset(&debug_float_array, 0, sizeof(debug_float_array));
+
+        debug_float_array.array_id = 7;
+
+        mavlink_msg_debug_float_array_encode_chan(
+                    static_cast<uint8_t>(mavlink->getSystemId()),
+                    static_cast<uint8_t>(mavlink->getComponentId()),
+                    sharedLink->mavlinkChannel(),
+                    &msg,
+                    &debug_float_array);
+        _sendVHFCommand(vehicle, sharedLink.get(), static_cast<CommandID>(7), msg);
     }
 }
 

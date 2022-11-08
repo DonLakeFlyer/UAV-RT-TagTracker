@@ -39,11 +39,13 @@ public:
     Q_PROPERTY(int              missedPulseCount    MEMBER _missedPulseCount        NOTIFY missedPulseCountChanged)
     Q_PROPERTY(int              detectionStatus     MEMBER _detectionStatus         NOTIFY detectionStatusChanged)
 
-    Q_INVOKABLE void startRotation  (void);
-    Q_INVOKABLE void cancelAndReturn(void);
-    Q_INVOKABLE void sendTag        (void);
-    Q_INVOKABLE void startDetection (void);
-    Q_INVOKABLE void stopDetection  (void);
+    Q_INVOKABLE void startRotation      (void);
+    Q_INVOKABLE void cancelAndReturn    (void);
+    Q_INVOKABLE void sendTag            (void);
+    Q_INVOKABLE void startDetection     (void);
+    Q_INVOKABLE void stopDetection      (void);
+    Q_INVOKABLE void airspyHFCapture    (void);
+    Q_INVOKABLE void airspyMiniCapture  (void);
 
     // Overrides from QGCCorePlugin
     QVariantList&       settingsPages           (void) final;
@@ -125,6 +127,7 @@ private:
     int                     _nextSlice;
     int                     _cSlice;
     int                     _detectionStatus = -1;
+    double                  _lastPulseTime = 0;
 
     qreal                   _beepStrength;
     qreal                   _temp;
