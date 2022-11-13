@@ -4,9 +4,7 @@
 #include "QmlObjectListModel.h"
 #include "CustomOptions.h"
 #include "FactSystem.h"
-
-#include "uavrt_interfaces/qgc_enum_class_definitions.hpp"
-using namespace uavrt_interfaces;
+#include "TunnelProtocol.h"
 
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
@@ -28,22 +26,19 @@ public:
     CustomPlugin(QGCApplication* app, QGCToolbox* toolbox);
     ~CustomPlugin();
 
-    Q_PROPERTY(CustomSettings*  customSettings      MEMBER _customSettings          CONSTANT)
-    Q_PROPERTY(qreal            beepStrength        MEMBER _beepStrength            NOTIFY beepStrengthChanged)
-    Q_PROPERTY(double           pulseTimeSeconds    MEMBER _pulseTimeSeconds        NOTIFY pulseReceived)
-    Q_PROPERTY(double           pulseSNR            MEMBER _pulseSNR                NOTIFY pulseReceived)
-    Q_PROPERTY(bool             pulseConfirmed      MEMBER _pulseConfirmed          NOTIFY pulseReceived)
-    Q_PROPERTY(qreal            temp                MEMBER _temp                    NOTIFY tempChanged)
-    Q_PROPERTY(int              bpm                 MEMBER _bpm                     NOTIFY bpmChanged)
-    Q_PROPERTY(QList<QList<double>> angleRatios         MEMBER _rgAngleRatios           NOTIFY angleRatiosChanged)
-    Q_PROPERTY(bool             flightMachineActive MEMBER _flightMachineActive     NOTIFY flightMachineActiveChanged)
-    Q_PROPERTY(int              vehicleFrequency    MEMBER _vehicleFrequency        NOTIFY vehicleFrequencyChanged)
-    Q_PROPERTY(int              missedPulseCount    MEMBER _missedPulseCount        NOTIFY missedPulseCountChanged)
-    Q_PROPERTY(int              detectionStatus     MEMBER _detectionStatus         NOTIFY detectionStatusChanged)
+    Q_PROPERTY(CustomSettings*  customSettings      MEMBER  _customSettings         CONSTANT)
+    Q_PROPERTY(double           pulseTimeSeconds    READ    _pulseTimeSeconds       NOTIFY pulseReceived)
+    Q_PROPERTY(double           pulseSNR            READ    _pulseSNR               NOTIFY pulseReceived)
+    Q_PROPERTY(bool             pulseConfirmed      READ    _pulseConfirmed         NOTIFY pulseReceived)
+    Q_PROPERTY(QList<QList<double>> angleRatios     MEMBER  _rgAngleRatios          NOTIFY angleRatiosChanged)
+    Q_PROPERTY(bool             flightMachineActive MEMBER  _flightMachineActive    NOTIFY flightMachineActiveChanged)
+    Q_PROPERTY(int              vehicleFrequency    MEMBER  _vehicleFrequency       NOTIFY vehicleFrequencyChanged)
+    Q_PROPERTY(int              missedPulseCount    MEMBER  _missedPulseCount       NOTIFY missedPulseCountChanged)
+    Q_PROPERTY(int              detectionStatus     MEMBER  _detectionStatus        NOTIFY detectionStatusChanged)
 
     Q_INVOKABLE void startRotation      (void);
     Q_INVOKABLE void cancelAndReturn    (void);
-    Q_INVOKABLE void sendTag            (void);
+    Q_INVOKABLE void sendTags           (void);
     Q_INVOKABLE void startDetection     (void);
     Q_INVOKABLE void stopDetection      (void);
     Q_INVOKABLE void airspyHFCapture    (void);
@@ -60,9 +55,6 @@ public:
     void setToolbox(QGCToolbox* toolbox) final;
 
 signals:
-    void beepStrengthChanged        (qreal beepStrength);
-    void tempChanged                (qreal temp);
-    void bpmChanged                 (int bpm);
     void angleRatiosChanged         (void);
     void flightMachineActiveChanged (bool flightMachineActive);
     void vehicleFrequencyChanged    (int vehicleFrequency);
@@ -77,8 +69,7 @@ private slots:
     void _targetValueFailed             (void);
     void _updateFlightMachineActive     (bool flightMachineActive);
     void _mavCommandResult              (int vehicleId, int component, int command, int result, bool noResponseFromVehicle);
-    void _simulatePulse                 (void);
-    void _vhfCommandAckFailed           (void);
+    void _tunnelCommandAckFailed        (void);
     void _activeVehicleChanged          (Vehicle* activeVehicle);
 
 private:
@@ -96,25 +87,25 @@ private:
         double                  targetVariance;
     } VehicleState_t;
 
-    void _handleVHFCommandAck           (const mavlink_debug_float_array_t& debug_float_array);
-    void _handleVHFPulse                (const mavlink_debug_float_array_t& debug_float_array);
-    //void _handleDetectionStatus         (const mavlink_debug_float_array_t& debug_float_array);
-    void _rotateVehicle                 (Vehicle* vehicle, double headingDegrees);
-    void _say                           (QString text);
-    bool _armVehicleAndValidate         (Vehicle* vehicle);
-    bool _setRTLFlightModeAndValidate   (Vehicle* vehicle);
-    void _sendCommandAndVerify          (Vehicle* vehicle, MAV_CMD command, double param1 = 0.0, double param2 = 0.0, double param3 = 0.0, double param4 = 0.0, double param5 = 0.0, double param6 = 0.0, double param7 = 0.0);
-    void _takeoff                       (Vehicle* vehicle, double takeoffAltRel);
-    void _resetStateAndRTL              (void);
-    int  _rawPulseToPct                 (double rawPulse);
-    void _sendVHFCommand                (Vehicle* vehicle, LinkInterface* link, CommandID vhfCommandId, const mavlink_message_t& msg);
-    void _handleSimulatedTagCommand     (const mavlink_debug_float_array_t& debug_float_array);
-    void _handleSimulatedStartDetection (const mavlink_debug_float_array_t& debug_float_array);
-    void _handleSimulatedStopDetection  (const mavlink_debug_float_array_t& debug_float_array);
-    QString _vhfCommandIdToText         (CommandID vhfCommandId);
-    void _sendSimulatedVHFCommandAck    (CommandID vhfCommandId);
-    void _logPulseToFile                (const mavlink_debug_float_array_t& debug_float_array);
-    void _logRotateStartStopToFile      (bool start);
+    void    _handleTunnelCommandAck     (const mavlink_tunnel_t& tunnel);
+    void    _handleTunnelPulse          (const mavlink_tunnel_t& tunnel);
+    void    _rotateVehicle              (Vehicle* vehicle, double headingDegrees);
+    void    _say                        (QString text);
+    bool    _armVehicleAndValidate      (Vehicle* vehicle);
+    bool    _setRTLFlightModeAndValidate(Vehicle* vehicle);
+    void    _sendCommandAndVerify       (Vehicle* vehicle, MAV_CMD command, double param1 = 0.0, double param2 = 0.0, double param3 = 0.0, double param4 = 0.0, double param5 = 0.0, double param6 = 0.0, double param7 = 0.0);
+    void    _takeoff                    (Vehicle* vehicle, double takeoffAltRel);
+    void    _resetStateAndRTL           (void);
+    int     _rawPulseToPct              (double rawPulse);
+    void    _sendTunnelCommand          (uint8_t* payload, size_t payloadSize);
+    QString _tunnelCommandIdToText      (uint32_t command);
+    void    _logPulseToFile             (const mavlink_tunnel_t& tunnel);
+    void    _logRotateStartStopToFile   (bool start);
+    double  _pulseTimeSeconds           (void) { return _lastPulseInfo.start_time_seconds; }
+    double  _pulseSNR                   (void) { return _lastPulseInfo.snr; }
+    bool    _pulseConfirmed             (void) { return _lastPulseInfo.confirmed_status; }
+    void    _sendOneTag                 (void);
+    void    _sendEndTags                (void);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -131,16 +122,10 @@ private:
     int                     _detectionStatus = -1;
     double                  _lastPulseTime = 0;
 
-    qreal                   _beepStrength;
-    qreal                   _temp;
-    int                     _bpm;
-    QElapsedTimer           _elapsedTimer;
     QTimer                  _delayTimer;
     QTimer                  _targetValueTimer;
-    bool                    _simulate;
-    QTimer                  _simPulseTimer;
-    QTimer                  _vhfCommandAckTimer;
-    CommandID               _vhfCommandAckExpected;
+    QTimer                  _tunnelCommandAckTimer;
+    uint32_t                _tunnelCommandAckExpected;
     CustomOptions*          _customOptions;
     CustomSettings*         _customSettings;
     int                     _vehicleFrequency;
@@ -148,21 +133,7 @@ private:
     int                     _missedPulseCount;
     QmlObjectListModel      _customMapItems;
     QFile                   _pulseLogFile;
-
-    double                  _pulseTimeSeconds;
-    double                  _pulseSNR;
-    bool                    _pulseConfirmed;
-
-    // Simulator values
-    uint32_t    _simulatorTagId                 = 0;
-    uint32_t    _simulatorFrequency;
-    uint32_t    _simulatorPulseDuration;
-    uint32_t    _simulatorIntraPulse1;
-    uint32_t    _simulatorIntraPulse2;
-    uint32_t    _simulatorIntraPulseUncertainty;
-    uint32_t    _simulatorIntraPulseJitter;
-    float       _simulatorMaxPulse;
-
+    TunnelProtocol::PulseInfo_t _lastPulseInfo;
 };
 
 class PulseRoseMapItem : public QObject
