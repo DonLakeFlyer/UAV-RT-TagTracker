@@ -80,4 +80,4 @@ HEADERS += \
 
 INCLUDEPATH += \
     $$PWD/src \
-    $$PWD/uavrt_interfaces/include \
+    $$PWD/uavrt_interfaces/include/uavrt_interfaces \

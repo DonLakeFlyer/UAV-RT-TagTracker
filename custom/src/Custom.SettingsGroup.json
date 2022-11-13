@@ -27,9 +27,9 @@
     "name":             "frequency",
     "shortDesc": "Tag frequency",
     "type":             "Uint32",
-    "min":              100000,
-    "max":              199999,
-    "default":     146000
+    "min":              100000000,
+    "max":              199999000,
+    "default":     146000000
 },
 {
     "name":             "frequencyDelta",

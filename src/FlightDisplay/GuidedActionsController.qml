@@ -110,18 +110,21 @@ Item {
     readonly property int actionGripper:                    26
 
     // Start UAV-RT mods
-    readonly property int actionStartDetection:             26
-    readonly property int actionStopDetection:              27
-    readonly property int actionStartRotation:              28
-    readonly property int actionAirspyHF:                   29
-    readonly property int actionAirspyMini:                 30
+    readonly property int actionSendTags:                   26
+    readonly property int actionStartDetection:             27
+    readonly property int actionStopDetection:              28
+    readonly property int actionStartRotation:              29
+    readonly property int actionAirspyHF:                   30
+    readonly property int actionAirspyMini:                 31
 
+    readonly property string sendTagsTitle:                 qsTr("Tagsꜛ")
     readonly property string startDetectionTitle:           qsTr("Start")
     readonly property string stopDetectionTitle:            qsTr("Stop")
     readonly property string startRotationTitle:            qsTr("Rotate")
     readonly property string airspyHFTitle:                 qsTr("HF+")
     readonly property string airspyMiniTitle:               qsTr("Mini")
 
+    readonly property string sendTagsMessage:               qsTr("Send tag(s) to vehicle.")
     readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag.")
     readonly property string stopDetectionMessage:          qsTr("Stop all pulse detection.")
     readonly property string startRotationMessage:          qsTr("Start rotation in place.")
@@ -529,6 +532,11 @@ Item {
             _widgetLayer._gripperMenu.createObject(mainWindow).open()
             break
         // Start UAV-RT mods
+        case actionSendTags:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = sendTagsTitle
+            confirmDialog.message = sendTagsMessage
+            break
         case actionStartDetection:
             confirmDialog.hideTrigger = true
             confirmDialog.title = startDetectionTitle
@@ -646,9 +654,19 @@ Item {
             break
         case actionGripper:           
             _gripperFunction === undefined ? _activeVehicle.sendGripperAction(Vehicle.Invalid_option) : _activeVehicle.sendGripperAction(_gripperFunction)
+        // Start UAV-RT mods
+        case actionSendTags:
+            QGroundControl.corePlugin.sendTags()
             break
-<<<<<<< HEAD
-=======
+        case actionStartDetection:
+            QGroundControl.corePlugin.startDetection()
+            break
+        case actionStopDetection:
+            QGroundControl.corePlugin.stopDetection()
+            break
+        case actionStartRotation:
+            QGroundControl.corePlugin.startRotation()
+            break
         case actionAirspyHF:
             QGroundControl.corePlugin.airspyHFCapture()
             break
@@ -656,7 +674,6 @@ Item {
             QGroundControl.corePlugin.airspyMiniCapture()
             break
         // End UAV-RT modes
->>>>>>> Airspy capture
         default:
             console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
             break

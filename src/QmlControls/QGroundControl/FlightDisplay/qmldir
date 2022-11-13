@@ -21,6 +21,7 @@ GuidedActionRTL                 1.0 GuidedActionRTL.qml
 GuidedValueSlider               1.0 GuidedValueSlider.qml
 GuidedActionTakeoff             1.0 GuidedActionTakeoff.qml
 GuidedActionGripper             1.0 GuidedActionGripper.qml
+CustomGuidedActionSendTags      1.0 CustomGuidedActionSendTags.qml
 CustomGuidedActionStartDetection      1.0 CustomGuidedActionStartDetection.qml
 CustomGuidedActionStopDetection       1.0 CustomGuidedActionStopDetection.qml
 CustomGuidedActionStartRotation       1.0 CustomGuidedActionStartRotation.qml
