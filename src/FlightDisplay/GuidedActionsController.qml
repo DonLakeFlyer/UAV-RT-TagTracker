@@ -107,18 +107,21 @@ Item {
     readonly property int actionChangeSpeed:                25
 
     // Start UAV-RT mods
-    readonly property int actionStartDetection:             26
-    readonly property int actionStopDetection:              27
-    readonly property int actionStartRotation:              28
-    readonly property int actionAirspyHF:                   29
-    readonly property int actionAirspyMini:                 30
+    readonly property int actionSendTags:                   26
+    readonly property int actionStartDetection:             27
+    readonly property int actionStopDetection:              28
+    readonly property int actionStartRotation:              29
+    readonly property int actionAirspyHF:                   30
+    readonly property int actionAirspyMini:                 31
 
+    readonly property string sendTagsTitle:                 qsTr("Tagsꜛ")
     readonly property string startDetectionTitle:           qsTr("Start")
     readonly property string stopDetectionTitle:            qsTr("Stop")
     readonly property string startRotationTitle:            qsTr("Rotate")
     readonly property string airspyHFTitle:                 qsTr("HF+")
     readonly property string airspyMiniTitle:               qsTr("Mini")
 
+    readonly property string sendTagsMessage:               qsTr("Send tag(s) to vehicle.")
     readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag.")
     readonly property string stopDetectionMessage:          qsTr("Stop all pulse detection.")
     readonly property string startRotationMessage:          qsTr("Start rotation in place.")
@@ -517,6 +520,11 @@ Item {
             guidedValueSlider.visible = true
             break
         // Start UAV-RT mods
+        case actionSendTags:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = sendTagsTitle
+            confirmDialog.message = sendTagsMessage
+            break
         case actionStartDetection:
             confirmDialog.hideTrigger = true
             confirmDialog.title = startDetectionTitle
@@ -633,8 +641,11 @@ Item {
             }
             break
         // Start UAV-RT mods
+        case actionSendTags:
+            QGroundControl.corePlugin.sendTags()
+            break
         case actionStartDetection:
-            QGroundControl.corePlugin.sendTag()
+            QGroundControl.corePlugin.startDetection()
             break
         case actionStopDetection:
             QGroundControl.corePlugin.stopDetection()

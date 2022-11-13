@@ -22,6 +22,7 @@ ToolStripActionList {
         GuidedActionTakeoff { },
         GuidedActionLand { },
         GuidedActionRTL { },
+        CustomGuidedActionSendTags { },
         CustomGuidedActionStartDetection { },
         CustomGuidedActionStopDetection { },
         CustomGuidedActionStartRotation { },
