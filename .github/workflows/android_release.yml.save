@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -68,13 +68,10 @@ jobs:
 
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
-        shell: cmake -P {0}
-        run: |
-          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-          message("::set-output name=timestamp::${current_date}")
+        run: echo "name=timestamp::$(date --utc +'%Y-%m-%d-%H\;%M\;%S')" >> $GITHUB_OUTPUT
 
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path:         ~/.ccache
           key:          ${{ runner.os }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
@@ -99,16 +96,10 @@ jobs:
             mkdir gstreamer-1.0-android-universal-1.18.5
             tar xf gstreamer-1.0-android-universal-1.18.5.tar.xz -C gstreamer-1.0-android-universal-1.18.5
 
-      # This will set GIT_BRANCH_NAME environment variable
-      - name: Git branch name
-        id:   git-branch-name
-        uses: EthanSK/git-branch-name-action@v1
-
       - name: Update android manifest
+        if: github.ref_name != 'Stable'
         run: |
-          if [ $GIT_BRANCH_NAME != "Stable*" ]; then
-            ${SOURCE_DIR}/tools/update_android_manifest_package.sh ${GIT_BRANCH_NAME}
-          fi
+            ${SOURCE_DIR}/tools/update_android_manifest_package.sh ${{ github.ref_name }}
 
       - name: Build
         working-directory: ${{ runner.temp }}/shadow_build_dir

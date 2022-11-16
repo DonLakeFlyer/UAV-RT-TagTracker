@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -39,7 +39,7 @@ jobs:
           git fetch --all --tags -f
 
       - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        uses: jurplel/install-qt-action@v3
         with:
           version:      ${{ env.QT_VERSION }}
           host:         linux
@@ -62,13 +62,10 @@ jobs:
 
       - name: Prepare ccache timestamp
         id: ccache_cache_timestamp
-        shell: cmake -P {0}
-        run: |
-          string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-          message("::set-output name=timestamp::${current_date}")
+        run: echo "name=timestamp::$(date --utc +'%Y-%m-%d-%H\;%M\;%S')" >> $GITHUB_OUTPUT
 
       - name: ccache cache files
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path:         ~/.ccache
           key:          ${{ runner.os }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
