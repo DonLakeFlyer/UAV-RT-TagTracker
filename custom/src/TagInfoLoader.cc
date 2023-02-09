@@ -88,13 +88,13 @@ bool TagInfoLoader::loadTags(void)
         }
 
         tagValueString              = tagValues[tagValuePosition++];
-        tagInfo.intra_pulse1_msecs  = tagValueString.toUInt(&ok);
+        tagInfo.pulse_width_msecs   = tagValueString.toUInt(&ok);
         if (!ok) {
             qgcApp()->showAppMessage(QStringLiteral("TagInfoLoader: Line #%1 Value:'%2'. Unable to convert pulse_width_msecs to uint.").arg(lineCount).arg(tagValueString));
             return false;
         }
-        if (tagInfo.intra_pulse1_msecs == 0) {
-            qgcApp()->showAppMessage(QStringLiteral("TagInfoLoader: Line #%1 Value:'%2'. ip_msecs value cannot be 0").arg(lineCount).arg(tagValueString));
+        if (tagInfo.pulse_width_msecs == 0) {
+            qgcApp()->showAppMessage(QStringLiteral("TagInfoLoader: Line #%1 Value:'%2'. pulse_width_msecs value cannot be 0").arg(lineCount).arg(tagValueString));
             return false;
         }
 
@@ -141,6 +141,8 @@ bool TagInfoLoader::loadTags(void)
             qgcApp()->showAppMessage(QStringLiteral("TagInfoLoader: Line #%1 Value:'%2'. false_alarm value cannot be 0").arg(lineCount).arg(tagValueString));
             return false;
         }
+
+        newTagList.append(tagInfo);
     }
 
     tagList = newTagList;
