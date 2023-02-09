@@ -23,6 +23,7 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _vehicleFrequency     (0)
     , _lastPulseSendIndex   (-1)
     , _missedPulseCount     (0)
+    , _tagInfoLoader        (this)
 {
     static_assert(TunnelProtocolValidateSizes, "TunnelProtocolValidateSizes failed");
 
@@ -50,6 +51,8 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     _customOptions = new CustomOptions(this, nullptr);
 
     connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
+
+    _tagInfoLoader.loadTags();
 }
 
 void CustomPlugin::_activeVehicleChanged(Vehicle* activeVehicle)
@@ -115,10 +118,8 @@ void CustomPlugin::_handleTunnelCommandAck(const mavlink_tunnel_t& tunnel)
         if (ack.result == COMMAND_RESULT_SUCCESS) {
             switch (ack.command) {
             case COMMAND_ID_START_TAGS:
-                _sendOneTag();
-                break;
             case COMMAND_ID_TAG:
-                _sendEndTags();
+                _sendNextTag();
                 break;
             }
         } else {
@@ -314,26 +315,27 @@ void CustomPlugin::airspyMiniCapture(void)
 
 void CustomPlugin::sendTags(void)
 {
+    if (_tagInfoLoader.tagList.count() == 0) {
+        qgcApp()->showAppMessage(("No tags are available to send."));
+        return;
+    }
+
+    _nextTagToSend = 0;
+
     StartTagsInfo_t startTagsInfo;
 
     startTagsInfo.header.command = COMMAND_ID_START_TAGS;
     _sendTunnelCommand((uint8_t*)&startTagsInfo, sizeof(startTagsInfo));
 }
 
-void CustomPlugin::_sendOneTag(void)
+void CustomPlugin::_sendNextTag(void)
 {
-    TagInfo_t tagInfo;
-
-    tagInfo.header.command                  = COMMAND_ID_TAG;
-    tagInfo.id                              = _customSettings->tagId()->rawValue().toUInt();
-    tagInfo.frequency_hz                    = _customSettings->frequency()->rawValue().toUInt() -  _customSettings->frequencyDelta()->rawValue().toUInt();
-    tagInfo.pulse_width_msecs               = _customSettings->pulseDuration()->rawValue().toUInt();
-    tagInfo.intra_pulse1_msecs              = _customSettings->intraPulse1()->rawValue().toUInt();
-    tagInfo.intra_pulse2_msecs              = _customSettings->intraPulse2()->rawValue().toUInt();
-    tagInfo.intra_pulse_uncertainty_msecs   = _customSettings->intraPulseUncertainty()->rawValue().toUInt();
-    tagInfo.intra_pulse_jitter_msecs        = _customSettings->intraPulseJitter()->rawValue().toUInt();
-
-    _sendTunnelCommand((uint8_t*)&tagInfo, sizeof(tagInfo));
+    if (_nextTagToSend >= _tagInfoLoader.tagList.count()) {
+        _sendEndTags();
+    } else {
+        TagInfo_t tagInfo = _tagInfoLoader.tagList[_nextTagToSend++];
+        _sendTunnelCommand((uint8_t*)&tagInfo, sizeof(tagInfo));
+    }
 }
 
 void CustomPlugin::_sendEndTags(void)
