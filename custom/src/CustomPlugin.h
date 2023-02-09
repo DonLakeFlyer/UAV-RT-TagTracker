@@ -5,6 +5,7 @@
 #include "CustomOptions.h"
 #include "FactSystem.h"
 #include "TunnelProtocol.h"
+#include "TagInfoLoader.h"
 
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
@@ -102,7 +103,7 @@ private:
     double  _pulseTimeSeconds           (void) { return _lastPulseInfo.start_time_seconds; }
     double  _pulseSNR                   (void) { return _lastPulseInfo.snr; }
     bool    _pulseConfirmed             (void) { return _lastPulseInfo.confirmed_status; }
-    void    _sendOneTag                 (void);
+    void    _sendNextTag                (void);
     void    _sendEndTags                (void);
 
     QVariantList            _settingsPages;
@@ -132,6 +133,9 @@ private:
     QmlObjectListModel      _customMapItems;
     QFile                   _pulseLogFile;
     TunnelProtocol::PulseInfo_t _lastPulseInfo;
+
+    TagInfoLoader           _tagInfoLoader;
+    int                     _nextTagToSend;
 };
 
 class PulseRoseMapItem : public QObject
