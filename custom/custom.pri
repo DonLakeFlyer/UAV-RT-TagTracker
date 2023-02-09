@@ -69,6 +69,7 @@ SOURCES += \
     $$PWD/src/CustomOptions.cc \
     $$PWD/src/CustomPlugin.cc \
     $$PWD/src/CustomSettings.cc \
+    $$PWD/src/TagInfoLoader.cc \
 
 HEADERS += \
     $$PWD/src/CustomFirmwarePlugin.h \
@@ -76,6 +77,7 @@ HEADERS += \
     $$PWD/src/CustomOptions.h \
     $$PWD/src/CustomPlugin.h \
     $$PWD/src/CustomSettings.h \
+    $$PWD/src/TagInfoLoader.h \
 
 INCLUDEPATH += \
     $$PWD/src \
