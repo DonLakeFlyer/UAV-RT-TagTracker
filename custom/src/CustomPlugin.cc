@@ -141,18 +141,14 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
 
     memcpy(&_lastPulseInfo, tunnel.payload, sizeof(_lastPulseInfo));
 
-    if (qFuzzyCompare(_lastPulseTime, _lastPulseInfo.start_time_seconds)) {
-        // Remove duplicates cause by double forwarding or detection boundary case
-        return;
-    } else {
-        qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
-                                    "PULSE time:snr:confirmed" <<
-                                    _lastPulseInfo.start_time_seconds <<
-                                    _lastPulseInfo.snr <<
-                                    _lastPulseInfo.confirmed_status;
-        emit pulseReceived();
-    }
-    _lastPulseTime = _lastPulseInfo.start_time_seconds;
+    qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
+                                "PULSE tag_id:frequency_hz:time:snr:confirmed" <<
+                                _lastPulseInfo.tag_id <<
+                                _lastPulseInfo.frequency_hz <<
+                                _lastPulseInfo.start_time_seconds <<
+                                _lastPulseInfo.snr <<
+                                _lastPulseInfo.confirmed_status;
+    emit pulseReceived();
 
     _rgPulseValues.append(_lastPulseInfo.snr);
 }
