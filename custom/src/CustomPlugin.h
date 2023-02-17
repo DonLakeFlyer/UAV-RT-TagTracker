@@ -119,7 +119,6 @@ private:
     int                     _nextSlice;
     int                     _cSlice;
     int                     _detectionStatus = -1;
-    double                  _lastPulseTime = 0;
 
     QTimer                  _delayTimer;
     QTimer                  _targetValueTimer;
