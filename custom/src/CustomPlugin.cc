@@ -139,18 +139,22 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         qWarning() << "_handleTunnelPulse Received incorrectly sized PulseInfo payload expected:actual" <<  sizeof(PulseInfo_t) << tunnel.payload_length;
     }
 
-    memcpy(&_lastPulseInfo, tunnel.payload, sizeof(_lastPulseInfo));
+    PulseInfo_t pulseInfo;
+    memcpy(&pulseInfo, tunnel.payload, sizeof(pulseInfo));
 
-    qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
-                                "PULSE tag_id:frequency_hz:time:snr:confirmed" <<
-                                _lastPulseInfo.tag_id <<
-                                _lastPulseInfo.frequency_hz <<
-                                _lastPulseInfo.start_time_seconds <<
-                                _lastPulseInfo.snr <<
-                                _lastPulseInfo.confirmed_status;
-    emit pulseReceived();
+    if (pulseInfo.confirmed_status) {
+        qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
+                                    "PULSE tag_id:frequency_hz:time:snr:confirmed" <<
+                                    pulseInfo.tag_id <<
+                                    pulseInfo.frequency_hz <<
+                                    pulseInfo.start_time_seconds <<
+                                    pulseInfo.snr <<
+                                    pulseInfo.confirmed_status;
+        emit pulseReceived();
 
-    _rgPulseValues.append(_lastPulseInfo.snr);
+        _rgPulseValues.append(pulseInfo.snr);
+        _lastPulseInfo = pulseInfo;
+    }
 }
 
 void CustomPlugin::_logPulseToFile(const mavlink_tunnel_t& tunnel)
