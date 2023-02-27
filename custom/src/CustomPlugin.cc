@@ -150,7 +150,38 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
                                     pulseInfo.start_time_seconds <<
                                     pulseInfo.snr <<
                                     pulseInfo.confirmed_status;
-        emit pulseReceived();
+
+        if (_lastPulseTimes.contains(pulseInfo.tag_id)) {
+            // We've seen this tag before
+
+            if (_lastPulseTimes[pulseInfo.tag_id].msecsTo(QTime::currentTime()) > 500) {
+                // This is a new grouping
+                _lastPulseTimes[pulseInfo.tag_id] = QTime::currentTime();
+
+                // Delete the stale group of pulses from prev
+                auto tagPulseInfoList = _prevPulseInfoMap[pulseInfo.tag_id];
+                auto tagPulseInfoIter = tagPulseInfoList.constBegin();
+                while (tagPulseInfoIter != tagPulseInfoList.constEnd()) {
+                    delete (*tagPulseInfoIter);
+                    tagPulseInfoIter++;
+                }
+                _prevPulseInfoMap.remove(pulseInfo.tag_id);
+
+                // Move the curr group of pulses to prev
+                _prevPulseInfoMap[pulseInfo.tag_id] = _currPulseInfoMap[pulseInfo.tag_id];
+                _currPulseInfoMap.remove(pulseInfo.tag_id);
+            } else {
+                // We are still receiving new pulses associated with the current grouping
+            }
+
+            _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, this));
+        } else {
+            // We've never seen this tag before so we can add directly to the lists
+            _lastPulseTimes[pulseInfo.tag_id] = QTime::currentTime();
+            _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, this));
+        }
+
+        emit pulseInfoListsChanged();
 
         _rgPulseValues.append(pulseInfo.snr);
         _lastPulseInfo = pulseInfo;
@@ -315,7 +346,9 @@ void CustomPlugin::airspyMiniCapture(void)
 
 void CustomPlugin::sendTags(void)
 {
-    if (_tagInfoLoader.tagList.count() == 0) {
+    TagInfoLoader::TagList_t tagList = _tagInfoLoader.getTagList();
+
+    if (tagList.count() == 0) {
         qgcApp()->showAppMessage(("No tags are available to send."));
         return;
     }
@@ -330,10 +363,12 @@ void CustomPlugin::sendTags(void)
 
 void CustomPlugin::_sendNextTag(void)
 {
-    if (_nextTagToSend >= _tagInfoLoader.tagList.count()) {
+    TagInfoLoader::TagList_t tagList = _tagInfoLoader.getTagList();
+
+    if (_nextTagToSend >= tagList.count()) {
         _sendEndTags();
     } else {
-        TagInfo_t tagInfo = _tagInfoLoader.tagList[_nextTagToSend++];
+        TagInfo_t tagInfo = tagList[_nextTagToSend++];
         _sendTunnelCommand((uint8_t*)&tagInfo, sizeof(tagInfo));
     }
 }
@@ -736,3 +771,50 @@ QmlObjectListModel* CustomPlugin::customMapItems(void)
     return &_customMapItems;
 }
 
+QVariantList CustomPlugin::currPulseInfoList(void)
+{
+    QVariantList pulseInfoList;
+
+    QList<TunnelProtocol::TagInfo_t> tagList;
+
+    auto tagIdIter = _currPulseInfoMap.constBegin();
+
+    while (tagIdIter != _currPulseInfoMap.constEnd()) {
+        auto tagPulseInfoList = _currPulseInfoMap[tagIdIter.key()];
+        auto tagPulseInfoIter = tagPulseInfoList.constBegin();
+
+        while (tagPulseInfoIter != tagPulseInfoList.constEnd()) {
+            pulseInfoList.append(QVariant::fromValue(*tagPulseInfoIter));
+
+            tagPulseInfoIter++;
+        }
+
+        ++tagIdIter;
+    }
+
+    return pulseInfoList;
+}
+
+QVariantList CustomPlugin::prevPulseInfoList(void)
+{
+    QVariantList pulseInfoList;
+
+    QList<TunnelProtocol::TagInfo_t> tagList;
+
+    auto tagIdIter = _prevPulseInfoMap.constBegin();
+
+    while (tagIdIter != _prevPulseInfoMap.constEnd()) {
+        auto tagPulseInfoList = _prevPulseInfoMap[tagIdIter.key()];
+        auto tagPulseInfoIter = tagPulseInfoList.constBegin();
+
+        while (tagPulseInfoIter != tagPulseInfoList.constEnd()) {
+            pulseInfoList.append(QVariant::fromValue(*tagPulseInfoIter));
+
+            tagPulseInfoIter++;
+        }
+
+        ++tagIdIter;
+    }
+
+    return pulseInfoList;
+}

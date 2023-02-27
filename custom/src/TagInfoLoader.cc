@@ -21,8 +21,9 @@ TagInfoLoader::~TagInfoLoader()
 
 bool TagInfoLoader::loadTags(void)
 {
-    tagList.clear();
-    QList<TagInfo_t> newTagList;
+    _tagInfoMap.clear();
+
+    TagInfoMap_t newTagInfoMap;
 
     QString tagFilename = QString::asprintf("%s/TagInfo.txt",
                                             qgcApp()->toolbox()->settingsManager()->appSettings()->parameterSavePath().toStdString().c_str());
@@ -142,10 +143,23 @@ bool TagInfoLoader::loadTags(void)
             return false;
         }
 
-        newTagList.append(tagInfo);
+        newTagInfoMap[tagInfo.id] = tagInfo;
     }
 
-    tagList = newTagList;
+    _tagInfoMap = newTagInfoMap;
 
     return true;
+}
+
+QList<TunnelProtocol::TagInfo_t> TagInfoLoader::getTagList(void)
+{
+    QList<TunnelProtocol::TagInfo_t> tagList;
+
+    TagInfoMap_t::const_iterator iter = _tagInfoMap.constBegin();
+    while (iter != _tagInfoMap.constEnd()) {
+        tagList.append(iter.value());
+        ++iter;
+    }
+
+    return tagList;
 }
