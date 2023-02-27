@@ -6,6 +6,7 @@
 #include "FactSystem.h"
 #include "TunnelProtocol.h"
 #include "TagInfoLoader.h"
+#include "PulseInfo.h"
 
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
@@ -28,14 +29,10 @@ public:
     ~CustomPlugin();
 
     Q_PROPERTY(CustomSettings*  customSettings      MEMBER  _customSettings         CONSTANT)
-    Q_PROPERTY(double           pulseTimeSeconds    READ    _pulseTimeSeconds       NOTIFY pulseReceived)
-    Q_PROPERTY(double           pulseSNR            READ    _pulseSNR               NOTIFY pulseReceived)
-    Q_PROPERTY(bool             pulseConfirmed      READ    _pulseConfirmed         NOTIFY pulseReceived)
     Q_PROPERTY(QList<QList<double>> angleRatios     MEMBER  _rgAngleRatios          NOTIFY angleRatiosChanged)
     Q_PROPERTY(bool             flightMachineActive MEMBER  _flightMachineActive    NOTIFY flightMachineActiveChanged)
-    Q_PROPERTY(int              vehicleFrequency    MEMBER  _vehicleFrequency       NOTIFY vehicleFrequencyChanged)
-    Q_PROPERTY(int              missedPulseCount    MEMBER  _missedPulseCount       NOTIFY missedPulseCountChanged)
-    Q_PROPERTY(int              detectionStatus     MEMBER  _detectionStatus        NOTIFY detectionStatusChanged)
+    Q_PROPERTY(QVariantList     currPulseInfoList   READ    currPulseInfoList       NOTIFY pulseInfoListsChanged)
+    Q_PROPERTY(QVariantList     prevPulseInfoList   READ    prevPulseInfoList       NOTIFY pulseInfoListsChanged)
 
     Q_INVOKABLE void startRotation      (void);
     Q_INVOKABLE void cancelAndReturn    (void);
@@ -44,6 +41,9 @@ public:
     Q_INVOKABLE void stopDetection      (void);
     Q_INVOKABLE void airspyHFCapture    (void);
     Q_INVOKABLE void airspyMiniCapture  (void);
+
+    QVariantList currPulseInfoList(void);
+    QVariantList prevPulseInfoList(void);
 
     // Overrides from QGCCorePlugin
     QVariantList&       settingsPages           (void) final;
@@ -58,10 +58,7 @@ public:
 signals:
     void angleRatiosChanged         (void);
     void flightMachineActiveChanged (bool flightMachineActive);
-    void vehicleFrequencyChanged    (int vehicleFrequency);
-    void missedPulseCountChanged    (int missedPulseCount);
-    void detectionStatusChanged     (int detectionStatus);
-    void pulseReceived              (void);
+    void pulseInfoListsChanged      (void);
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
@@ -137,6 +134,10 @@ private:
 
     TagInfoLoader           _tagInfoLoader;
     int                     _nextTagToSend;
+
+    QMap<uint32_t, QList<PulseInfo*>>   _prevPulseInfoMap;
+    QMap<uint32_t, QList<PulseInfo*>>   _currPulseInfoMap;
+    QMap<uint32_t, QTime>               _lastPulseTimes;
 };
 
 class PulseRoseMapItem : public QObject

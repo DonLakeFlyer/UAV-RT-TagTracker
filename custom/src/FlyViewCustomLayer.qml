@@ -68,79 +68,41 @@ Item {
 
         property real _margins: ScreenTools.defaultFontPixelWidth / 2
 
-        ChartView {
-            id:                 chart
-            anchors.fill:       parent
-            antialiasing:       true
-            margins.top:            0
-            margins.bottom:            0
-            margins.left:            0
-            margins.right:            0
-            legend.visible: false
+        QGCFlickable {
+            anchors.fill:   parent
+            contentHeight:  innerColumn.height
 
-            ValueAxis {
-                id:             axisX
-                min:            0
-                max:            100
-                tickCount:      5
-                labelsVisible:  false
-            }
+            ColumnLayout {
+                id:             innerColumn
+                anchors.left:   parent.left
+                anchors.right:  parent.right
 
-            ValueAxis {
-                id:         axisY
-                min:        0
-                max:        12
-                tickCount:  12
-                reverse:    true
-            }
-
-            ScatterSeries {
-                id:             confirmedSeries
-                axisX:          axisX
-                axisY:          axisY
-                markerShape:    ScatterSeries.MarkerShapeCircle
-            }
-
-            ScatterSeries {
-                id:             unConfirmedSeries
-                axisX:          axisX
-                axisY:          axisY
-                markerShape:    ScatterSeries.MarkerShapeRectangle
-                markerSize:     confirmedSeries.markerSize * 0.75
-            }
-
-            Timer {
-                id:         updateTimer
-                interval:   100
-                repeat:     true
-                running:    true
-                onTriggered: {
-                    axisY.min = axisY.min + 0.1
-                    axisY.max = axisY.max + 0.1
+                SectionHeader {
+                    Layout.fillWidth:   true
+                    text:               qsTr("Previous Pulses")
                 }
-            }
 
-            Connections {
-                target: _corePlugin
+                Repeater {
+                    model: _corePlugin.prevPulseInfoList;
 
-                property bool firstPulse:       true
-                property real timeAdjustment:   0
-
-                function onPulseReceived() {
-                    if (firstPulse) {
-                        firstPulse = false
-                        timeAdjustment = _corePlugin.pulseTimeSeconds - axisY.max
+                    QGCLabel {
+                        text: qsTr("id:%1 %2").arg(modelData.tag_id).arg(modelData.snr.toLocaleString(Qt.locale("en_US"), 'f', 3));
                     }
-                    var adjustedTimeValue = _corePlugin.pulseTimeSeconds - timeAdjustment
-                    if (_corePlugin.pulseConfirmed) {
-                        confirmedSeries.append(_corePlugin.pulseSNR, adjustedTimeValue);
-                    } else {
-                        unConfirmedSeries.append(_corePlugin.pulseSNR, adjustedTimeValue);
-                    }
+                }
 
+                SectionHeader {
+                    Layout.fillWidth:   true
+                    text:               qsTr("Current Pulses")
+                }
+
+                Repeater {
+                    model: _corePlugin.currPulseInfoList;
+
+                    QGCLabel {
+                        text: qsTr("id:%1 %2").arg(modelData.tag_id).arg(modelData.snr.toLocaleString(Qt.locale("en_US"), 'f', 3));
+                    }
                 }
             }
         }
-
     }
 }

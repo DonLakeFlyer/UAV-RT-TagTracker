@@ -4,6 +4,7 @@
 #include "TunnelProtocol.h"
 
 #include <QObject>
+#include <QMap>
 
 class TagInfoLoader : public QObject
 {
@@ -13,7 +14,14 @@ public:
     TagInfoLoader(QObject* parent = NULL);
     ~TagInfoLoader();
 
-    bool loadTags(void);
+    typedef QList<TunnelProtocol::TagInfo_t> TagList_t;
 
-    QList<TunnelProtocol::TagInfo_t> tagList;
+    bool                        loadTags    (void);
+    TagList_t                   getTagList  (void);
+    TunnelProtocol::TagInfo_t   getTagInfo  (uint32_t tag_id) { return _tagInfoMap[tag_id]; }
+
+private:
+    typedef QMap<uint32_t, TunnelProtocol::TagInfo_t> TagInfoMap_t;
+
+    TagInfoMap_t _tagInfoMap;
 };
