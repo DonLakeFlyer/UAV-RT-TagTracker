@@ -123,7 +123,11 @@ void CustomPlugin::_handleTunnelCommandAck(const mavlink_tunnel_t& tunnel)
                 break;
             }
         } else {
-            _say(QStringLiteral("%1 command failed").arg(_tunnelCommandIdToText(ack.command)));
+            QString message = QStringLiteral("%1 command failed").arg(_tunnelCommandIdToText(ack.command));
+
+            _say(message);
+            qgcApp()->showAppMessage(message);
+
         }
 
     } else {
@@ -718,7 +722,11 @@ QString CustomPlugin::_tunnelCommandIdToText(uint32_t vhfCommandId)
 
 void CustomPlugin::_tunnelCommandAckFailed(void)
 {
+    QString message = QStringLiteral("%1 failed. no response from vehicle.").arg(_tunnelCommandIdToText(_tunnelCommandAckExpected));
+
     _say(QStringLiteral("%1 failed. no response from vehicle.").arg(_tunnelCommandIdToText(_tunnelCommandAckExpected)));
+    qgcApp()->showAppMessage(message);
+
     _tunnelCommandAckExpected = 0;
 }
 
