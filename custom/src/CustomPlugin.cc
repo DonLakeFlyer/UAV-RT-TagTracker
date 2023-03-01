@@ -155,6 +155,12 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
                                     pulseInfo.snr <<
                                     pulseInfo.confirmed_status;
 
+        auto evenTagId      = pulseInfo.tag_id - (pulseInfo.tag_id % 2);
+        auto extTagInfo     = _tagInfoLoader.getTagInfo(evenTagId);
+        bool rate2Tag       = pulseInfo.tag_id % 2;
+        QString tagName(extTagInfo.name);
+        QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_1_id : extTagInfo.ip_msecs_2_id);
+
         if (_lastPulseTimes.contains(pulseInfo.tag_id)) {
             // We've seen this tag before
 
@@ -178,11 +184,11 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
                 // We are still receiving new pulses associated with the current grouping
             }
 
-            _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, this));
+            _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, tagName, tagRateChar, this));
         } else {
             // We've never seen this tag before so we can add directly to the lists
             _lastPulseTimes[pulseInfo.tag_id] = QTime::currentTime();
-            _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, this));
+            _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, tagName, tagRateChar, this));
         }
 
         emit pulseInfoListsChanged();
@@ -367,13 +373,22 @@ void CustomPlugin::sendTags(void)
 
 void CustomPlugin::_sendNextTag(void)
 {
-    TagInfoLoader::TagList_t tagList = _tagInfoLoader.getTagList();
+    auto tagList = _tagInfoLoader.getTagList();
 
     if (_nextTagToSend >= tagList.count()) {
         _sendEndTags();
     } else {
-        TagInfo_t tagInfo = tagList[_nextTagToSend++];
-        _sendTunnelCommand((uint8_t*)&tagInfo, sizeof(tagInfo));
+        auto extTagInfo = tagList.value(_nextTagToSend++); // Returns a copy
+        _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
+        // Don't send tags too fast
+        QGC::SLEEP::msleep(100);
+        if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
+            extTagInfo.tagInfo.id++;
+            extTagInfo.tagInfo.intra_pulse1_msecs = extTagInfo.tagInfo.intra_pulse2_msecs;
+            _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
+            // Don't send tags too fast
+            QGC::SLEEP::msleep(100);
+        }
     }
 }
 

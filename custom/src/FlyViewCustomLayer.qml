@@ -86,7 +86,7 @@ Item {
                     model: _corePlugin.prevPulseInfoList;
 
                     QGCLabel {
-                        text: qsTr("id:%1 %2").arg(modelData.tag_id).arg(modelData.snr.toLocaleString(Qt.locale("en_US"), 'f', 3));
+                        text: qsTr("%1:%2 %3").arg(modelData.name).arg(modelData.rateChar).arg(modelData.snr.toLocaleString(Qt.locale("en_US"), 'f', 3));
                     }
                 }
 
@@ -99,7 +99,7 @@ Item {
                     model: _corePlugin.currPulseInfoList;
 
                     QGCLabel {
-                        text: qsTr("id:%1 %2").arg(modelData.tag_id).arg(modelData.snr.toLocaleString(Qt.locale("en_US"), 'f', 3));
+                        text: qsTr("%1:%2 %3").arg(modelData.name).arg(modelData.rateChar).arg(modelData.snr.toLocaleString(Qt.locale("en_US"), 'f', 3));
                     }
                 }
             }
