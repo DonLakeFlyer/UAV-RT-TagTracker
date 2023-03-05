@@ -5,7 +5,7 @@
 #include "CustomOptions.h"
 #include "FactSystem.h"
 #include "TunnelProtocol.h"
-#include "TagInfoLoader.h"
+#include "TagInfoList.h"
 #include "PulseInfo.h"
 
 #include <QElapsedTimer>
@@ -130,8 +130,8 @@ private:
     QFile                   _pulseLogFile;
     TunnelProtocol::PulseInfo_t _lastPulseInfo;
 
-    TagInfoLoader           _tagInfoLoader;
-    int                     _nextTagToSend;
+    TagInfoList           _tagInfoList;
+    TagInfoList::const_iterator _nextTagToSend;
 
     QMap<uint32_t, QList<PulseInfo*>>   _prevPulseInfoMap;
     QMap<uint32_t, QList<PulseInfo*>>   _currPulseInfoMap;
