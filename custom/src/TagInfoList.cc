@@ -192,8 +192,6 @@ ExtendedTagInfo_t TagInfoList::getTagInfo(uint32_t id)
 // channels follow and wrap around back to the beginning of the bandwidth.
 bool TagInfoList::_channelizerTuner()
 {
-    _radioCenterHz = 0;
-
     // Build the list of requested frequencies
     QVector<int> freqListHz(size());
     std::transform(begin(), end(), freqListHz.begin(), [](const ExtendedTagInfo_t& tag) { return tag.tagInfo.frequency_hz; });
@@ -234,48 +232,62 @@ bool TagInfoList::_channelizerTuner()
 #endif
 
     QVector <int>           channelUsageCountsForTestCenter (_nChannels);
-    QList   <int>           distanceFromCenterAverages;
     QList   <QList<int>>    channelBinsArray;
     QVector <QList<int>>    channelUsageCountsArray(_nChannels);
+    QList   <int>           distanceFromCenterAverages;
+    QList   <QList<bool>>   inShoulderArray;
 
     for (auto testCenterHz : testCentersHz) {
         std::for_each(channelUsageCountsForTestCenter.begin(), channelUsageCountsForTestCenter.end(), [](int& n) { n = 0; });
 
-        QList<int> distanceFromCenters;
-        QList<int> channelBins;
+        QList<int>  distanceFromCenters;
+        QList<bool> inShoulders;
+        QList<int>  channelBins;
+
+        int firstChannelFreqHz = _firstChannelFreqHz(testCenterHz);
 
         for (auto requestedFreqHz : freqListHz) {
             // Adjust the requested frequency to first channel frequency start
-            int adjustedFreqHz = requestedFreqHz - _firstChannelFreqHz(requestedFreqHz);
+            int adjustedFreqHz = requestedFreqHz - firstChannelFreqHz;
 
             int channelBucket       = adjustedFreqHz  / (int)_channelBwHz;
             int distanceFromCenter  = (adjustedFreqHz % (int)_channelBwHz) - _halfChannelBwHz;
 
-            distanceFromCenters.push_back(distanceFromCenter);
+            double  shoulderPercent = 0.925;
+            auto    halfCenterBwHz  = _halfChannelBwHz * shoulderPercent;
+            bool    inShoulder      = abs(distanceFromCenter) > halfCenterBwHz;
 
+#if 1
             qDebug() << "---- single freq build begin ---";
             qDebug() << "requestedFreqHz:" << requestedFreqHz/1000 <<
                         "testCenterHz:" << testCenterHz/1000 <<
                         "adjustedFreqHz:" << adjustedFreqHz/1000 <<
                         "distanceFromCenter:" << distanceFromCenter <<
-                        "channelBucket" << channelBucket;
+                        "channelBucket" << channelBucket <<
+                        "inShoulder:" << inShoulder;
             _printChannelMap(testCenterHz, QVector<int>({requestedFreqHz}));
             qDebug() << "---- single freq build end ---";
+#endif
 
+            distanceFromCenters.push_back(abs(distanceFromCenter));
+            inShoulders.push_back(inShoulder);
             channelBins.push_back(channelBucket + 1);
 
             channelUsageCountsForTestCenter[channelBucket]++;
         }
 
-        qDebug() << "---- test center build begin ---";
-        _printChannelMap(testCenterHz, freqListHz);
-        qDebug() << "---- test center build end ---";
+        channelBinsArray.push_back(channelBins);
+        inShoulderArray.push_back(inShoulders);
 
         // Find the average of the distances from the center of each channel
         auto averageDistanceFromCenter = std::accumulate(distanceFromCenters.begin(), distanceFromCenters.end(), 0) / distanceFromCenters.size();
         distanceFromCenterAverages.push_back(averageDistanceFromCenter);
 
-        channelBinsArray.push_back(channelBins);
+        qDebug() << "---- test center build begin ---";
+        _printChannelMap(testCenterHz, freqListHz);
+        qDebug() << "averageDistanceFromCenter:" << averageDistanceFromCenter;
+        qDebug() << "---- test center build end ---";
+
     }
 
     // Find the best center frequency
@@ -292,37 +304,38 @@ bool TagInfoList::_channelizerTuner()
             continue;
         }
 
-        // We can't use a center frequency if it has a requested frequency within the shoulder of the channel
-
-        double  shoulderPercent = 0.925;
-        auto    centerBwHz      = _channelBwHz * shoulderPercent;
-        
-        if (std::any_of(distanceFromCenterAverages.begin(), distanceFromCenterAverages.end(), [centerBwHz](int n) { return abs(n) < centerBwHz; })) {
+        // We can use a center frequency if any of the frequencies are in the shoulder
+        if (std::any_of(inShoulderArray[i].begin(), inShoulderArray[i].end(), [](bool inShoulder) { return inShoulder; })) {
             continue;
         }
 
+        // Keep track of the smallest average distance from center
         if (distanceFromCenterAverages[i] < smallestDistanceFromCenterAverage) {
             smallestDistanceFromCenterAverage = distanceFromCenterAverages[i];
             bestTestCenterHz = testCenterHz;
             channelBins = channelBinsArray[i];
         }
     }
-    qDebug() << "bestTestCenterHz:" << bestTestCenterHz << "channelBins:" << channelBins;
 
+    qDebug() << "bestTestCenterHz:" << bestTestCenterHz << "channelBins:" << channelBins;
     if (bestTestCenterHz != 0) {
+        _printChannelMap(bestTestCenterHz, freqListHz);
         for (int i=0; i<size(); i++) {
             (*this)[i].tagInfo.channelizer_bin = channelBins[i] + 1;
         }
         _radioCenterHz = bestTestCenterHz;
+        return true;
+    } else {
+        _radioCenterHz = 0;
         return false;
     }
-
-    return _radioCenterHz != 0;
 }
 
 void TagInfoList::_printChannelMap(const int centerFreq, const QVector<int>& requestedFreqsHz)
 {
-        QString channelHeader("------   :    ------");
+        qDebug() << "Frequencies:" << requestedFreqsHz;
+
+        QString channelHeader("------    :    ------");
         int firstChannelFreqHz = _firstChannelFreqHz(centerFreq);
 
         QString channelBinsHeaderStr("|");
@@ -335,17 +348,23 @@ void TagInfoList::_printChannelMap(const int centerFreq, const QVector<int>& req
 
             channelBinsHeaderStr    += channelHeader;
             channelBinsHeaderStr    += "|";
-            channelBinsValuesStr    += QStringLiteral("%1 %2 %3|").arg(channelStart).arg(channelCenter).arg(channelEnd);
+            channelBinsValuesStr    += QStringLiteral("%1 %2:%3 %4|").arg(channelStart).arg(channelCenter/1000,3,10,QChar('0')).arg(channelCenter%1000,3,10,QChar('0')).arg(channelEnd);
             nextChannelStartFreqHz  += _channelBwHz;
         }
 
-        QString freqPositionStr = QString(channelBinsHeaderStr.length(), ' ');
+        QString freqPositionStr = channelBinsHeaderStr;
         
         for (auto requestedFreqHz : requestedFreqsHz) {
-            double pctInBandwith = (requestedFreqHz - firstChannelFreqHz) / (_channelBwHz * _nChannels);
+            double pctInBandwith = (double)(requestedFreqHz - firstChannelFreqHz) / (double)(_channelBwHz * _nChannels);
 
-            double cCharsInChannelPrintDisplay = (channelHeader.length() * _nChannels) + ((_nChannels * 2) - 1);
-            int    freqPositinInChannelDisplay = round(pctInBandwith * cCharsInChannelPrintDisplay);
+            int adjustedFreqHz  = requestedFreqHz - firstChannelFreqHz;
+            int channelBucket   = adjustedFreqHz  / (int)_channelBwHz;
+
+            // Characted count without dividers
+            double cCharsInChannelPrintDisplay = channelBinsHeaderStr.length() - (_nChannels + 1);
+
+            // Make sure to take abck into account dividers
+            int    freqPositinInChannelDisplay = round(pctInBandwith * cCharsInChannelPrintDisplay) + channelBucket;
 
             freqPositionStr[freqPositinInChannelDisplay] = 'v';
         }
