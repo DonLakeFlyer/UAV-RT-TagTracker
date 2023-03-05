@@ -4,6 +4,11 @@
     "QGC.MetaData.Facts":
 [
 {
+    "name":             "sendSingleTagForMultiRate",
+    "type":             "bool",
+    "default":          1
+},
+{
     "name":             "altitude",
     "shortDesc":        "Altitude to perform VHF scan",
     "type":             "double",

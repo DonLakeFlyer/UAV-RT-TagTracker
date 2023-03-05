@@ -23,7 +23,6 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _vehicleFrequency     (0)
     , _lastPulseSendIndex   (-1)
     , _missedPulseCount     (0)
-    , _tagInfoLoader        (this)
 {
     static_assert(TunnelProtocolValidateSizes, "TunnelProtocolValidateSizes failed");
 
@@ -52,7 +51,7 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
 
     connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
 
-    _tagInfoLoader.loadTags();
+    _tagInfoList.loadTags();
 }
 
 void CustomPlugin::_activeVehicleChanged(Vehicle* activeVehicle)
@@ -156,7 +155,7 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
                                     pulseInfo.confirmed_status;
 
         auto evenTagId      = pulseInfo.tag_id - (pulseInfo.tag_id % 2);
-        auto extTagInfo     = _tagInfoLoader.getTagInfo(evenTagId);
+        auto extTagInfo     = _tagInfoList.getTagInfo(evenTagId);
         bool rate2Tag       = pulseInfo.tag_id % 2;
         QString tagName(extTagInfo.name);
         QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_1_id : extTagInfo.ip_msecs_2_id);
@@ -356,13 +355,10 @@ void CustomPlugin::airspyMiniCapture(void)
 
 void CustomPlugin::sendTags(void)
 {
-    TagInfoLoader::TagList_t tagList = _tagInfoLoader.getTagList();
-
-    if (tagList.count() == 0) {
+    if (_tagInfoList.size() == 0) {
         qgcApp()->showAppMessage(("No tags are available to send."));
         return;
     }
-
     _nextTagToSend = 0;
 
     StartTagsInfo_t startTagsInfo;
@@ -373,22 +369,28 @@ void CustomPlugin::sendTags(void)
 
 void CustomPlugin::_sendNextTag(void)
 {
-    auto tagList = _tagInfoLoader.getTagList();
-
-    if (_nextTagToSend >= tagList.count()) {
+    if (_nextTagToSend == _tagInfoList.end()) {
         _sendEndTags();
     } else {
-        auto extTagInfo = tagList.value(_nextTagToSend++); // Returns a copy
+        auto refExtTagInfo = *_nextTagToSend;
+        ExtendedTagInfo_t extTagInfo = refExtTagInfo;   // make a copy
+
         _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
         // Don't send tags too fast
         QGC::SLEEP::msleep(100);
-        if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
-            extTagInfo.tagInfo.id++;
-            extTagInfo.tagInfo.intra_pulse1_msecs = extTagInfo.tagInfo.intra_pulse2_msecs;
-            _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
-            // Don't send tags too fast
-            QGC::SLEEP::msleep(100);
+
+        if (_customSettings->sendSingleTagForMultiRate()->rawValue().toBool()) {
+            // We are sending the second rate as an additional tag
+            if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
+                extTagInfo.tagInfo.id++;
+                extTagInfo.tagInfo.intra_pulse1_msecs = extTagInfo.tagInfo.intra_pulse2_msecs;
+                _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
+                // Don't send tags too fast
+                QGC::SLEEP::msleep(100);
+            }
         }
+
+        _nextTagToSend++;
     }
 }
 
@@ -841,3 +843,4 @@ QVariantList CustomPlugin::prevPulseInfoList(void)
 
     return pulseInfoList;
 }
+
