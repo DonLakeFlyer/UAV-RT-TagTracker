@@ -158,7 +158,7 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         auto extTagInfo     = _tagInfoList.getTagInfo(evenTagId);
         bool rate2Tag       = pulseInfo.tag_id % 2;
         QString tagName(extTagInfo.name);
-        QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_1_id : extTagInfo.ip_msecs_2_id);
+        QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_2_id : extTagInfo.ip_msecs_1_id);
 
         if (_lastPulseTimes.contains(pulseInfo.tag_id)) {
             // We've seen this tag before
