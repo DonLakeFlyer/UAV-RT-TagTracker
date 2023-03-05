@@ -359,7 +359,7 @@ void CustomPlugin::sendTags(void)
         qgcApp()->showAppMessage(("No tags are available to send."));
         return;
     }
-    _nextTagToSend = 0;
+    _nextTagToSend = _tagInfoList.begin();
 
     StartTagsInfo_t startTagsInfo;
 
@@ -378,17 +378,6 @@ void CustomPlugin::_sendNextTag(void)
         _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
         // Don't send tags too fast
         QGC::SLEEP::msleep(100);
-
-        if (_customSettings->sendSingleTagForMultiRate()->rawValue().toBool()) {
-            // We are sending the second rate as an additional tag
-            if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
-                extTagInfo.tagInfo.id++;
-                extTagInfo.tagInfo.intra_pulse1_msecs = extTagInfo.tagInfo.intra_pulse2_msecs;
-                _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
-                // Don't send tags too fast
-                QGC::SLEEP::msleep(100);
-            }
-        }
 
         _nextTagToSend++;
     }

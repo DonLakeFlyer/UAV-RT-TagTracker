@@ -32,5 +32,4 @@ public:
     DEFINE_SETTINGFACT(intraPulseJitter)
     DEFINE_SETTINGFACT(maxPulse)
     DEFINE_SETTINGFACT(gain)
-    DEFINE_SETTINGFACT(sendSingleTagForMultiRate)
 };
