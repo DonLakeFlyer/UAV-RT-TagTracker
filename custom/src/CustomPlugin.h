@@ -87,6 +87,7 @@ private:
 
     void    _handleTunnelCommandAck     (const mavlink_tunnel_t& tunnel);
     void    _handleTunnelPulse          (const mavlink_tunnel_t& tunnel);
+    void    _handleTunnelHeartbeat      (const mavlink_tunnel_t& tunnel);
     void    _rotateVehicle              (Vehicle* vehicle, double headingDegrees);
     void    _say                        (QString text);
     bool    _armVehicleAndValidate      (Vehicle* vehicle);
@@ -137,7 +138,7 @@ private:
 
     QMap<uint32_t, QList<PulseInfo*>>   _prevPulseInfoMap;
     QMap<uint32_t, QList<PulseInfo*>>   _currPulseInfoMap;
-    QMap<uint32_t, QTime>               _lastPulseTimes;
+    QMap<uint32_t, uint32_t>            _lastGroupSeqCounts;
 };
 
 class PulseRoseMapItem : public QObject
