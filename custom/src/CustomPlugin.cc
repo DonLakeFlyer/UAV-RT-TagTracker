@@ -29,7 +29,7 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     _delayTimer.setSingleShot(true);
     _targetValueTimer.setSingleShot(true);
     _tunnelCommandAckTimer.setSingleShot(true);
-    _tunnelCommandAckTimer.setInterval(1000);
+    _tunnelCommandAckTimer.setInterval(2000);
 
     connect(&_delayTimer,               &QTimer::timeout, this, &CustomPlugin::_delayComplete);
     connect(&_targetValueTimer,         &QTimer::timeout, this, &CustomPlugin::_targetValueFailed);
@@ -95,11 +95,31 @@ bool CustomPlugin::mavlinkMessage(Vehicle*, LinkInterface*, mavlink_message_t me
         case COMMAND_ID_PULSE:
             _handleTunnelPulse(tunnel);
             break;
+        case COMMAND_ID_HEARTBEAT:
+            _handleTunnelHeartbeat(tunnel);
+            break;
         }
 
         return false;
     } else {
         return true;
+    }
+}
+
+void CustomPlugin::_handleTunnelHeartbeat(const mavlink_tunnel_t& tunnel)
+{
+    Heartbeat_t heartbeat;
+
+    memcpy(&heartbeat, tunnel.payload, sizeof(heartbeat));
+
+    switch (heartbeat.system_id) {
+    case HEARTBEAT_SYSTEM_MAVLINKCONTROLLER:
+        static uint32_t counter = 0;
+        qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController" << counter++;
+        break;
+    case HEARTBEAT_SYSTEM_CHANNELIZER:
+        qCDebug(CustomPluginLog) << "HEARTBEAT from Channelizer";
+        break;
     }
 }
 
@@ -147,12 +167,11 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
 
     if (pulseInfo.confirmed_status) {
         qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
-                                    "PULSE tag_id:frequency_hz:time:snr:confirmed" <<
+                                    "CONFIRMED tag_id:frequency_hz:seq_ctr:snr" <<
                                     pulseInfo.tag_id <<
                                     pulseInfo.frequency_hz <<
-                                    pulseInfo.start_time_seconds <<
-                                    pulseInfo.snr <<
-                                    pulseInfo.confirmed_status;
+                                    pulseInfo.group_seq_counter <<
+                                    pulseInfo.snr;
 
         auto evenTagId      = pulseInfo.tag_id - (pulseInfo.tag_id % 2);
         auto extTagInfo     = _tagInfoList.getTagInfo(evenTagId);
@@ -160,12 +179,19 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         QString tagName(extTagInfo.name);
         QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_2_id : extTagInfo.ip_msecs_1_id);
 
-        if (_lastPulseTimes.contains(pulseInfo.tag_id)) {
+        if (_lastGroupSeqCounts.contains(pulseInfo.tag_id)) {
             // We've seen this tag before
 
-            if (_lastPulseTimes[pulseInfo.tag_id].msecsTo(QTime::currentTime()) > 500) {
+            uint16_t lastGroupSeqCounter = _lastGroupSeqCounts[pulseInfo.tag_id];
+            if (lastGroupSeqCounter == pulseInfo.group_seq_counter) {
+                // We are still receiving new pulses associated with the current grouping
+            } else {
                 // This is a new grouping
-                _lastPulseTimes[pulseInfo.tag_id] = QTime::currentTime();
+
+                // Check for lost groupings
+                if (pulseInfo.group_seq_counter > lastGroupSeqCounter + 1) {
+                    qgcApp()->showAppMessage(QString("ERROR: Lost %1 pulse groups").arg(pulseInfo.group_seq_counter - lastGroupSeqCounter - 1));
+                }
 
                 // Delete the stale group of pulses from prev
                 auto tagPulseInfoList = _prevPulseInfoMap[pulseInfo.tag_id];
@@ -179,14 +205,11 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
                 // Move the curr group of pulses to prev
                 _prevPulseInfoMap[pulseInfo.tag_id] = _currPulseInfoMap[pulseInfo.tag_id];
                 _currPulseInfoMap.remove(pulseInfo.tag_id);
-            } else {
-                // We are still receiving new pulses associated with the current grouping
             }
 
             _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, tagName, tagRateChar, this));
         } else {
-            // We've never seen this tag before so we can add directly to the lists
-            _lastPulseTimes[pulseInfo.tag_id] = QTime::currentTime();
+            // We've never seen this tag before so we just add directly to current
             _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, tagName, tagRateChar, this));
         }
 
@@ -194,7 +217,13 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
 
         _rgPulseValues.append(pulseInfo.snr);
         _lastPulseInfo = pulseInfo;
+    } else {
+        qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
+                                    "UNCONFIRMED tag_id" <<
+                                    pulseInfo.tag_id;
     }
+
+    _lastGroupSeqCounts[pulseInfo.tag_id] = pulseInfo.group_seq_counter;
 }
 
 void CustomPlugin::_logPulseToFile(const mavlink_tunnel_t& tunnel)
