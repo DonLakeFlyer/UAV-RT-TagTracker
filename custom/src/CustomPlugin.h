@@ -136,7 +136,10 @@ private:
 
     QMap<uint32_t, QList<PulseInfo*>>   _prevPulseInfoMap;
     QMap<uint32_t, QList<PulseInfo*>>   _currPulseInfoMap;
+    QMap<uint32_t, QTime>               _prevLastTimeMap;
+    QMap<uint32_t, QTime>               _currLastTimeMap;
     QMap<uint32_t, uint32_t>            _lastGroupSeqCounts;
+
 };
 
 class PulseRoseMapItem : public QObject
