@@ -108,13 +108,14 @@ bool CustomPlugin::mavlinkMessage(Vehicle*, LinkInterface*, mavlink_message_t me
 
 void CustomPlugin::_handleTunnelHeartbeat(const mavlink_tunnel_t& tunnel)
 {
+    static uint32_t counter = 0;
+
     Heartbeat_t heartbeat;
 
     memcpy(&heartbeat, tunnel.payload, sizeof(heartbeat));
 
     switch (heartbeat.system_id) {
     case HEARTBEAT_SYSTEM_MAVLINKCONTROLLER:
-        static uint32_t counter = 0;
         qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController" << counter++;
         break;
     case HEARTBEAT_SYSTEM_CHANNELIZER:
@@ -204,13 +205,17 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
 
                 // Move the curr group of pulses to prev
                 _prevPulseInfoMap[pulseInfo.tag_id] = _currPulseInfoMap[pulseInfo.tag_id];
+                _prevLastTimeMap [pulseInfo.tag_id] = QTime::currentTime();
                 _currPulseInfoMap.remove(pulseInfo.tag_id);
+                _currLastTimeMap.remove(pulseInfo.tag_id);
             }
 
             _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, tagName, tagRateChar, this));
+            _currLastTimeMap[pulseInfo.tag_id] = QTime::currentTime();
         } else {
             // We've never seen this tag before so we just add directly to current
             _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, tagName, tagRateChar, this));
+            _currLastTimeMap[pulseInfo.tag_id] = QTime::currentTime();
         }
 
         emit pulseInfoListsChanged();
@@ -354,7 +359,11 @@ void CustomPlugin::startDetection(void)
 {
     StartDetectionInfo_t startDetectionInfo;
 
-    startDetectionInfo.header.command = COMMAND_ID_START_DETECTION;
+    memset(&startDetectionInfo, 0, sizeof(startDetectionInfo));
+
+    startDetectionInfo.header.command               = COMMAND_ID_START_DETECTION;
+    startDetectionInfo.radio_center_frequency_hz    = _tagInfoList.radioCenterHz();
+
     _sendTunnelCommand((uint8_t*)&startDetectionInfo, sizeof(startDetectionInfo));
 }
 
