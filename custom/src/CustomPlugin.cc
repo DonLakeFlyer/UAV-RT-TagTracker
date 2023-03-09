@@ -108,13 +108,14 @@ bool CustomPlugin::mavlinkMessage(Vehicle*, LinkInterface*, mavlink_message_t me
 
 void CustomPlugin::_handleTunnelHeartbeat(const mavlink_tunnel_t& tunnel)
 {
+    static uint32_t counter = 0;
+
     Heartbeat_t heartbeat;
 
     memcpy(&heartbeat, tunnel.payload, sizeof(heartbeat));
 
     switch (heartbeat.system_id) {
     case HEARTBEAT_SYSTEM_MAVLINKCONTROLLER:
-        static uint32_t counter = 0;
         qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController" << counter++;
         break;
     case HEARTBEAT_SYSTEM_CHANNELIZER:
