@@ -50,8 +50,6 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     _customOptions = new CustomOptions(this, nullptr);
 
     connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
-
-    _tagInfoList.loadTags();
 }
 
 void CustomPlugin::_activeVehicleChanged(Vehicle* activeVehicle)
@@ -392,7 +390,9 @@ void CustomPlugin::airspyMiniCapture(void)
 }
 
 void CustomPlugin::sendTags(void)
-{
+{    
+    _tagInfoList.loadTags();
+
     if (_tagInfoList.size() == 0) {
         qgcApp()->showAppMessage(("No tags are available to send."));
         return;
