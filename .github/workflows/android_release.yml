@@ -132,7 +132,7 @@ jobs:
         run:  |
             ls /home/runner/work/_temp/Qt/6.6.1
             qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="${{ matrix.eabi }}"
-            make -j2
+            make -j2 apk
 
       - name: ccache post-run
         run:  ccache -s
