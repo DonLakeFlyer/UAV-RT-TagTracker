@@ -297,6 +297,7 @@ public:
     Q_PROPERTY(Fact* altitudeTuning     READ altitudeTuning     CONSTANT)
     Q_PROPERTY(Fact* altitudeTuningSetpoint READ altitudeTuningSetpoint CONSTANT)
     Q_PROPERTY(Fact* xTrackError        READ xTrackError        CONSTANT)
+    Q_PROPERTY(Fact* rangeFinderDist    READ rangeFinderDist    CONSTANT)
     Q_PROPERTY(Fact* flightDistance     READ flightDistance     CONSTANT)
     Q_PROPERTY(Fact* distanceToHome     READ distanceToHome     CONSTANT)
     Q_PROPERTY(Fact* missionItemIndex   READ missionItemIndex   CONSTANT)
@@ -670,6 +671,7 @@ public:
     Fact* altitudeTuning                    () { return &_altitudeTuningFact; }
     Fact* altitudeTuningSetpoint            () { return &_altitudeTuningSetpointFact; }
     Fact* xTrackError                       () { return &_xTrackErrorFact; }
+    Fact* rangeFinderDist                   () { return &_rangeFinderDistFact; }
     Fact* flightDistance                    () { return &_flightDistanceFact; }
     Fact* distanceToHome                    () { return &_distanceToHomeFact; }
     Fact* missionItemIndex                  () { return &_missionItemIndexFact; }
@@ -1028,6 +1030,7 @@ private:
     void _handleGlobalPositionInt       (mavlink_message_t& message);
     void _handleAltitude                (mavlink_message_t& message);
     void _handleVfrHud                  (mavlink_message_t& message);
+    void _handleRangefinder             (mavlink_message_t& message);
     void _handleNavControllerOutput     (mavlink_message_t& message);
     void _handleHighLatency             (mavlink_message_t& message);
     void _handleHighLatency2            (mavlink_message_t& message);
@@ -1288,7 +1291,13 @@ private:
         bool                useCommandInt       = false;
         MAV_CMD             command;
         MAV_FRAME           frame;
-        float               rgParam[7]          = { 0 };
+        float               rgParam1            = 0;
+        float               rgParam2            = 0;
+        float               rgParam3            = 0;
+        float               rgParam4            = 0;
+        double              rgParam5            = 0;
+        double              rgParam6            = 0;
+        float               rgParam7            = 0;
         bool                showError           = true;
         MavCmdResultHandler resultHandler;
         void*               resultHandlerData   = nullptr;
@@ -1305,7 +1314,7 @@ private:
     static const int                _mavCommandAckTimeoutMSecs              = 3000;
     static const int                _mavCommandAckTimeoutMSecsHighLatency   = 120000;
 
-    void _sendMavCommandWorker  (bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int compId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, float param5, float param6, float param7);
+    void _sendMavCommandWorker  (bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int compId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, double param5, double param6, float param7);
     void _sendMavCommandFromList(int index);
     int  _findMavCommandListEntryIndex(int targetCompId, MAV_CMD command);
     bool _sendMavCommandShouldRetry(MAV_CMD command);
@@ -1336,6 +1345,7 @@ private:
     Fact _altitudeTuningFact;
     Fact _altitudeTuningSetpointFact;
     Fact _xTrackErrorFact;
+    Fact _rangeFinderDistFact;
     Fact _flightDistanceFact;
     Fact _flightTimeFact;
     Fact _distanceToHomeFact;
@@ -1388,6 +1398,7 @@ private:
     static const char* _altitudeTuningFactName;
     static const char* _altitudeTuningSetpointFactName;
     static const char* _xTrackErrorFactName;
+    static const char* _rangeFinderDistFactName;
     static const char* _flightDistanceFactName;
     static const char* _flightTimeFactName;
     static const char* _distanceToHomeFactName;
