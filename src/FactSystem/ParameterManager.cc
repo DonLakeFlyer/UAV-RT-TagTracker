@@ -66,11 +66,6 @@ const QHash<int, QString> _mavlinkCompIdHash {
     { MAV_COMP_ID_GPS2,     "GPS2" }
 };
 
-const char* ParameterManager::_jsonParametersKey =          "parameters";
-const char* ParameterManager::_jsonCompIdKey =              "compId";
-const char* ParameterManager::_jsonParamNameKey =           "name";
-const char* ParameterManager::_jsonParamValueKey =          "value";
-
 ParameterManager::ParameterManager(Vehicle* vehicle)
     : QObject                           (vehicle)
     , _vehicle                          (vehicle)
@@ -531,7 +526,7 @@ void ParameterManager::refreshAllParameters(uint8_t componentId)
         FTPManager* ftpManager = _vehicle->ftpManager();
         connect(ftpManager, &FTPManager::downloadComplete, this, &ParameterManager::_ftpDownloadComplete);
         _waitingParamTimeoutTimer.stop();
-        if (ftpManager->download("@PARAM/param.pck",
+        if (ftpManager->download(MAV_COMP_ID_AUTOPILOT1, "@PARAM/param.pck",
                                  QStandardPaths::writableLocation(QStandardPaths::TempLocation),
                                  "", false /* No filesize check */)) {
             connect(ftpManager, &FTPManager::commandProgress, this, &ParameterManager::_ftpDownloadProgress);

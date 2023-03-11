@@ -80,6 +80,7 @@ const char* Vehicle::_yawRateFactName =             "yawRate";
 const char* Vehicle::_airSpeedFactName =            "airSpeed";
 const char* Vehicle::_airSpeedSetpointFactName =    "airSpeedSetpoint";
 const char* Vehicle::_xTrackErrorFactName =         "xTrackError";
+const char* Vehicle::_rangeFinderDistFactName =     "rangeFinderDist";
 const char* Vehicle::_groundSpeedFactName =         "groundSpeed";
 const char* Vehicle::_climbRateFactName =           "climbRate";
 const char* Vehicle::_altitudeRelativeFactName =    "altitudeRelative";
@@ -147,6 +148,7 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _altitudeTuningFact           (0, _altitudeTuningFactName,    FactMetaData::valueTypeDouble)
     , _altitudeTuningSetpointFact   (0, _altitudeTuningSetpointFactName, FactMetaData::valueTypeDouble)
     , _xTrackErrorFact              (0, _xTrackErrorFactName,       FactMetaData::valueTypeDouble)
+    , _rangeFinderDistFact          (0, _rangeFinderDistFactName,   FactMetaData::valueTypeFloat)
     , _flightDistanceFact           (0, _flightDistanceFactName,    FactMetaData::valueTypeDouble)
     , _flightTimeFact               (0, _flightTimeFactName,        FactMetaData::valueTypeElapsedTimeInSeconds)
     , _distanceToHomeFact           (0, _distanceToHomeFactName,    FactMetaData::valueTypeDouble)
@@ -301,6 +303,7 @@ Vehicle::Vehicle(MAV_AUTOPILOT              firmwareType,
     , _altitudeTuningFact               (0, _altitudeTuningFactName,    FactMetaData::valueTypeDouble)
     , _altitudeTuningSetpointFact       (0, _altitudeTuningSetpointFactName, FactMetaData::valueTypeDouble)
     , _xTrackErrorFact                  (0, _xTrackErrorFactName,       FactMetaData::valueTypeDouble)
+    , _rangeFinderDistFact              (0, _rangeFinderDistFactName,   FactMetaData::valueTypeFloat)
     , _flightDistanceFact               (0, _flightDistanceFactName,    FactMetaData::valueTypeDouble)
     , _flightTimeFact                   (0, _flightTimeFactName,        FactMetaData::valueTypeElapsedTimeInSeconds)
     , _distanceToHomeFact               (0, _distanceToHomeFactName,    FactMetaData::valueTypeDouble)
@@ -424,6 +427,7 @@ void Vehicle::_commonInit()
     _addFact(&_altitudeTuningFact,       _altitudeTuningFactName);
     _addFact(&_altitudeTuningSetpointFact, _altitudeTuningSetpointFactName);
     _addFact(&_xTrackErrorFact,         _xTrackErrorFactName);
+    _addFact(&_rangeFinderDistFact,     _rangeFinderDistFactName);
     _addFact(&_flightDistanceFact,      _flightDistanceFactName);
     _addFact(&_flightTimeFact,          _flightTimeFactName);
     _addFact(&_distanceToHomeFact,      _distanceToHomeFactName);
@@ -719,6 +723,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_VFR_HUD:
         _handleVfrHud(message);
         break;
+    case MAVLINK_MSG_ID_RANGEFINDER:
+        _handleRangefinder(message);
+        break;
     case MAVLINK_MSG_ID_NAV_CONTROLLER_OUTPUT:
         _handleNavControllerOutput(message);
         break;
@@ -1000,6 +1007,14 @@ void Vehicle::_handleVfrHud(mavlink_message_t& message)
     }
     _altitudeTuningFact.setRawValue(vfrHud.alt - _altitudeTuningOffset);
 }
+
+void Vehicle::_handleRangefinder(mavlink_message_t& message)
+{
+    mavlink_rangefinder_t rangefinder;
+    mavlink_msg_rangefinder_decode(&message, &rangefinder);
+    _rangeFinderDistFact.setRawValue(qIsNaN(rangefinder.distance) ? 0 : rangefinder.distance);
+}
+
 
 void Vehicle::_handleNavControllerOutput(mavlink_message_t& message)
 {
@@ -1316,7 +1331,7 @@ QString Vehicle::vehicleUIDStr()
 {
     QString uid;
     uint8_t* pUid = (uint8_t*)(void*)&_uid;
-    uid.asprintf("%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
+    uid = uid.asprintf("%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
                  pUid[0] & 0xff,
             pUid[1] & 0xff,
             pUid[2] & 0xff,
@@ -2963,7 +2978,7 @@ bool Vehicle::_commandCanBeDuplicated(MAV_CMD command)
     }
 }
 
-void Vehicle::_sendMavCommandWorker(bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int targetCompId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
+void Vehicle::_sendMavCommandWorker(bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int targetCompId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, double param5, double param6, float param7)
 {
     if ((targetCompId == MAV_COMP_ID_ALL) || (isMavCommandPending(targetCompId, command) && !_commandCanBeDuplicated(command))) {
         bool    compIdAll       = targetCompId == MAV_COMP_ID_ALL;
@@ -3001,13 +3016,13 @@ void Vehicle::_sendMavCommandWorker(bool commandInt, bool showError, MavCmdResul
     entry.showError         = showError;
     entry.resultHandler     = resultHandler;
     entry.resultHandlerData = resultHandlerData;
-    entry.rgParam[0]        = param1;
-    entry.rgParam[1]        = param2;
-    entry.rgParam[2]        = param3;
-    entry.rgParam[3]        = param4;
-    entry.rgParam[4]        = param5;
-    entry.rgParam[5]        = param6;
-    entry.rgParam[6]        = param7;
+    entry.rgParam1          = param1;
+    entry.rgParam2          = param2;
+    entry.rgParam3          = param3;
+    entry.rgParam4          = param4;
+    entry.rgParam5          = param5;
+    entry.rgParam6          = param6;
+    entry.rgParam7          = param7;
     entry.maxTries          = _sendMavCommandShouldRetry(command) ? _mavCommandMaxRetryCount : 1;
     entry.ackTimeoutMSecs   = sharedLink->linkConfiguration()->isHighLatency() ? _mavCommandAckTimeoutMSecsHighLatency : _mavCommandAckTimeoutMSecs;
     entry.elapsedTimer.start();
@@ -3060,13 +3075,13 @@ void Vehicle::_sendMavCommandFromList(int index)
         cmd.target_component =  commandEntry.targetCompId;
         cmd.command =           commandEntry.command;
         cmd.frame =             commandEntry.frame;
-        cmd.param1 =            commandEntry.rgParam[0];
-        cmd.param2 =            commandEntry.rgParam[1];
-        cmd.param3 =            commandEntry.rgParam[2];
-        cmd.param4 =            commandEntry.rgParam[3];
-        cmd.x =                 commandEntry.frame == MAV_FRAME_MISSION ? commandEntry.rgParam[4] : commandEntry.rgParam[4] * 1e7;
-        cmd.y =                 commandEntry.frame == MAV_FRAME_MISSION ? commandEntry.rgParam[5] : commandEntry.rgParam[5] * 1e7;
-        cmd.z =                 commandEntry.rgParam[6];
+        cmd.param1 =            commandEntry.rgParam1;
+        cmd.param2 =            commandEntry.rgParam2;
+        cmd.param3 =            commandEntry.rgParam3;
+        cmd.param4 =            commandEntry.rgParam4;
+        cmd.x =                 commandEntry.frame == MAV_FRAME_MISSION ? commandEntry.rgParam5 : commandEntry.rgParam5 * 1e7;
+        cmd.y =                 commandEntry.frame == MAV_FRAME_MISSION ? commandEntry.rgParam6 : commandEntry.rgParam6 * 1e7;
+        cmd.z =                 commandEntry.rgParam7;
         mavlink_msg_command_int_encode_chan(_mavlink->getSystemId(),
                                             _mavlink->getComponentId(),
                                             sharedLink->mavlinkChannel(),
@@ -3080,13 +3095,13 @@ void Vehicle::_sendMavCommandFromList(int index)
         cmd.target_component =  commandEntry.targetCompId;
         cmd.command =           commandEntry.command;
         cmd.confirmation =      0;
-        cmd.param1 =            commandEntry.rgParam[0];
-        cmd.param2 =            commandEntry.rgParam[1];
-        cmd.param3 =            commandEntry.rgParam[2];
-        cmd.param4 =            commandEntry.rgParam[3];
-        cmd.param5 =            commandEntry.rgParam[4];
-        cmd.param6 =            commandEntry.rgParam[5];
-        cmd.param7 =            commandEntry.rgParam[6];
+        cmd.param1 =            commandEntry.rgParam1;
+        cmd.param2 =            commandEntry.rgParam2;
+        cmd.param3 =            commandEntry.rgParam3;
+        cmd.param4 =            commandEntry.rgParam4;
+        cmd.param5 =            static_cast<float>(commandEntry.rgParam5);
+        cmd.param6 =            static_cast<float>(commandEntry.rgParam6);
+        cmd.param7 =            commandEntry.rgParam7;
         mavlink_msg_command_long_encode_chan(_mavlink->getSystemId(),
                                              _mavlink->getComponentId(),
                                              sharedLink->mavlinkChannel(),
