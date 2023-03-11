@@ -50,6 +50,7 @@ installer {
         QMAKE_POST_LINK += && tar -cj --exclude='package' -f package/QGroundControl.tar.bz2 staging --transform 's/$${DESTDIR}/qgroundcontrol/'
     }
     AndroidBuild {
+        QMAKE_POST_LINK += && androiddeployqt --verbose --input android-QGroundControl-deployment-settings.json --output android-build --release --sign $${SOURCE_DIR}/android/android_release.keystore QGCAndroidKeyStore --storepass $$(ANDROID_KEYSTORE_PASSWORD)
         _ANDROID_KEYSTORE_PASSWORD = $$(ANDROID_KEYSTORE_PASSWORD)
         isEmpty(_ANDROID_KEYSTORE_PASSWORD) {
             # This is for local builds or builds in forks and PR where the Android keystore password is not available
