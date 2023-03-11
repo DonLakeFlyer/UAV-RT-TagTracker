@@ -58,51 +58,12 @@ Item {
         bottomEdgeRightInset:       0
     }
 
-    Rectangle {
+    /*Rectangle {
         width:                  parentToolInsets.rightEdgeTopInset
         anchors.topMargin:      parentToolInsets.topEdgeRightInset
         anchors.bottom:         parent.bottom
         anchors.top:            parent.top
         anchors.right:          parent.right
         color:                  "white"
-
-        property real _margins: ScreenTools.defaultFontPixelWidth / 2
-
-        QGCFlickable {
-            anchors.fill:   parent
-            contentHeight:  innerColumn.height
-
-            ColumnLayout {
-                id:             innerColumn
-                anchors.left:   parent.left
-                anchors.right:  parent.right
-
-                SectionHeader {
-                    Layout.fillWidth:   true
-                    text:               qsTr("Previous Pulses")
-                }
-
-                Repeater {
-                    model: _corePlugin.prevPulseInfoList;
-
-                    QGCLabel {
-                        text: qsTr("%1:%2 %3").arg(modelData.name).arg(modelData.rateChar).arg(modelData.snr.toLocaleString(Qt.locale("en_US"), 'f', 3));
-                    }
-                }
-
-                SectionHeader {
-                    Layout.fillWidth:   true
-                    text:               qsTr("Current Pulses")
-                }
-
-                Repeater {
-                    model: _corePlugin.currPulseInfoList;
-
-                    QGCLabel {
-                        text: qsTr("%1:%2 %3").arg(modelData.name).arg(modelData.rateChar).arg(modelData.snr.toLocaleString(Qt.locale("en_US"), 'f', 3));
-                    }
-                }
-            }
-        }
-    }
+    }*/
 }

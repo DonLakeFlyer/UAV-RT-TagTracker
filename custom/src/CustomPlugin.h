@@ -31,8 +31,7 @@ public:
     Q_PROPERTY(CustomSettings*  customSettings      MEMBER  _customSettings         CONSTANT)
     Q_PROPERTY(QList<QList<double>> angleRatios     MEMBER  _rgAngleRatios          NOTIFY angleRatiosChanged)
     Q_PROPERTY(bool             flightMachineActive MEMBER  _flightMachineActive    NOTIFY flightMachineActiveChanged)
-    Q_PROPERTY(QVariantList     currPulseInfoList   READ    currPulseInfoList       NOTIFY pulseInfoListsChanged)
-    Q_PROPERTY(QVariantList     prevPulseInfoList   READ    prevPulseInfoList       NOTIFY pulseInfoListsChanged)
+    Q_PROPERTY(QVariantList     pulseLog            MEMBER  _pulseLog               NOTIFY pulseLogChanged)
 
     Q_INVOKABLE void startRotation      (void);
     Q_INVOKABLE void cancelAndReturn    (void);
@@ -41,9 +40,6 @@ public:
     Q_INVOKABLE void stopDetection      (void);
     Q_INVOKABLE void airspyHFCapture    (void);
     Q_INVOKABLE void airspyMiniCapture  (void);
-
-    QVariantList currPulseInfoList(void);
-    QVariantList prevPulseInfoList(void);
 
     // Overrides from QGCCorePlugin
     QVariantList&       settingsPages           (void) final;
@@ -59,6 +55,7 @@ signals:
     void angleRatiosChanged         (void);
     void flightMachineActiveChanged (bool flightMachineActive);
     void pulseInfoListsChanged      (void);
+    void pulseLogChanged            ();
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
@@ -105,6 +102,7 @@ private:
     bool    _pulseConfirmed             (void) { return _lastPulseInfo.confirmed_status; }
     void    _sendNextTag                (void);
     void    _sendEndTags                (void);
+    void    _resetPulseLog              (void);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -133,15 +131,10 @@ private:
     QFile                   _pulseLogFile;
     TunnelProtocol::PulseInfo_t _lastPulseInfo;
 
-    TagInfoList           _tagInfoList;
+    TagInfoList             _tagInfoList;
     TagInfoList::const_iterator _nextTagToSend;
 
-    QMap<uint32_t, QList<PulseInfo*>>   _prevPulseInfoMap;
-    QMap<uint32_t, QList<PulseInfo*>>   _currPulseInfoMap;
-    QMap<uint32_t, QTime>               _prevLastTimeMap;
-    QMap<uint32_t, QTime>               _currLastTimeMap;
-    QMap<uint32_t, uint32_t>            _lastGroupSeqCounts;
-
+    QVariantList            _pulseLog;
 };
 
 class PulseRoseMapItem : public QObject
