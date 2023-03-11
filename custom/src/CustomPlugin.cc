@@ -7,6 +7,7 @@
 #include "FlyViewSettings.h"
 #include "QmlComponentInfo.h"
 #include "TunnelProtocol.h"
+#include "PulseInfoList.h"
 
 #include <QDebug>
 #include <QPointF>
@@ -139,6 +140,9 @@ void CustomPlugin::_handleTunnelCommandAck(const mavlink_tunnel_t& tunnel)
             case COMMAND_ID_TAG:
                 _sendNextTag();
                 break;
+            case COMMAND_ID_END_TAGS:
+                _resetPulseLog();
+                break;
             }
         } else {
             QString message = QStringLiteral("%1 command failed").arg(_tunnelCommandIdToText(ack.command));
@@ -178,55 +182,26 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         QString tagName(extTagInfo.name);
         QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_2_id : extTagInfo.ip_msecs_1_id);
 
-        if (_lastGroupSeqCounts.contains(pulseInfo.tag_id)) {
-            // We've seen this tag before
-
-            uint16_t lastGroupSeqCounter = _lastGroupSeqCounts[pulseInfo.tag_id];
-            if (lastGroupSeqCounter == pulseInfo.group_seq_counter) {
-                // We are still receiving new pulses associated with the current grouping
-            } else {
-                // This is a new grouping
-
-                // Check for lost groupings
-                if (pulseInfo.group_seq_counter > lastGroupSeqCounter + 1) {
-                    qgcApp()->showAppMessage(QString("ERROR: Lost %1 pulse groups").arg(pulseInfo.group_seq_counter - lastGroupSeqCounter - 1));
-                }
-
-                // Delete the stale group of pulses from prev
-                auto tagPulseInfoList = _prevPulseInfoMap[pulseInfo.tag_id];
-                auto tagPulseInfoIter = tagPulseInfoList.constBegin();
-                while (tagPulseInfoIter != tagPulseInfoList.constEnd()) {
-                    delete (*tagPulseInfoIter);
-                    tagPulseInfoIter++;
-                }
-                _prevPulseInfoMap.remove(pulseInfo.tag_id);
-
-                // Move the curr group of pulses to prev
-                _prevPulseInfoMap[pulseInfo.tag_id] = _currPulseInfoMap[pulseInfo.tag_id];
-                _prevLastTimeMap [pulseInfo.tag_id] = QTime::currentTime();
-                _currPulseInfoMap.remove(pulseInfo.tag_id);
-                _currLastTimeMap.remove(pulseInfo.tag_id);
+        // Find the tag in the pulse log
+        bool foundTag = false;
+        for (int i=0; i<_pulseLog.count(); i++) {
+            auto listModel = qvariant_cast<PulseInfoList*>(_pulseLog[i]);
+            if (listModel->tagId() == evenTagId) {
+                auto pInfo = new PulseInfo(pulseInfo, extTagInfo.name, tagRateChar);
+                listModel->insert(0, pInfo);
+                foundTag = true;
+                break;
             }
-
-            _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, tagName, tagRateChar, this));
-            _currLastTimeMap[pulseInfo.tag_id] = QTime::currentTime();
-        } else {
-            // We've never seen this tag before so we just add directly to current
-            _currPulseInfoMap[pulseInfo.tag_id].append(new PulseInfo(pulseInfo, tagName, tagRateChar, this));
-            _currLastTimeMap[pulseInfo.tag_id] = QTime::currentTime();
         }
-
-        emit pulseInfoListsChanged();
-
-        _rgPulseValues.append(pulseInfo.snr);
-        _lastPulseInfo = pulseInfo;
+        if (!foundTag) {
+            qWarning() << "_handleTunnelPulse: Unable to find tag in pulse log" << evenTagId;
+        }
     } else {
         qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
                                     "UNCONFIRMED tag_id" <<
                                     pulseInfo.tag_id;
     }
 
-    _lastGroupSeqCounts[pulseInfo.tag_id] = pulseInfo.group_seq_counter;
 }
 
 void CustomPlugin::_logPulseToFile(const mavlink_tunnel_t& tunnel)
@@ -823,51 +798,14 @@ QmlObjectListModel* CustomPlugin::customMapItems(void)
     return &_customMapItems;
 }
 
-QVariantList CustomPlugin::currPulseInfoList(void)
+void CustomPlugin::_resetPulseLog(void)
 {
-    QVariantList pulseInfoList;
+    _pulseLog.clear();
 
-    QList<TunnelProtocol::TagInfo_t> tagList;
-
-    auto tagIdIter = _currPulseInfoMap.constBegin();
-
-    while (tagIdIter != _currPulseInfoMap.constEnd()) {
-        auto tagPulseInfoList = _currPulseInfoMap[tagIdIter.key()];
-        auto tagPulseInfoIter = tagPulseInfoList.constBegin();
-
-        while (tagPulseInfoIter != tagPulseInfoList.constEnd()) {
-            pulseInfoList.append(QVariant::fromValue(*tagPulseInfoIter));
-
-            tagPulseInfoIter++;
-        }
-
-        ++tagIdIter;
+    for (auto& extTagInfo: _tagInfoList) {
+        auto listModel = new PulseInfoList(extTagInfo.tagInfo.id, extTagInfo.name, extTagInfo.tagInfo.frequency_hz, this);
+        _pulseLog.append(QVariant::fromValue(listModel));
     }
 
-    return pulseInfoList;
+    emit pulseLogChanged();
 }
-
-QVariantList CustomPlugin::prevPulseInfoList(void)
-{
-    QVariantList pulseInfoList;
-
-    QList<TunnelProtocol::TagInfo_t> tagList;
-
-    auto tagIdIter = _prevPulseInfoMap.constBegin();
-
-    while (tagIdIter != _prevPulseInfoMap.constEnd()) {
-        auto tagPulseInfoList = _prevPulseInfoMap[tagIdIter.key()];
-        auto tagPulseInfoIter = tagPulseInfoList.constBegin();
-
-        while (tagPulseInfoIter != tagPulseInfoList.constEnd()) {
-            pulseInfoList.append(QVariant::fromValue(*tagPulseInfoIter));
-
-            tagPulseInfoIter++;
-        }
-
-        ++tagIdIter;
-    }
-
-    return pulseInfoList;
-}
-
