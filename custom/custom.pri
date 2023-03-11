@@ -71,6 +71,7 @@ SOURCES += \
     $$PWD/src/CustomSettings.cc \
     $$PWD/src/TagInfoList.cc \
     $$PWD/src/PulseInfo.cc \
+    $$PWD/src/PulseInfoList.cc \
 
 HEADERS += \
     $$PWD/src/CustomFirmwarePlugin.h \
@@ -80,6 +81,7 @@ HEADERS += \
     $$PWD/src/CustomSettings.h \
     $$PWD/src/TagInfoList.h \
     $$PWD/src/PulseInfo.h \
+    $$PWD/src/PulseInfoList.h \
 
 INCLUDEPATH += \
     $$PWD/src \
