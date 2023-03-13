@@ -14,6 +14,20 @@ TagInfoList::TagInfoList()
 
 }
 
+void TagInfoList::checkForTagFile (void)
+{
+    QString tagFilename = QString::asprintf("%s/TagInfo.txt",
+                                            qgcApp()->toolbox()->settingsManager()->appSettings()->parameterSavePath().toStdString().c_str());
+    QFile   tagFile(tagFilename);
+
+    if (!tagFile.open(QIODevice::ReadOnly)) {
+        qgcApp()->showAppMessage(QStringLiteral("TagInfo.txt does not exist. Creating default file at: %1").arg(tagFilename));
+        if (!QFile::copy(":/res/TagInfo.txt", tagFilename)) {
+            qgcApp()->showAppMessage(QStringLiteral("Unable to create default TagIndo.txt file"));
+        }
+    }
+}
+
 bool TagInfoList::loadTags(void)
 {
     clear();
@@ -25,10 +39,9 @@ bool TagInfoList::loadTags(void)
     QFile   tagFile(tagFilename);
 
     if (!tagFile.open(QIODevice::ReadOnly)) {
-        qgcApp()->showAppMessage(QStringLiteral("TagInfoList: Unable to open tag file: %1").arg(tagFilename));
+        qgcApp()->showAppMessage(QStringLiteral("Unable to open TagInfo.txt at: %1").arg(tagFilename));
         return false;
     }
-
 
     QString     tagLine;
     QTextStream tagStream(&tagFile);
