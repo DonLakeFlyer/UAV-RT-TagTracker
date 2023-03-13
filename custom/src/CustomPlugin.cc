@@ -51,6 +51,8 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     _customOptions = new CustomOptions(this, nullptr);
 
     connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
+
+    _tagInfoList.checkForTagFile();
 }
 
 void CustomPlugin::_activeVehicleChanged(Vehicle* activeVehicle)
