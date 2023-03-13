@@ -18,6 +18,7 @@ class TagInfoList : public QList<ExtendedTagInfo_t>
 public:
     TagInfoList();
 
+    void                checkForTagFile (void);
     bool                loadTags        (void);
     ExtendedTagInfo_t   getTagInfo      (uint32_t tag_id);
     uint32_t            radioCenterHz   () { return _radioCenterHz; }

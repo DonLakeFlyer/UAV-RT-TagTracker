@@ -13,6 +13,7 @@
         <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
     </qresource>
     <qresource prefix="/res">
+        <file alias="TagInfo.txt">TagInfo.txt</file>
     </qresource>
     <qresource prefix="/json">
         <file alias="Custom.SettingsGroup.json">src/Custom.SettingsGroup.json</file>
