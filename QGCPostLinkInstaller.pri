@@ -49,10 +49,4 @@ installer {
         QMAKE_POST_LINK += && mkdir -p package
         QMAKE_POST_LINK += && tar -cj --exclude='package' -f package/QGroundControl.tar.bz2 staging --transform 's/$${DESTDIR}/qgroundcontrol/'
     }
-    AndroidBuild {
-        QMAKE_POST_LINK += && mkdir -p package
-        QMAKE_POST_LINK += && make apk_install_target INSTALL_ROOT=android-build
-        QMAKE_POST_LINK += && androiddeployqt --verbose --input android-QGroundControl-deployment-settings.json --output android-build --release
-        QMAKE_POST_LINK += && cp android-build/build/outputs/apk/release/android-build-release-signed.apk package/QGroundControl$${ANDROID_TRUE_BITNESS}.apk
-    }
 }
