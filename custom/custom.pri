@@ -62,7 +62,7 @@ RESOURCES += \
     $$PWD/custom.qrc
 
 QML_IMPORT_PATH += \
-   $$PWD/res
+   $$PWD/src
 
 # Our own, custom sources
 SOURCES += \
