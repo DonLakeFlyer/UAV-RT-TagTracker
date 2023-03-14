@@ -11,9 +11,9 @@ import QGroundControl               1.0
 import QGroundControl.FlightDisplay 1.0
 
 GuidedToolStripAction {
-    text:       _guidedController.startDetectionTitle
+    text:       _guidedController.downloadLogsTitle
     iconSource: "/res/action.svg"
     visible:    true
     enabled:    QGroundControl.multiVehicleManager.activeVehicle
-    actionID:   _guidedController.actionStartDetection
+    actionID:   _guidedController.actionDownloadLogs
 }

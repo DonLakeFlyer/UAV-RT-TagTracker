@@ -8,6 +8,7 @@
 #include "QmlComponentInfo.h"
 #include "TunnelProtocol.h"
 #include "PulseInfoList.h"
+#include "FTPManager.h"
 
 #include <QDebug>
 #include <QPointF>
@@ -384,6 +385,9 @@ void CustomPlugin::sendTags(void)
 
 void CustomPlugin::_sendNextTag(void)
 {
+    // Don't send tags too fast
+    QGC::SLEEP::msleep(100);
+
     if (_nextTagToSend == _tagInfoList.end()) {
         _sendEndTags();
     } else {
@@ -391,8 +395,6 @@ void CustomPlugin::_sendNextTag(void)
         ExtendedTagInfo_t extTagInfo = refExtTagInfo;   // make a copy
 
         _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
-        // Don't send tags too fast
-        QGC::SLEEP::msleep(100);
 
         _nextTagToSend++;
     }
@@ -810,4 +812,36 @@ void CustomPlugin::_resetPulseLog(void)
     }
 
     emit pulseLogChanged();
+}
+
+void CustomPlugin::_ftpDownloadComplete(const QString& file, const QString& errorMsg)
+{
+    qgcApp()->showAppMessage(QString("Download Complete %1").arg(errorMsg), file);
+}
+
+void CustomPlugin::_ftpCommandError(const QString& msg)
+{
+    qgcApp()->showAppMessage(msg);
+}
+
+void CustomPlugin::downloadLogs()
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        qCDebug(CustomPluginLog) << "downloadLogs called with no vehicle active";
+        return;
+    }
+
+    auto ftpManager = vehicle->ftpManager();
+
+    connect(ftpManager, &FTPManager::downloadComplete,  this, &CustomPlugin::_ftpDownloadComplete);
+    connect(ftpManager, &FTPManager::commandError,      this, &CustomPlugin::_ftpCommandError);
+
+    bool success = ftpManager->download(
+                        MAV_COMP_ID_ONBOARD_COMPUTER,
+                        "/home/vmware/MavlinkTagController.log",
+                        qgcApp()->toolbox()->settingsManager()->appSettings()->logSavePath());
+    if (!success) {
+        qCDebug(CustomPluginLog) << "FTP download failed to start";
+    }
 }
