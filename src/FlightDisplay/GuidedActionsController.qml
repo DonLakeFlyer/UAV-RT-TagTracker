@@ -116,13 +116,14 @@ Item {
     readonly property int actionSetEstimatorOrigin:         28
   
 
-    // Start UAV-RT mods
+// Start UAV-RT mods
     readonly property int actionSendTags:                   26
     readonly property int actionStartDetection:             27
     readonly property int actionStopDetection:              28
     readonly property int actionStartRotation:              29
     readonly property int actionAirspyHF:                   30
     readonly property int actionAirspyMini:                 31
+    readonly property int actionDownloadLogs:               32
 
     readonly property string sendTagsTitle:                 qsTr("Tagsꜛ")
     readonly property string startDetectionTitle:           qsTr("Start")
@@ -130,6 +131,7 @@ Item {
     readonly property string startRotationTitle:            qsTr("Rotate")
     readonly property string airspyHFTitle:                 qsTr("HF+")
     readonly property string airspyMiniTitle:               qsTr("Mini")
+    readonly property string downloadLogsTitle:             qsTr("Download")
 
     readonly property string sendTagsMessage:               qsTr("Send tag(s) to vehicle.")
     readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag.")
@@ -137,7 +139,8 @@ Item {
     readonly property string startRotationMessage:          qsTr("Start rotation in place.")
     readonly property string airspyHFMessage:               qsTr("Start capture Airspy HF+.")
     readonly property string airspyMiniMessage:             qsTr("Start capture Airspy Mini.")
-    // End UAV-RT mods
+    readonly property string downloadLogsMessage:           qsTr("Download companion logs.")
+// End UAV-RT mods
 
     property var    _activeVehicle:             QGroundControl.multiVehicleManager.activeVehicle
     property bool   _useChecklist:              QGroundControl.settingsManager.appSettings.useChecklist.rawValue && QGroundControl.corePlugin.options.preFlightChecklistUrl.toString().length
@@ -583,7 +586,12 @@ Item {
             confirmDialog.title = airspyMiniTitle
             confirmDialog.message = airspyMiniMessage
             break
-        // End UAV-RT modes
+        case actionDownloadLogs:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = downloadLogsTitle
+            confirmDialog.message = downloadLogsMessage
+            break
+// End UAV-RT modes
         default:
             console.warn("Unknown actionCode", actionCode)
             return
@@ -703,7 +711,10 @@ Item {
         case actionAirspyMini:
             QGroundControl.corePlugin.airspyMiniCapture()
             break
-        // End UAV-RT modes
+        case actionDownloadLogs:
+            QGroundControl.corePlugin.downloadLogs()
+            break
+// End UAV-RT modes
         default:
             console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
             break

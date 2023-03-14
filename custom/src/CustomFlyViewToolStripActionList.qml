@@ -26,6 +26,7 @@ ToolStripActionList {
         CustomGuidedActionStartDetection { },
         CustomGuidedActionStopDetection { },
         CustomGuidedActionStartRotation { },
+        CustomGuidedActionDownloadLogs { },
         CustomGuidedActionAirspyHF { },
         CustomGuidedActionAirspyMini { }
     ]

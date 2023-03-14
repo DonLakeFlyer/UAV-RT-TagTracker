@@ -52,7 +52,7 @@ Item {
 
             QGCFlickable {
                 anchors.fill:   parent
-                contentHeight:  lowLayout.height
+                contentHeight:  flowLayout.height
                 
                 Flow {
                     id:             flowLayout
@@ -68,13 +68,13 @@ Item {
                                 height: popupRect.height / 2
                                 clip:   true
 
-                                QGCLabel { text: modelData.tagName + " - " + modelData.tagId }
-                                QGCLabel { text: modelData.tagFreqHz }
+                                QGCLabel { font.pointSize: ScreenTools.largeFontPointSize; text: modelData.tagName + " - " + modelData.tagId }
+                                QGCLabel { font.pointSize: ScreenTools.largeFontPointSize; text: modelData.tagFreqHz }
 
                                 Repeater {
                                     model: modelData
 
-                                    QGCLabel { text: object.rateChar + ": " + object.snr.toFixed(1) }
+                                    QGCLabel { font.pointSize: ScreenTools.largeFontPointSize; text: object.rateChar + ": " + object.snr.toFixed(1) }
                                 }
                             }
 

@@ -38,6 +38,7 @@ public:
     Q_INVOKABLE void stopDetection      (void);
     Q_INVOKABLE void airspyHFCapture    (void);
     Q_INVOKABLE void airspyMiniCapture  (void);
+    Q_INVOKABLE void downloadLogs       (void);
 
     // Overrides from QGCCorePlugin
     QVariantList&       settingsPages           (void) final;
@@ -64,6 +65,8 @@ private slots:
     void _mavCommandResult              (int vehicleId, int component, int command, int result, bool noResponseFromVehicle);
     void _tunnelCommandAckFailed        (void);
     void _activeVehicleChanged          (Vehicle* activeVehicle);
+    void _ftpDownloadComplete           (const QString& file, const QString& errorMsg);
+    void _ftpCommandError               (const QString& msg);
 
 private:
     typedef enum {
