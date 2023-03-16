@@ -65,7 +65,7 @@ Item {
                             spacing: ScreenTools.defaultFontPixelWidth * 2
 
                             Column {
-                                height: popupRect.height / 2
+                                height: popupRect.height
                                 clip:   true
 
                                 QGCLabel { font.pointSize: ScreenTools.largeFontPointSize; text: modelData.tagName + " - " + modelData.tagId }
