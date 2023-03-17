@@ -24,9 +24,11 @@ public:
     uint32_t            radioCenterHz   () { return _radioCenterHz; }
 
 private:
-    bool _channelizerTuner  ();
-    void _printChannelMap   (const uint32_t centerFreqHz, const QVector<uint32_t>& wrappedRequestedFreqsHz);
-    int  _firstChannelFreqHz(const int centerFreq);
+    bool    _channelizerTuner  ();
+    void    _printChannelMap   (const uint32_t centerFreqHz, const QVector<uint32_t>& wrappedRequestedFreqsHz);
+    int     _firstChannelFreqHz(const int centerFreq);
+    QString _tagInfoFilePath();
+    bool    _generateThresholds();
 
     uint32_t            _radioCenterHz      = 0;
     QVector<uint32_t>   _channelBucketCenters;
