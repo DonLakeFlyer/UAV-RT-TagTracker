@@ -28,10 +28,12 @@ public:
     CustomPlugin(QGCApplication* app, QGCToolbox* toolbox);
     ~CustomPlugin();
 
-    Q_PROPERTY(CustomSettings*  customSettings      MEMBER  _customSettings         CONSTANT)
+    Q_PROPERTY(CustomSettings*  customSettings      READ    customSettings          CONSTANT)
     Q_PROPERTY(QList<QList<double>> angleRatios     MEMBER  _rgAngleRatios          NOTIFY angleRatiosChanged)
     Q_PROPERTY(bool             flightMachineActive MEMBER  _flightMachineActive    NOTIFY flightMachineActiveChanged)
     Q_PROPERTY(QVariantList     pulseLog            MEMBER  _pulseLog               NOTIFY pulseLogChanged)
+
+    CustomSettings* customSettings() { return _customSettings; }
 
     Q_INVOKABLE void startRotation      (void);
     Q_INVOKABLE void cancelAndReturn    (void);

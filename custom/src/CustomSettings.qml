@@ -42,31 +42,10 @@ Rectangle {
                 factList: [
                     QGroundControl.corePlugin.customSettings.altitude,
                     QGroundControl.corePlugin.customSettings.divisions,
-                    QGroundControl.corePlugin.customSettings.tagId,
-                    QGroundControl.corePlugin.customSettings.frequency,
-                    QGroundControl.corePlugin.customSettings.frequencyDelta,
-                    QGroundControl.corePlugin.customSettings.pulseDuration,
-                    QGroundControl.corePlugin.customSettings.intraPulse1,
-                    QGroundControl.corePlugin.customSettings.intraPulse2,
-                    QGroundControl.corePlugin.customSettings.intraPulseUncertainty,
-                    QGroundControl.corePlugin.customSettings.intraPulseJitter
+                    QGroundControl.corePlugin.customSettings.k,
+                    QGroundControl.corePlugin.customSettings.falseAlarmProbability,
+                    QGroundControl.corePlugin.customSettings.maxPulse,
                 ]
-            }
-
-            Row {
-                spacing: ScreenTools.defaultFontPixelWidth * 5
-
-                QGCButton {
-                    text:       "Send Tag"
-                    enabled:    _activeVehicle
-                    onClicked:  QGroundControl.corePlugin.sendTag()
-                }
-
-                QGCButton {
-                    text:       "Start Detection"
-                    enabled:    _activeVehicle
-                    onClicked:  QGroundControl.corePlugin.startDetection()
-                }
             }
         }
     }

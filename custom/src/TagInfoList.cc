@@ -2,6 +2,8 @@
 #include "QGCApplication.h"
 #include "SettingsManager.h"
 #include "AppSettings.h"
+#include "CustomPlugin.h"
+#include "CustomSettings.h"
 
 #if 0
 #include "threshold_appender.h"
@@ -46,10 +48,14 @@ bool TagInfoList::loadTags(void)
         return false;
     }
 
-    QString     tagLine;
-    QTextStream tagStream(&tagFile);
-    uint32_t    lineCount = 0;
-    QString     lineFormat = "id, name, freq_hz, ip_msecs_1, ip_msecs_1_id, ip_msecs_2, ip_msecs_2_id, pulse_width_msecs, ip_uncertainty_msecs, ip_jitter_msecs, k, false_alarm";
+    QString         tagLine;
+    QTextStream     tagStream(&tagFile);
+    uint32_t        lineCount               = 0;
+    QString         lineFormat              = "id, name, freq_hz, ip_msecs_1, ip_msecs_1_id, ip_msecs_2, ip_msecs_2_id, pulse_width_msecs, ip_uncertainty_msecs, ip_jitter_msecs";
+    CustomSettings* customSettings          = qobject_cast<CustomPlugin*>(qgcApp()->toolbox()->corePlugin())->customSettings();
+    uint32_t        k                       = customSettings->k()->rawValue().toUInt();
+    double          falseAlarmProbability   = customSettings->falseAlarmProbability()->rawValue().toDouble() / 100.0;
+
     while (tagStream.readLineInto(&tagLine)) {
         lineCount++;
         if (tagLine.startsWith("#")) {
@@ -165,27 +171,8 @@ bool TagInfoList::loadTags(void)
             return false;
         }
 
-        tagValueString  = tagValues[tagValuePosition++];
-        extTagInfo.tagInfo.k       = tagValueString.toUInt(&ok);
-        if (!ok) {
-            qgcApp()->showAppMessage(QStringLiteral("TagInfoList: Line #%1 Value:'%2'. Unable to convert k to uint.").arg(lineCount).arg(tagValueString));
-            return false;
-        }
-        if (extTagInfo.tagInfo.k == 0) {
-            qgcApp()->showAppMessage(QStringLiteral("TagInfoList: Line #%1 Value:'%2'. k value cannot be 0").arg(lineCount).arg(tagValueString));
-            return false;
-        }
-
-        tagValueString                  = tagValues[tagValuePosition++];
-        extTagInfo.tagInfo.false_alarm_probability = tagValueString.toDouble(&ok);
-        if (!ok) {
-            qgcApp()->showAppMessage(QStringLiteral("TagInfoList: Line #%1 Value:'%2'. Unable to convert false_alarm to uint.").arg(lineCount).arg(tagValueString));
-            return false;
-        }
-        if (extTagInfo.tagInfo.false_alarm_probability == 0) {
-            qgcApp()->showAppMessage(QStringLiteral("TagInfoList: Line #%1 Value:'%2'. false_alarm value cannot be 0").arg(lineCount).arg(tagValueString));
-            return false;
-        }
+        extTagInfo.tagInfo.k = k;
+        extTagInfo.tagInfo.false_alarm_probability = falseAlarmProbability;
 
         newTagInfoList.push_back(extTagInfo);
     }
