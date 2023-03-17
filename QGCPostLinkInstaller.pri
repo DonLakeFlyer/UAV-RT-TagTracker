@@ -52,7 +52,7 @@ installer {
     AndroidBuild {
         QMAKE_POST_LINK += && mkdir -p package
         ReleaseBuild {
-            QMAKE_POST_LINK += && ls android-build/build/outputs/apk/release
+            QMAKE_POST_LINK += && androiddeployqt --verbose --input android-QGroundControl-deployment-settings.json --output android-build --gradle
             QMAKE_POST_LINK += && cp android-build/build/outputs/apk/release/android-build-release.apk package/TagTracker$${ANDROID_TRUE_BITNESS}.apk
         } else {
             QMAKE_POST_LINK += && cp android-build/build/outputs/apk/debug/android-build-debug.apk package/TagTracker$${ANDROID_TRUE_BITNESS}.apk
