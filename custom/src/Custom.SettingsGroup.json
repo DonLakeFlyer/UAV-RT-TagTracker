@@ -4,82 +4,40 @@
     "QGC.MetaData.Facts":
 [
 {
-    "name":             "sendSingleTagForMultiRate",
-    "type":             "bool",
-    "default":          1
-},
-{
     "name":             "altitude",
     "shortDesc":        "Altitude to perform VHF scan",
     "type":             "double",
     "units":            "m",
     "decimalPlaces":    1,
-    "default":     121.92
+    "default":          121.92
 },
 {
-    "name":             "divisions",
-    "shortDesc": "Number of divisions to stop rotation at",
-    "type":             "Int32",
-    "default":     16
+    "name":         "k",
+    "shortDesc":    "K value for detectors",
+    "type":         "UInt32",
+    "default":      3
 },
 {
-    "name":             "tagId",
-    "shortDesc": "Tag Id",
-    "type":             "Uint32",
-    "default":     1
+    "name":             "falseAlarmProbability",
+    "shortDesc":        "Detector false alarm probability in percent. Example: 1 percent = 1.0",
+    "type":             "double",
+    "units":            "%",
+    "decimalPlaces":    2,
+    "default":          0.8
 },
 {
-    "name":             "frequency",
-    "shortDesc": "Tag frequency",
-    "type":             "Uint32",
-    "min":              100000000,
-    "max":              199999000,
-    "default":     146000000
-},
-{
-    "name":             "frequencyDelta",
-    "shortDesc": "Frequency Delta",
-    "type":             "Uint32",
-    "default":     0
-},
-{
-    "name":             "pulseDuration",
-    "type":             "Uint32",
-    "min":              1,
-    "default":     20,
-    "units":            "msecs"
-},
-{
-    "name":             "intraPulse1",
-    "type":             "Uint32",
-    "min":              1,
-    "default":     1500,
-    "units":            "msecs"
-},
-{
-    "name":             "intraPulse2",
-    "type":             "Uint32",
-    "default":     2000,
-    "units":            "msecs"
-},
-{
-    "name":             "intraPulseUncertainty",
-    "type":             "Uint32",
-    "default":     500,
-    "units":            "msecs"
-},
-{
-    "name":             "intraPulseJitter",
-    "type":             "Uint32",
-    "default":     0,
-    "units":            "msecs"
+    "name":         "divisions",
+    "shortDesc":    "Number of divisions to stop rotation at",
+    "type":         "Int32",
+    "default":      16
 },
 {
     "name":             "maxPulse",
-    "shortDesc": "Maximum pulse value",
-    "type":             "float",
+    "shortDesc":        "Maximum pulse value",
+    "type":             "double",
     "min":              0,
-    "default":     19
+    "decimalPlaces":    1,
+    "default":          60
 }
 ]
 }
