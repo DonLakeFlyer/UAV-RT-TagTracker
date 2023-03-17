@@ -171,19 +171,23 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
     PulseInfo_t pulseInfo;
     memcpy(&pulseInfo, tunnel.payload, sizeof(pulseInfo));
 
-    if (pulseInfo.confirmed_status) {
-        qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
-                                    "CONFIRMED tag_id:frequency_hz:seq_ctr:snr" <<
-                                    pulseInfo.tag_id <<
-                                    pulseInfo.frequency_hz <<
-                                    pulseInfo.group_seq_counter <<
-                                    pulseInfo.snr;
-
+    if (pulseInfo.confirmed_status || pulseInfo.frequency_hz == 0) {
         auto evenTagId      = pulseInfo.tag_id - (pulseInfo.tag_id % 2);
         auto extTagInfo     = _tagInfoList.getTagInfo(evenTagId);
         bool rate2Tag       = pulseInfo.tag_id % 2;
-        QString tagName(extTagInfo.name);
         QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_2_id : extTagInfo.ip_msecs_1_id);
+
+        if (pulseInfo.frequency_hz != 0) {
+            qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
+                                        "CONFIRMED tag_id:frequency_hz:seq_ctr:snr" <<
+                                        pulseInfo.tag_id <<
+                                        pulseInfo.frequency_hz <<
+                                        pulseInfo.group_seq_counter <<
+                                        pulseInfo.snr;
+        } else {
+            tagRateChar = "H" + tagRateChar;
+            qCDebug(CustomPluginLog) << "HEARTBEAT from Detector" << pulseInfo.tag_id;
+        }
 
         // Find the tag in the pulse log
         bool foundTag = false;
