@@ -92,6 +92,7 @@ INCLUDEPATH += \
 
 # Setup to build uavrt_thresholds
 
+DontInclude {
 SOURCES += \
     $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.cpp, false) \
     $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.c, false) \
@@ -102,5 +103,5 @@ INCLUDEPATH += \
 
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp
-
+}
 
