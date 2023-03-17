@@ -3,6 +3,8 @@
 #include "SettingsManager.h"
 #include "AppSettings.h"
 
+#include "threshold_appender.h"
+
 #include <QFile>
 #include <QTextStream>
 
@@ -16,8 +18,7 @@ TagInfoList::TagInfoList()
 
 void TagInfoList::checkForTagFile (void)
 {
-    QString tagFilename = QString::asprintf("%s/TagInfo.txt",
-                                            qgcApp()->toolbox()->settingsManager()->appSettings()->parameterSavePath().toStdString().c_str());
+    QString tagFilename = _tagInfoFilePath();
     QFile   tagFile(tagFilename);
 
     if (!tagFile.open(QIODevice::ReadOnly)) {
@@ -436,4 +437,35 @@ void TagInfoList::_printChannelMap(const uint32_t centerFreqHz, const QVector<ui
 int TagInfoList::_firstChannelFreqHz(const int centerFreqHz)
 {
     return centerFreqHz - _halfBwHz - _halfChannelBwHz;
+}
+
+QString TagInfoList::_tagInfoFilePath()
+{
+    return QString::asprintf("%s/TagInfo.txt",
+                             qgcApp()->toolbox()->settingsManager()->appSettings()->parameterSavePath().toStdString().c_str());
+
+}
+
+bool TagInfoList::_generateThresholds()
+{
+    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+
+    tempPath += "/TagInfo.txt.thresholds";
+    QFile::copy(_tagInfoFilePath(), tempPath);
+    qDebug() << tempPath;
+
+    coder::array<char, 2U> configPathAsArray;
+
+    configPathAsArray.set_size(1, tempPath.length());
+
+    // Loop over the array to initialize each element.
+    for (int idx1{0}; idx1 < configPathAsArray.size(1); idx1++) {
+      // Set the value of the array element.
+      // Change this value to the value that the application requires.
+      configPathAsArray[idx1] = tempPath[idx1].toLatin1();
+    }
+
+    threshold_appender(3750.0, configPathAsArray);
+
+    return true;
 }
