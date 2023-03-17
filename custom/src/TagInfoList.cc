@@ -446,6 +446,7 @@ QString TagInfoList::_tagInfoFilePath()
 
 }
 
+#if 0
 bool TagInfoList::_generateThresholds()
 {
     QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
@@ -469,3 +470,4 @@ bool TagInfoList::_generateThresholds()
 
     return true;
 }
+#endif
