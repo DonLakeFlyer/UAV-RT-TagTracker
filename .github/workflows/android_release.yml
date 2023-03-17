@@ -140,5 +140,5 @@ jobs:
       - name: Save artifact
         uses: actions/upload-artifact@master
         with:
-          name: ${{ matrix.ARTIFACT }}
-          path: ${{ runner.temp }}/shadow_build_dir/package/${{ matrix.ARTIFACT }}
+          name: TagTracker32.apk
+          path: ${{ runner.temp }}/shadow_build_dir/android-build/TagTracker.apk
