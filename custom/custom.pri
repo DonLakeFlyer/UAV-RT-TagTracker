@@ -93,8 +93,8 @@ INCLUDEPATH += \
 # Setup to build uavrt_thresholds
 
 SOURCES += \
-    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.cpp, true) \
-    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.c, true) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.cpp, false) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.c, false) \
 
 INCLUDEPATH += \
     $$PWD/uavrt_thresholds/codegen/lib/threshold_appender \
