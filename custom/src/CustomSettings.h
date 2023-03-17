@@ -22,14 +22,7 @@ public:
 
     DEFINE_SETTINGFACT(altitude)
     DEFINE_SETTINGFACT(divisions)
-    DEFINE_SETTINGFACT(tagId)
-    DEFINE_SETTINGFACT(frequency)
-    DEFINE_SETTINGFACT(frequencyDelta)
-    DEFINE_SETTINGFACT(pulseDuration)
-    DEFINE_SETTINGFACT(intraPulse1)
-    DEFINE_SETTINGFACT(intraPulse2)
-    DEFINE_SETTINGFACT(intraPulseUncertainty)
-    DEFINE_SETTINGFACT(intraPulseJitter)
     DEFINE_SETTINGFACT(maxPulse)
-    DEFINE_SETTINGFACT(gain)
+    DEFINE_SETTINGFACT(k)
+    DEFINE_SETTINGFACT(falseAlarmProbability)
 };
