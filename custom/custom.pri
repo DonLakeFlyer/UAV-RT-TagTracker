@@ -85,4 +85,22 @@ HEADERS += \
 
 INCLUDEPATH += \
     $$PWD/src \
+
+# Shared header files for Tunnel Protocol
+INCLUDEPATH += \
     $$PWD/uavrt_interfaces/include/uavrt_interfaces \
+
+# Setup to build uavrt_thresholds
+
+SOURCES += \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.cpp, true) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.c, true) \
+
+INCLUDEPATH += \
+    $$PWD/uavrt_thresholds/codegen/lib/threshold_appender \
+    $$PWD/uavrt_thresholds/matlab-coder-utils/coder-headers \
+
+QMAKE_CXXFLAGS += -fopenmp
+QMAKE_LFLAGS += -fopenmp
+
+
