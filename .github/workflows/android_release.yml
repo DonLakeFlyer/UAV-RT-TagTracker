@@ -25,16 +25,6 @@ jobs:
   build:
     runs-on:  ubuntu-20.04
 
-    strategy:
-      matrix:
-       include:
-         - architecture: 32bits
-           eabi: armeabi-v7a
-           ARTIFACT: TagTracker32.apk
-         - architecture: 64bits
-           eabi: arm64-v8a
-           ARTIFACT: TagTracker.apk
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -63,8 +53,10 @@ jobs:
           ndk-version: r21e
           add-to-path: false
 
-      - name: Remove Android SDK android-33-ext4
-        run: ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext4"
+      - name: Remove Android SDK android-33-ext
+        run: |
+            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext5"
+            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext4"
 
       - name: Install ccache
         run:  sudo apt-get install ccache
@@ -113,7 +105,7 @@ jobs:
           ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
         run:  |
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="${{ matrix.eabi }}"
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang ANDROID_ABIS=armeabi-v7a
             make -j2 apk
 
       - name: ccache post-run
@@ -122,5 +114,5 @@ jobs:
       - name: Save artifact
         uses: actions/upload-artifact@master
         with:
-          name: ${{ matrix.ARTIFACT }}
-          path: ${{ runner.temp }}/shadow_build_dir/package/${{ matrix.ARTIFACT }}
+          name: TagTracker32.apk
+          path: ${{ runner.temp }}/shadow_build_dir/android-build/TagTracker.apk
