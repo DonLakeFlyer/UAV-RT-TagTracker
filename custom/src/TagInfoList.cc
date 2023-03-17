@@ -3,7 +3,9 @@
 #include "SettingsManager.h"
 #include "AppSettings.h"
 
+#if 0
 #include "threshold_appender.h"
+#endif
 
 #include <QFile>
 #include <QTextStream>
