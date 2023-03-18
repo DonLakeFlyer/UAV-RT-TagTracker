@@ -30,6 +30,8 @@ public:
     Q_PROPERTY(QList<QList<double>> angleRatios     MEMBER  _rgAngleRatios          NOTIFY angleRatiosChanged)
     Q_PROPERTY(bool             flightMachineActive MEMBER  _flightMachineActive    NOTIFY flightMachineActiveChanged)
     Q_PROPERTY(QVariantList     pulseLog            MEMBER  _pulseLog               NOTIFY pulseLogChanged)
+    Q_PROPERTY(bool             controllerHeartbeat MEMBER  _controllerHeartbeat    NOTIFY controllerHeartbeatChanged)
+    Q_PROPERTY(QVariantList     detectorHeartbeats  MEMBER  _detectorHeartbeats     NOTIFY detectorHeartbeatsChanged)
 
     CustomSettings* customSettings() { return _customSettings; }
 
@@ -57,6 +59,8 @@ signals:
     void flightMachineActiveChanged (bool flightMachineActive);
     void pulseInfoListsChanged      (void);
     void pulseLogChanged            ();
+    void controllerHeartbeatChanged ();
+    void detectorHeartbeatsChanged  ();
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
@@ -69,6 +73,7 @@ private slots:
     void _activeVehicleChanged          (Vehicle* activeVehicle);
     void _ftpDownloadComplete           (const QString& file, const QString& errorMsg);
     void _ftpCommandError               (const QString& msg);
+    void _controllerHeartbeatFailed     (void);
 
 private:
     typedef enum {
@@ -106,6 +111,10 @@ private:
     void    _sendNextTag                (void);
     void    _sendEndTags                (void);
     void    _resetPulseLog              (void);
+    void    _clearDetectorHeartbeats    (void);
+    void    _setupDetectorHeartbeats    (void);
+    void    _updateDetectorHeartbeat    (int tagId);
+    void    _rebuildDetectorHeartbeats  (void);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -136,6 +145,18 @@ private:
 
     TagInfoList             _tagInfoList;
     TagInfoList::const_iterator _nextTagToSend;
+
+    bool                    _controllerHeartbeat { false };
+    QTimer                  _controllerHeartbeatTimer;
+
+    typedef struct DetectorHeartbeatInfo_t {
+        bool    heartbeat               { false };
+        int     heartbeatTimerInterval  { 0 };
+        QTimer* pTimer                  { NULL };
+    } DetectorHeartbeatInfo_t;
+
+    QVariantList                            _detectorHeartbeats;
+    QMap<uint32_t, DetectorHeartbeatInfo_t> _detectorHeartbeatInfoMap;
 
     QVariantList            _pulseLog;
 };
