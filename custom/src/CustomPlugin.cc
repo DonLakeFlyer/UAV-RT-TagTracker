@@ -32,10 +32,13 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     _targetValueTimer.setSingleShot(true);
     _tunnelCommandAckTimer.setSingleShot(true);
     _tunnelCommandAckTimer.setInterval(2000);
+    _controllerHeartbeatTimer.setSingleShot(true);
+    _controllerHeartbeatTimer.setInterval(6000);    // We should get heartbeats every 5 seconds
 
     connect(&_delayTimer,               &QTimer::timeout, this, &CustomPlugin::_delayComplete);
     connect(&_targetValueTimer,         &QTimer::timeout, this, &CustomPlugin::_targetValueFailed);
     connect(&_tunnelCommandAckTimer,    &QTimer::timeout, this, &CustomPlugin::_tunnelCommandAckFailed);
+    connect(&_controllerHeartbeatTimer, &QTimer::timeout, this, &CustomPlugin::_controllerHeartbeatFailed);
 }
 
 CustomPlugin::~CustomPlugin()
@@ -119,6 +122,9 @@ void CustomPlugin::_handleTunnelHeartbeat(const mavlink_tunnel_t& tunnel)
     switch (heartbeat.system_id) {
     case HEARTBEAT_SYSTEM_MAVLINKCONTROLLER:
         qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController" << counter++;
+        _controllerHeartbeat = true;
+        emit controllerHeartbeatChanged();
+        _controllerHeartbeatTimer.start();
         break;
     case HEARTBEAT_SYSTEM_CHANNELIZER:
         qCDebug(CustomPluginLog) << "HEARTBEAT from Channelizer";
@@ -187,6 +193,7 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         } else {
             tagRateChar = "H" + tagRateChar;
             qCDebug(CustomPluginLog) << "HEARTBEAT from Detector" << pulseInfo.tag_id;
+            _updateDetectorHeartbeat(pulseInfo.tag_id);
         }
 
         // Find the tag in the pulse log
@@ -345,6 +352,8 @@ void CustomPlugin::startDetection(void)
     startDetectionInfo.radio_center_frequency_hz    = _tagInfoList.radioCenterHz();
 
     _sendTunnelCommand((uint8_t*)&startDetectionInfo, sizeof(startDetectionInfo));
+
+    _setupDetectorHeartbeats();
 }
 
 void CustomPlugin::stopDetection(void)
@@ -353,6 +362,8 @@ void CustomPlugin::stopDetection(void)
 
     stopDetectionInfo.header.command = COMMAND_ID_STOP_DETECTION;
     _sendTunnelCommand((uint8_t*)&stopDetectionInfo, sizeof(stopDetectionInfo));
+
+    _clearDetectorHeartbeats();
 }
 
 void CustomPlugin::airspyHFCapture(void)
@@ -848,4 +859,69 @@ void CustomPlugin::downloadLogs()
     if (!success) {
         qCDebug(CustomPluginLog) << "FTP download failed to start";
     }
+}
+
+void CustomPlugin::_controllerHeartbeatFailed()
+{
+    _controllerHeartbeat = false;
+    emit controllerHeartbeatChanged();
+}
+
+void CustomPlugin::_clearDetectorHeartbeats(void)
+{
+    for (auto detectorHeartbeatInfo: _detectorHeartbeatInfoMap) {
+        delete detectorHeartbeatInfo.pTimer;
+    }
+    _detectorHeartbeatInfoMap.clear();
+    _detectorHeartbeats.clear();
+
+    emit detectorHeartbeatsChanged();
+}
+
+void CustomPlugin::_setupDetectorHeartbeats(void)
+{
+    uint32_t k = _customSettings->k()->rawValue().toUInt();
+
+    _clearDetectorHeartbeats();
+
+    for (auto& extTagInfo: _tagInfoList) {
+        DetectorHeartbeatInfo_t& detectorHeartbeatInfo = _detectorHeartbeatInfoMap[extTagInfo.tagInfo.id];
+
+        detectorHeartbeatInfo.pTimer                    = new QTimer(this);
+        detectorHeartbeatInfo.heartbeatTimerInterval    = (k + 2) * extTagInfo.tagInfo.intra_pulse1_msecs;
+
+        if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
+            DetectorHeartbeatInfo_t&  detectorHeartbeatInfo = _detectorHeartbeatInfoMap[extTagInfo.tagInfo.id + 1];
+    
+            detectorHeartbeatInfo.pTimer                    = new QTimer(this);
+            detectorHeartbeatInfo.heartbeatTimerInterval    = (k + 2) * extTagInfo.tagInfo.intra_pulse2_msecs;
+        }
+    }
+
+    _rebuildDetectorHeartbeats();
+}
+
+void  CustomPlugin::_updateDetectorHeartbeat(int tagId)
+{
+    DetectorHeartbeatInfo_t& detectorHeartbeatInfo      = _detectorHeartbeatInfoMap[tagId];
+    detectorHeartbeatInfo.heartbeat = true;
+    detectorHeartbeatInfo.pTimer->start(detectorHeartbeatInfo.heartbeatTimerInterval);
+    _rebuildDetectorHeartbeats();
+}
+
+void CustomPlugin::_rebuildDetectorHeartbeats(void)
+{
+    _detectorHeartbeats.clear();
+
+    for (auto& extTagInfo: _tagInfoList) {
+        DetectorHeartbeatInfo_t& detectorHeartbeatInfo = _detectorHeartbeatInfoMap[extTagInfo.tagInfo.id];
+        _detectorHeartbeats.append(QVariant::fromValue(detectorHeartbeatInfo.heartbeat));
+
+        if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
+            DetectorHeartbeatInfo_t& detectorHeartbeatInfo = _detectorHeartbeatInfoMap[extTagInfo.tagInfo.id + 1];
+            _detectorHeartbeats.append(QVariant::fromValue(detectorHeartbeatInfo.heartbeat));
+        }
+    }
+
+    emit detectorHeartbeatsChanged();
 }
