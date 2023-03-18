@@ -149,7 +149,7 @@ private:
     bool                    _controllerHeartbeat { false };
     QTimer                  _controllerHeartbeatTimer;
 
-    typedef struct {
+    typedef struct DetectorHeartbeatInfo_t {
         bool    heartbeat               { false };
         int     heartbeatTimerInterval  { 0 };
         QTimer* pTimer                  { NULL };
