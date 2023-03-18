@@ -22,22 +22,37 @@ Item {
     id:             _root
     anchors.top:    parent.top
     anchors.bottom: parent.bottom
-    width:          indicator.width
+    width:          rowLayout.width
 
     property bool showIndicator: true
 
     property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
 
-    Rectangle {
-        id:             indicator
+    Row {
+        id:             rowLayout
         anchors.top:    parent.top
         anchors.bottom: parent.bottom
-        width:          ScreenTools.defaultFontPixelHeight * 5
-        color:          "green"  
+        spacing:        ScreenTools.defaultFontPixelWidth / 2
 
+        Rectangle {
+            height: parent.height
+            width:  ScreenTools.defaultFontPixelWidth * 3
+            color:  QGroundControl.corePlugin.controllerHeartbeat ? "green" : "red" 
+        }
+
+        Repeater {
+            model: QGroundControl.corePlugin.detectorHeartbeats
+
+            Rectangle {
+                height: parent.height
+                width:  ScreenTools.defaultFontPixelWidth
+                color:  modelData ? "green" : "red" 
+            }
+        }
     }
+
     MouseArea {
-        anchors.fill:   parent
+        anchors.fill:   rowLayout
         onClicked:      mainWindow.showIndicatorPopup(_root, indicatorPopup)
     }
 
