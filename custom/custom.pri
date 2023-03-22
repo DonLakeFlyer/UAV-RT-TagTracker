@@ -94,16 +94,19 @@ INCLUDEPATH += \
 
 # Setup to build uavrt_thresholds
 
-DontInclude {
 SOURCES += \
-    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.cpp, false) \
-    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.c, false) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorPre/*.cpp, false) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorPre/*.c, false) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorPost/*.cpp, false) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorPost/*.c, false) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorSingleTrial/*.cpp, false) \
+    $$files($$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorSingleTrial/*.c, false) \
 
 INCLUDEPATH += \
-    $$PWD/uavrt_thresholds/codegen/lib/threshold_appender \
+    $$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorPre \
+    $$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorPost \
     $$PWD/uavrt_thresholds/matlab-coder-utils/coder-headers \
+    $$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorSingleTrial \
 
 QMAKE_CXXFLAGS += -fopenmp
-QMAKE_LFLAGS += -fopenmp
-}
-
+QMAKE_LFLAGS += -fopenmp -z muldefs

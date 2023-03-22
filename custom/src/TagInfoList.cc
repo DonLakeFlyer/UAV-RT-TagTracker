@@ -5,9 +5,9 @@
 #include "CustomPlugin.h"
 #include "CustomSettings.h"
 
-#if 0
-#include "threshold_appender.h"
-#endif
+#include "thresholdGeneratorPre.h"
+#include "thresholdGeneratorPost.h"
+#include "thresholdGeneratorSingleTrial.h"
 
 #include <QFile>
 #include <QTextStream>
@@ -183,6 +183,8 @@ bool TagInfoList::loadTags(void)
         qgcApp()->showAppMessage(QStringLiteral("TagInfoList: Unable to tune channelizer"));
         return false;
     }
+
+    //_generateThresholds();
 
     return true;
 }
@@ -435,28 +437,26 @@ QString TagInfoList::_tagInfoFilePath()
 
 }
 
-#if 0
 bool TagInfoList::_generateThresholds()
 {
-    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+    int                         trials = 100;
+    coder::array<creal_T, 2>    W;
+    coder::array<creal_T, 3>    Ssynth;
+    coder::sparse               Wq;
+    boolean_T                   success;
+    coder::array<double, 1>     scores;
+    double                      mu;
+    double                      sigma;
 
-    tempPath += "/TagInfo.txt.thresholds";
-    QFile::copy(_tagInfoFilePath(), tempPath);
-    qDebug() << tempPath;
+    scores.set_size(trials);
 
-    coder::array<char, 2U> configPathAsArray;
-
-    configPathAsArray.set_size(1, tempPath.length());
-
-    // Loop over the array to initialize each element.
-    for (int idx1{0}; idx1 < configPathAsArray.size(1); idx1++) {
-      // Set the value of the array element.
-      // Change this value to the value that the application requires.
-      configPathAsArray[idx1] = tempPath[idx1].toLatin1();
+    thresholdGeneratorPre(3750.0, 0.15, 2.0, 0.02, 0.06, 3, W, Ssynth, &Wq, &success);
+    for (int i=1; i<trials+1; i++) {
+        scores[i] = thresholdGeneratorSingleTrial(W, Ssynth, &Wq, i);
     }
+    thresholdGeneratorPost(scores, &mu, &sigma);
 
-    threshold_appender(3750.0, configPathAsArray);
+    qDebug() << "mu:" << mu << "sigma:" << sigma;
 
     return true;
 }
-#endif
