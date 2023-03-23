@@ -109,7 +109,7 @@ INCLUDEPATH += \
     $$PWD/uavrt_thresholds/codegen/lib/thresholdGeneratorSingleTrial \
 
 MacBuild {
-    QMAKE_CXXFLAGS += -fopenmp=libomp
+    QMAKE_CXXFLAGS += -fopenmp
     QMAKE_LFLAGS += -fopenmp=libomp -z muldefs
 } else {
     QMAKE_CXXFLAGS += -fopenmp
