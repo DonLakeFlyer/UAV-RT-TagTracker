@@ -20,7 +20,7 @@ public:
 
     void                checkForTagFile (void);
     bool                loadTags        (void);
-    ExtendedTagInfo_t   getTagInfo      (uint32_t tag_id);
+    ExtendedTagInfo_t   getTagInfo      (uint32_t tag_id, bool& exists);
     uint32_t            radioCenterHz   () { return _radioCenterHz; }
 
 private:
