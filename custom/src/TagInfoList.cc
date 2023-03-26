@@ -187,9 +187,17 @@ bool TagInfoList::loadTags(void)
     return true;
 }
 
-ExtendedTagInfo_t TagInfoList::getTagInfo(uint32_t id)
+ExtendedTagInfo_t TagInfoList::getTagInfo(uint32_t id, bool& exists)
 {
-    return *std::find_if(begin(), end(), [id](const ExtendedTagInfo_t extTagInfo) { return extTagInfo.tagInfo.id == id; });
+    exists = false;
+
+    auto iterFound = std::find_if(begin(), end(), [id](const ExtendedTagInfo_t extTagInfo) { return extTagInfo.tagInfo.id == id; });
+    if (iterFound == end()) {
+        return ExtendedTagInfo_t();
+    } else {
+        exists = true;
+        return *iterFound;
+    }
 }
 
 // Find the best center frequency for the requested frequencies such that the there is only one frequency per channel

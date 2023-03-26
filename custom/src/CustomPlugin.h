@@ -28,7 +28,7 @@ public:
 
     Q_PROPERTY(CustomSettings*  customSettings      READ    customSettings          CONSTANT)
     Q_PROPERTY(QList<QList<double>> angleRatios     MEMBER  _rgAngleRatios          NOTIFY angleRatiosChanged)
-    Q_PROPERTY(bool             flightMachineActive MEMBER  _flightMachineActive    NOTIFY flightMachineActiveChanged)
+    Q_PROPERTY(bool             flightMachineActive MEMBER  _flightStateMachineActive    NOTIFY flightMachineActiveChanged)
     Q_PROPERTY(QVariantList     pulseLog            MEMBER  _pulseLog               NOTIFY pulseLogChanged)
     Q_PROPERTY(bool             controllerHeartbeat MEMBER  _controllerHeartbeat    NOTIFY controllerHeartbeatChanged)
     Q_PROPERTY(QVariantList     detectorHeartbeats  MEMBER  _detectorHeartbeats     NOTIFY detectorHeartbeatsChanged)
@@ -64,9 +64,8 @@ signals:
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
-    void _nextVehicleState              (void);
-    void _delayComplete                 (void);
-    void _targetValueFailed             (void);
+    void _advanceStateMachine           (void);
+    void _vehicleStateWaitFailed        (void);
     void _updateFlightMachineActive     (bool flightMachineActive);
     void _mavCommandResult              (int vehicleId, int component, int command, int result, bool noResponseFromVehicle);
     void _tunnelCommandAckFailed        (void);
@@ -79,16 +78,23 @@ private:
     typedef enum {
         CommandTakeoff,
         CommandSetHeading,
-        CommandDelay
+        CommandWaitForHeartbeats,
     } VehicleStateCommand_t;
 
-    typedef struct {
+    typedef struct VehicleState_t {
         VehicleStateCommand_t   command;
         Fact*                   fact;
         int                     targetValueWaitSecs;
         double                  targetValue;
         double                  targetVariance;
     } VehicleState_t;
+
+    typedef struct DetectorHeartbeatInfo_t {
+        bool    heartbeat               { false };
+        uint    heartbeatTimerInterval  { 0 };
+        QTimer* pTimer                  { NULL };
+        uint    heartbeatCount          { 0 };
+    } DetectorHeartbeatInfo_t;
 
     void    _handleTunnelCommandAck     (const mavlink_tunnel_t& tunnel);
     void    _handleTunnelPulse          (const mavlink_tunnel_t& tunnel);
@@ -115,6 +121,10 @@ private:
     void    _setupDetectorHeartbeats    (void);
     void    _updateDetectorHeartbeat    (int tagId);
     void    _rebuildDetectorHeartbeats  (void);
+    void    _setupDetectorHeartbeatInfo (DetectorHeartbeatInfo_t& detectorHeartbeatInfo, ExtendedTagInfo_t& extTagInfo, bool rate1);
+    void    _resetRotationPauseCounts   (void);
+    void    _setupDelayForHeartbeats    (void);
+    void    _rotationDelayComplete      (void);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -123,15 +133,14 @@ private:
     QList<double>           _rgPulseValues;
     QList<QList<double>>    _rgAngleStrengths;
     QList<QList<double>>    _rgAngleRatios;
-    bool                    _flightMachineActive;
+    bool                    _flightStateMachineActive;
     double                  _firstHeading;
     int                     _firstSlice;
     int                     _nextSlice;
     int                     _cSlice;
     int                     _detectionStatus = -1;
 
-    QTimer                  _delayTimer;
-    QTimer                  _targetValueTimer;
+    QTimer                  _vehicleStateTimeoutTimer;
     QTimer                  _tunnelCommandAckTimer;
     uint32_t                _tunnelCommandAckExpected;
     CustomOptions*          _customOptions;
@@ -149,14 +158,11 @@ private:
     bool                    _controllerHeartbeat { false };
     QTimer                  _controllerHeartbeatTimer;
 
-    typedef struct DetectorHeartbeatInfo_t {
-        bool    heartbeat               { false };
-        int     heartbeatTimerInterval  { 0 };
-        QTimer* pTimer                  { NULL };
-    } DetectorHeartbeatInfo_t;
-
     QVariantList                            _detectorHeartbeats;
     QMap<uint32_t, DetectorHeartbeatInfo_t> _detectorHeartbeatInfoMap;
+
+    bool                                               _captureRotationPulses { false };
+    QMap<uint32_t, QList<TunnelProtocol::PulseInfo_t>> _rotationPulseInfoMap;
 
     QVariantList            _pulseLog;
 };
@@ -165,9 +171,9 @@ class PulseRoseMapItem : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QString          url             MEMBER _url)
-    Q_PROPERTY(int              rotationIndex   MEMBER _rotationIndex)
-    Q_PROPERTY(QGeoCoordinate   rotationCenter  MEMBER _rotationCenter)
+    Q_PROPERTY(QString          url             MEMBER _url             CONSTANT)
+    Q_PROPERTY(int              rotationIndex   MEMBER _rotationIndex   CONSTANT)
+    Q_PROPERTY(QGeoCoordinate   rotationCenter  MEMBER _rotationCenter  CONSTANT)
 
 public:
     PulseRoseMapItem(QUrl& itemUrl, int rotationIndex, QGeoCoordinate rotationCenter, QObject* parent)
