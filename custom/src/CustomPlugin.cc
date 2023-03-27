@@ -357,8 +357,9 @@ void CustomPlugin::startRotation(void)
         _vehicleStates.append(vehicleState);
     }
 
-    _captureRotationPulses = true;
-    _vehicleStateIndex = -1;
+    _captureRotationPulses  = true;
+    _vehicleStateIndex      = -1;
+    _retryRotation          = false;
     _advanceStateMachine();
 }
 
@@ -488,8 +489,14 @@ void CustomPlugin::_mavCommandResult(int vehicleId, int component, int command, 
     } else if (currentState.command == CommandSetHeading && command == MAV_CMD_DO_REPOSITION) {
         disconnect(vehicle, &Vehicle::mavCommandResult, this, &CustomPlugin::_mavCommandResult);
         if (noResponseFromVehicle) {
-            _say(QStringLiteral("Vehicle did not response to Rotate command. Flight cancelled. Vehicle returning."));
-            _resetStateAndRTL();
+            if (_retryRotation) {
+                _retryRotation = false;
+                _say(QStringLiteral("Vehicle did not response to Rotate command. Retrying."));
+                _rotateVehicle(vehicle, _vehicleStates[_vehicleStateIndex].targetValue);
+            } else {
+                _say(QStringLiteral("Vehicle did not respond to Rotate command. Flight cancelled. Vehicle returning."));
+                _resetStateAndRTL();
+            }
         } else if (result != MAV_RESULT_ACCEPTED) {
             _say(QStringLiteral("Rotate command failed. Flight cancelled. Vehicle returning."));
             _resetStateAndRTL();
@@ -525,7 +532,7 @@ void CustomPlugin::_rotateVehicle(Vehicle* vehicle, double headingDegrees)
                 MAV_CMD_DO_REPOSITION,
                 -1,                                     // no change in ground speed
                 MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,    // switch to guided mode
-                0,                                      //reserved
+                0,                                      // reserved
                 qDegreesToRadians(headingDegrees),      // change heading
                 qQNaN(), qQNaN(), qQNaN());             // no change lat, lon, alt
 }
@@ -563,6 +570,7 @@ void CustomPlugin::_advanceStateMachine(void)
         }
 
         _rotationPulseInfoMap.clear();
+        _retryRotation = false;
     }
 
     if (_vehicleStateIndex == _vehicleStates.count() - 1) {
@@ -591,6 +599,7 @@ void CustomPlugin::_advanceStateMachine(void)
         break;
     case CommandSetHeading:
         _say(QStringLiteral("Waiting for rotate to %1 degrees.").arg(qRound(currentState.targetValue)));
+        _retryRotation = true;
         _rotateVehicle(vehicle, currentState.targetValue);
         break;
     case CommandWaitForHeartbeats:
