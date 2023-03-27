@@ -139,6 +139,7 @@ private:
     int                     _nextSlice;
     int                     _cSlice;
     int                     _detectionStatus = -1;
+    bool                    _retryRotation = false;
 
     QTimer                  _vehicleStateTimeoutTimer;
     QTimer                  _tunnelCommandAckTimer;
