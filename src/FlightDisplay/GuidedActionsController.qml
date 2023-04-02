@@ -123,7 +123,7 @@ Item {
     readonly property string stopDetectionTitle:            qsTr("Stop")
     readonly property string startRotationTitle:            qsTr("Rotate")
     readonly property string airspyHFTitle:                 qsTr("HF+")
-    readonly property string airspyMiniTitle:               qsTr("Mini")
+    readonly property string airspyMiniTitle:               qsTr("Capture")
     readonly property string downloadLogsTitle:             qsTr("Download")
 
     readonly property string sendTagsMessage:               qsTr("Send tag(s) to vehicle.")
