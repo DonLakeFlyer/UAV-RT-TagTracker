@@ -40,8 +40,7 @@ public:
     Q_INVOKABLE void sendTags           (void);
     Q_INVOKABLE void startDetection     (void);
     Q_INVOKABLE void stopDetection      (void);
-    Q_INVOKABLE void airspyHFCapture    (void);
-    Q_INVOKABLE void airspyMiniCapture  (void);
+    Q_INVOKABLE void rawCapture         (void);
     Q_INVOKABLE void downloadLogs       (void);
 
     // Overrides from QGCCorePlugin

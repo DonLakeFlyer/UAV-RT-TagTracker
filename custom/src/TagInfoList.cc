@@ -33,11 +33,10 @@ void TagInfoList::checkForTagFile (void)
     }
 }
 
-bool TagInfoList::loadTags(void)
+bool TagInfoList::loadTags(uint32_t sdrType)
 {
     clear();
-
-    TagInfoList newTagInfoList;
+    _setupTunerVars(sdrType);
 
     QString tagFilename = QString::asprintf("%s/TagInfo.txt",
                                             qgcApp()->toolbox()->settingsManager()->appSettings()->parameterSavePath().toStdString().c_str());
@@ -174,10 +173,8 @@ bool TagInfoList::loadTags(void)
         extTagInfo.tagInfo.k = k;
         extTagInfo.tagInfo.false_alarm_probability = falseAlarmProbability;
 
-        newTagInfoList.push_back(extTagInfo);
+        push_back(extTagInfo);
     }
-
-    (*this) = newTagInfoList;
 
     if (!_channelizerTuner()) {
         qgcApp()->showAppMessage(QStringLiteral("TagInfoList: Unable to tune channelizer"));
@@ -198,6 +195,15 @@ ExtendedTagInfo_t TagInfoList::getTagInfo(uint32_t id, bool& exists)
         exists = true;
         return *iterFound;
     }
+}
+
+void TagInfoList::_setupTunerVars(uint32_t sdrType)
+{
+    _sampleRateHz       = sdrType == SDR_TYPE_AIRSPY_MINI ? 375000 : 192000;
+    _fullBwHz           = _sampleRateHz;
+    _halfBwHz           = _fullBwHz / 2;
+    _channelBwHz        = _sampleRateHz / _nChannels;
+    _halfChannelBwHz    = _channelBwHz / 2;
 }
 
 // Find the best center frequency for the requested frequencies such that the there is only one frequency per channel
@@ -265,7 +271,7 @@ bool TagInfoList::_channelizerTuner()
         // The simplifies channel bucket calculations.
         auto wrappedRequestedFreqsHz = freqListHz;
         std::transform(freqListHz.begin(), freqListHz.end(), wrappedRequestedFreqsHz.begin(),
-            [testCenterHz](uint32_t freqHz) {
+            [this, testCenterHz](uint32_t freqHz) {
                 if (freqHz >= testCenterHz - _halfChannelBwHz) {
                     return freqHz;
                 } else {
