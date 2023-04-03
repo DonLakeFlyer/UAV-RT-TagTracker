@@ -11,9 +11,9 @@ import QGroundControl               1.0
 import QGroundControl.FlightDisplay 1.0
 
 GuidedToolStripAction {
-    text:       _guidedController.airspyHFTitle
+    text:       _guidedController.rawCaptureTitle
     iconSource: "/res/action.svg"
     visible:    true
     enabled:    QGroundControl.multiVehicleManager.activeVehicle
-    actionID:   _guidedController.actionAirspyHF
+    actionID:   _guidedController.actionRawCapture
 }

@@ -371,6 +371,7 @@ void CustomPlugin::startDetection(void)
 
     startDetectionInfo.header.command               = COMMAND_ID_START_DETECTION;
     startDetectionInfo.radio_center_frequency_hz    = _tagInfoList.radioCenterHz();
+    startDetectionInfo.sdr_type                     = _customSettings->sdrType()->rawValue().toUInt();
 
     _sendTunnelCommand((uint8_t*)&startDetectionInfo, sizeof(startDetectionInfo));
 
@@ -387,25 +388,19 @@ void CustomPlugin::stopDetection(void)
     _clearDetectorHeartbeats();
 }
 
-void CustomPlugin::airspyHFCapture(void)
+void CustomPlugin::rawCapture(void)
 {
-    HeaderInfo_t airspyHFCaptureInfo;
+    RawCapture_t rawCapture;
 
-    airspyHFCaptureInfo.command = COMMAND_ID_AIRSPY_HF;
-    _sendTunnelCommand((uint8_t*)&airspyHFCaptureInfo, sizeof(airspyHFCaptureInfo));
-}
+    rawCapture.header.command   = COMMAND_ID_RAW_CAPTURE;
+    rawCapture.sdr_type         = _customSettings->sdrType()->rawValue().toUInt();
 
-void CustomPlugin::airspyMiniCapture(void)
-{
-    HeaderInfo_t airspyMiniCaptureInfo;
-
-    airspyMiniCaptureInfo.command = COMMAND_ID_AIRSPY_MINI;
-    _sendTunnelCommand((uint8_t*)&airspyMiniCaptureInfo, sizeof(airspyMiniCaptureInfo));
+    _sendTunnelCommand((uint8_t*)&rawCapture, sizeof(rawCapture));
 }
 
 void CustomPlugin::sendTags(void)
 {    
-    _tagInfoList.loadTags();
+    _tagInfoList.loadTags(_customSettings->sdrType()->rawValue().toUInt());
 
     if (_tagInfoList.size() == 0) {
         qgcApp()->showAppMessage(("No tags are available to send."));
@@ -415,7 +410,9 @@ void CustomPlugin::sendTags(void)
 
     StartTagsInfo_t startTagsInfo;
 
-    startTagsInfo.header.command = COMMAND_ID_START_TAGS;
+    startTagsInfo.header.command    = COMMAND_ID_START_TAGS;
+    startTagsInfo.sdr_type          = _customSettings->sdrType()->rawValue().toUInt();
+
     _sendTunnelCommand((uint8_t*)&startTagsInfo, sizeof(startTagsInfo));
 }
 
@@ -810,10 +807,8 @@ QString CustomPlugin::_tunnelCommandIdToText(uint32_t vhfCommandId)
         return QStringLiteral("end tags");
     case COMMAND_ID_PULSE:
         return QStringLiteral("pulse");
-    case COMMAND_ID_AIRSPY_HF:
-        return QStringLiteral("airspy hf");
-    case COMMAND_ID_AIRSPY_MINI:
-        return QStringLiteral("airspy mini");
+    case COMMAND_ID_RAW_CAPTURE:
+        return QStringLiteral("raw capture");
     case COMMAND_ID_START_DETECTION:
         return QStringLiteral("start detection");
     case COMMAND_ID_STOP_DETECTION:
