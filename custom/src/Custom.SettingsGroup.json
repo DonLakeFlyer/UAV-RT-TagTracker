@@ -32,6 +32,14 @@
     "default":      16
 },
 {
+    "name":         "sdrType",
+    "shortDesc":    "SDR type used for collection",
+    "type":         "uint32",
+    "enumStrings":  "AirSpy Mini,AirSpy HF",
+    "enumValues":   "1,2",
+    "default":      1
+},
+{
     "name":             "maxPulse",
     "shortDesc":        "Maximum pulse value",
     "type":             "double",

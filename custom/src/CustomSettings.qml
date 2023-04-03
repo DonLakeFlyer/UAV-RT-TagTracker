@@ -47,6 +47,12 @@ Rectangle {
                     QGroundControl.corePlugin.customSettings.maxPulse,
                 ]
             }
+
+            FactComboBox {
+                fact:           QGroundControl.corePlugin.customSettings.sdrType
+                indexModel:     false
+                sizeToContents: true
+            }
         }
     }
 }

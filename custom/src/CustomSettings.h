@@ -25,4 +25,5 @@ public:
     DEFINE_SETTINGFACT(maxPulse)
     DEFINE_SETTINGFACT(k)
     DEFINE_SETTINGFACT(falseAlarmProbability)
+    DEFINE_SETTINGFACT(sdrType)
 };
