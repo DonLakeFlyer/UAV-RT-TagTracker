@@ -121,24 +121,21 @@ Item {
     readonly property int actionStartDetection:             27
     readonly property int actionStopDetection:              28
     readonly property int actionStartRotation:              29
-    readonly property int actionAirspyHF:                   30
-    readonly property int actionAirspyMini:                 31
-    readonly property int actionDownloadLogs:               32
+    readonly property int actionRawCapture:                 30
+    readonly property int actionDownloadLogs:               31
 
     readonly property string sendTagsTitle:                 qsTr("Tagsꜛ")
     readonly property string startDetectionTitle:           qsTr("Start")
     readonly property string stopDetectionTitle:            qsTr("Stop")
     readonly property string startRotationTitle:            qsTr("Rotate")
-    readonly property string airspyHFTitle:                 qsTr("HF+")
-    readonly property string airspyMiniTitle:               qsTr("Capture")
+    readonly property string rawCaptureTitle:               qsTr("Capture")
     readonly property string downloadLogsTitle:             qsTr("Download")
 
     readonly property string sendTagsMessage:               qsTr("Send tag(s) to vehicle.")
     readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag.")
     readonly property string stopDetectionMessage:          qsTr("Stop all pulse detection.")
     readonly property string startRotationMessage:          qsTr("Start rotation in place.")
-    readonly property string airspyHFMessage:               qsTr("Start capture Airspy HF+.")
-    readonly property string airspyMiniMessage:             qsTr("Start capture Airspy Mini.")
+    readonly property string rawCaptureMessage:             qsTr("Start sdr raw capture.")
     readonly property string downloadLogsMessage:           qsTr("Download companion logs.")
 // End UAV-RT mods
 
@@ -576,15 +573,10 @@ Item {
             confirmDialog.title = startRotationTitle
             confirmDialog.message = startRotationMessage
             break
-        case actionAirspyHF:
+        case actionRawCapture:
             confirmDialog.hideTrigger = true
-            confirmDialog.title = airspyHFTitle
-            confirmDialog.message = airspyHFMessage
-            break
-        case actionAirspyMini:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = airspyMiniTitle
-            confirmDialog.message = airspyMiniMessage
+            confirmDialog.title = rawCaptureTitle
+            confirmDialog.message = rawCaptureMessage
             break
         case actionDownloadLogs:
             confirmDialog.hideTrigger = true
@@ -705,11 +697,8 @@ Item {
         case actionStartRotation:
             QGroundControl.corePlugin.startRotation()
             break
-        case actionAirspyHF:
-            QGroundControl.corePlugin.airspyHFCapture()
-            break
-        case actionAirspyMini:
-            QGroundControl.corePlugin.airspyMiniCapture()
+        case actionRawCapture:
+            QGroundControl.corePlugin.rawCapture()
             break
         case actionDownloadLogs:
             QGroundControl.corePlugin.downloadLogs()

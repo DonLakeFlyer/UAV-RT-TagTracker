@@ -19,24 +19,26 @@ public:
     TagInfoList();
 
     void                checkForTagFile (void);
-    bool                loadTags        (void);
+    bool                loadTags        (uint32_t sdrType);
     ExtendedTagInfo_t   getTagInfo      (uint32_t tag_id, bool& exists);
     uint32_t            radioCenterHz   () { return _radioCenterHz; }
 
 private:
-    bool    _channelizerTuner  ();
-    void    _printChannelMap   (const uint32_t centerFreqHz, const QVector<uint32_t>& wrappedRequestedFreqsHz);
-    int     _firstChannelFreqHz(const int centerFreq);
-    QString _tagInfoFilePath();
-    bool    _generateThresholds();
+    void    _setupTunerVars     (uint32_t sdrType);
+    bool    _channelizerTuner   ();
+    void    _printChannelMap    (const uint32_t centerFreqHz, const QVector<uint32_t>& wrappedRequestedFreqsHz);
+    int     _firstChannelFreqHz (const int centerFreq);
+    QString _tagInfoFilePath    ();
+    bool    _generateThresholds ();
 
     uint32_t            _radioCenterHz      = 0;
     QVector<uint32_t>   _channelBucketCenters;
 
-    static const uint32_t   _sampleRateHz       = 375000;
+    uint32_t   _sampleRateHz;
+    uint32_t   _fullBwHz;
+    uint32_t   _halfBwHz;
+    uint32_t   _channelBwHz;
+    uint32_t   _halfChannelBwHz;
+
     static const uint       _nChannels          = 100;
-    static const uint32_t   _fullBwHz           = _sampleRateHz;
-    static const uint32_t   _halfBwHz           = _fullBwHz / 2;
-    static const uint32_t   _channelBwHz        = _sampleRateHz / _nChannels;
-    static const uint32_t   _halfChannelBwHz    = _channelBwHz / 2;
 };
