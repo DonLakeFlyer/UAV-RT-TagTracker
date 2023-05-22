@@ -108,8 +108,6 @@ private:
     int     _rawPulseToPct              (double rawPulse);
     void    _sendTunnelCommand          (uint8_t* payload, size_t payloadSize);
     QString _tunnelCommandIdToText      (uint32_t command);
-    void    _logPulseToFile             (const mavlink_tunnel_t& tunnel);
-    void    _logRotateStartStopToFile   (bool start);
     double  _pulseTimeSeconds           (void) { return _lastPulseInfo.start_time_seconds; }
     double  _pulseSNR                   (void) { return _lastPulseInfo.snr; }
     bool    _pulseConfirmed             (void) { return _lastPulseInfo.confirmed_status; }
@@ -124,6 +122,14 @@ private:
     void    _resetRotationPauseCounts   (void);
     void    _setupDelayForHeartbeats    (void);
     void    _rotationDelayComplete      (void);
+    QString _csvLogFilePath             (void);
+    void    _csvStartFullPulseLog       (void);
+    void    _csvStopFullPulseLog        (void);
+    void    _csvClearPrevRotationLogs   (void);
+    void    _csvStartRotationPulseLog   (int rotationCount);
+    void    _csvStopRotationPulseLog    (void);
+    void    _csvLogPulse                (QFile& csvFile, const TunnelProtocol::PulseInfo_t& pulseInfo);
+    void    _csvLogRotationStartStop    (QFile& csvFile, bool startRotation);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -149,7 +155,9 @@ private:
     int                     _lastPulseSendIndex;
     int                     _missedPulseCount;
     QmlObjectListModel      _customMapItems;
-    QFile                   _pulseLogFile;
+    QFile                   _csvFullPulseLogFile;
+    QFile                   _csvRotationPulseLogFile;
+    int                     _csvRotationCount = 1;
     TunnelProtocol::PulseInfo_t _lastPulseInfo;
 
     TagInfoList             _tagInfoList;
