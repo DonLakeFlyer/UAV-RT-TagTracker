@@ -41,9 +41,8 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
 
 CustomPlugin::~CustomPlugin()
 {
-    if (_pulseLogFile.isOpen()) {
-        _pulseLogFile.close();
-    }
+    _csvStopFullPulseLog();
+    _csvStopRotationPulseLog();
 }
 
 void CustomPlugin::setToolbox(QGCToolbox* toolbox)
@@ -55,6 +54,8 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     connect(toolbox->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &CustomPlugin::_activeVehicleChanged);
 
     _tagInfoList.checkForTagFile();
+
+    _csvClearPrevRotationLogs();
 }
 
 void CustomPlugin::_activeVehicleChanged(Vehicle* activeVehicle)
@@ -150,6 +151,12 @@ void CustomPlugin::_handleTunnelCommandAck(const mavlink_tunnel_t& tunnel)
             case COMMAND_ID_END_TAGS:
                 _resetPulseLog();
                 break;
+            case COMMAND_ID_START_DETECTION:
+                _csvStartFullPulseLog();
+                break;
+            case COMMAND_ID_STOP_DETECTION:
+                _csvStopFullPulseLog();
+                break;
             }
         } else {
             QString message = QStringLiteral("%1 command failed").arg(_tunnelCommandIdToText(ack.command));
@@ -206,6 +213,8 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
                                         pulseInfo.frequency_hz <<
                                         pulseInfo.group_seq_counter <<
                                         pulseInfo.snr;
+            _csvLogPulse(_csvFullPulseLogFile, pulseInfo);
+            _csvLogPulse(_csvRotationPulseLogFile, pulseInfo);
         } else {
             tagRateChar = "H" + tagRateChar;
             qCDebug(CustomPluginLog) << "HEARTBEAT from Detector" << pulseInfo.tag_id;
@@ -234,48 +243,107 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
 
 }
 
-void CustomPlugin::_logPulseToFile(const mavlink_tunnel_t& tunnel)
+QString CustomPlugin::_csvLogFilePath(void)
 {
-#if 0
-    if (!_pulseLogFile.isOpen()) {
-        _pulseLogFile.setFileName(QString("%1/Pulse-%2.csv").arg(qgcApp()->toolbox()->settingsManager()->appSettings()->logSavePath(),
-                                                                 QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data()));
-        qCDebug(CustomPluginLog) << "Pulse logging to:" << _pulseLogFile;
-        if (!_pulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qCWarning(CustomPluginLog) << "Unable to open pulse log file";
-            return;
-        }
-    }
-
-    _pulseLogFile.write(QString("1,%1,").arg(debug_float_array.time_usec).toUtf8());
-    for (int i=0; i <= static_cast<int>(PulseIndex::PulseIndexLast); i++) {
-        _pulseLogFile.write(QString("%1,").arg(static_cast<double>(debug_float_array.data[i]), 0, 'f', 6).toUtf8());
-    }
-    _pulseLogFile.write("\n");
-#endif
+    return qgcApp()->toolbox()->settingsManager()->appSettings()->logSavePath();
 }
 
-void CustomPlugin::_logRotateStartStopToFile(bool start)
+void CustomPlugin::_csvStartFullPulseLog(void)
 {
-    // FIXME NYI
-    return;
-
-    if (!_pulseLogFile.isOpen()) {
-        qCWarning(CustomPluginLog) << "_logRotateStartStopToFile called before detection started";
+    if (_csvFullPulseLogFile.isOpen()) {
+        qgcApp()->showAppMessage("Unabled to open full pulse csv log file - csvFile already open");
         return;
     }
 
+    _csvFullPulseLogFile.setFileName(QString("%1/Pulse-%2.csv").arg(_csvLogFilePath(), QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data()));
+    qCDebug(CustomPluginLog) << "Full CSV Pulse logging to:" << _csvFullPulseLogFile;
+    if (!_csvFullPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qgcApp()->showAppMessage(QString("Open of full pulse csv log file failed: %1").arg(_csvFullPulseLogFile.errorString()));
+        return;
+    }
+}
+
+void CustomPlugin::_csvStopFullPulseLog(void)
+{
+    if (_csvFullPulseLogFile.isOpen()) {
+        _csvFullPulseLogFile.close();
+    }
+}
+
+void CustomPlugin::_csvClearPrevRotationLogs(void)
+{
+    QDir csvLogDir(_csvLogFilePath(), {"Rotation-*.csv"});
+    for (const QString & filename: csvLogDir.entryList()){
+        csvLogDir.remove(filename);
+    }
+}
+
+void CustomPlugin::_csvStartRotationPulseLog(int rotationCount)
+{
+    if (_csvRotationPulseLogFile.isOpen()) {
+        qgcApp()->showAppMessage("Unabled to open rotation pulse csv log file - csvFile already open");
+        return;
+    }
+
+    _csvRotationPulseLogFile.setFileName(QString("%1/Rotation-%2.csv").arg(_csvLogFilePath()).arg(rotationCount));
+    qCDebug(CustomPluginLog) << "Rotation CSV Pulse logging to:" << _csvRotationPulseLogFile;
+    if (!_csvRotationPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        qgcApp()->showAppMessage(QString("Open of rotation pulse csv log file failed: %1").arg(_csvRotationPulseLogFile.errorString()));
+        return;
+    }
+}
+
+void CustomPlugin::_csvStopRotationPulseLog(void)
+{
+    if (_csvRotationPulseLogFile.isOpen()) {
+        _csvLogRotationStartStop(_csvRotationPulseLogFile, false /* startRotation */);
+        _csvRotationPulseLogFile.close();
+    }
+}
+
+void CustomPlugin::_csvLogPulse(QFile& csvFile, const PulseInfo_t& pulseInfo)
+{
+    if (csvFile.isOpen()) {
+        csvFile.write(QString("%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19\n")
+            .arg(COMMAND_ID_PULSE)
+            .arg(pulseInfo.tag_id)
+            .arg(pulseInfo.frequency_hz)
+            .arg(pulseInfo.start_time_seconds,          0, 'f', 6)
+            .arg(pulseInfo.predict_next_start_seconds,  0, 'f', 6)
+            .arg(pulseInfo.snr,                         0, 'f', 6)
+            .arg(pulseInfo.stft_score,                  0, 'f', 6)
+            .arg(pulseInfo.group_seq_counter)
+            .arg(pulseInfo.group_ind)
+            .arg(pulseInfo.group_snr,                   0, 'f', 6)
+            .arg(pulseInfo.detection_status)
+            .arg(pulseInfo.confirmed_status)
+            .arg(pulseInfo.position_x,                  0, 'f', 6)
+            .arg(pulseInfo.position_y,                  0, 'f', 6)
+            .arg(pulseInfo.position_z,                  0, 'f', 6)
+            .arg(pulseInfo.orientation_x,               0, 'f', 6)
+            .arg(pulseInfo.orientation_y,               0, 'f', 6)
+            .arg(pulseInfo.orientation_z,               0, 'f', 6)
+            .arg(pulseInfo.orientation_w,               0, 'f', 6)
+            .toUtf8());
+    }
+}
+
+void CustomPlugin::_csvLogRotationStartStop(QFile& csvFile, bool startRotation)
+{
     Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     if (!vehicle) {
+        qCWarning(CustomPluginLog) << "INTERNAL ERROR: _csvLogRotationStartStop - no vehicle available";
         return;
     }
 
-    QGeoCoordinate coord = vehicle->coordinate();
-    _pulseLogFile.write(QString("%1,%2,%3,%4\n").arg(start ? 2 : 3)
-                        .arg(coord.latitude(), 0, 'f', 6)
-                        .arg(coord.longitude(), 0, 'f', 6)
-                        .arg(vehicle->altitudeAMSL()->rawValue().toDouble(), 0, 'f', 6)
-                        .toUtf8());
+    if (csvFile.isOpen()) {
+        QGeoCoordinate coord = vehicle->coordinate();
+        csvFile.write(QString("%1,%2,%3,%4\n").arg(startRotation ? COMMAND_ID_START_ROTATION : COMMAND_ID_STOP_ROTATION)
+                      .arg(coord.latitude(), 0, 'f', 6)
+                      .arg(coord.longitude(), 0, 'f', 6)
+                      .arg(vehicle->altitudeAMSL()->rawValue().toDouble(), 0, 'f', 6)
+                      .toUtf8());
+    }
 }
 
 void CustomPlugin::_updateFlightMachineActive(bool flightMachineActive)
@@ -300,7 +368,9 @@ void CustomPlugin::startRotation(void)
         return;
     }
 
-    _logRotateStartStopToFile(true /* start */);
+    _csvStartRotationPulseLog(_csvRotationCount++);
+    _csvLogRotationStartStop(_csvFullPulseLogFile, true /* startRotation */);
+    _csvLogRotationStartStop(_csvRotationPulseLogFile, true /* startRotation */);
 
     _updateFlightMachineActive(true);
 
@@ -574,7 +644,7 @@ void CustomPlugin::_advanceStateMachine(void)
         // State machine complete
         _say(QStringLiteral("Collection complete."));
         _updateFlightMachineActive(false);
-        _logRotateStartStopToFile(false /* stop */);
+        _csvStopRotationPulseLog();
         return;
     }
 
@@ -584,7 +654,7 @@ void CustomPlugin::_advanceStateMachine(void)
         // User cancel
         _say(QStringLiteral("Collection cancelled."));
         _updateFlightMachineActive(false);
-        _logRotateStartStopToFile(false /* stop */);
+        _csvStopRotationPulseLog();
         return;
     }
 
@@ -783,6 +853,9 @@ void CustomPlugin::_resetStateAndRTL(void)
     _setRTLFlightModeAndValidate(vehicle);
 
     _updateFlightMachineActive(false);
+
+    _csvStopFullPulseLog();
+    _csvStopRotationPulseLog();
 }
 
 bool CustomPlugin::adjustSettingMetaData(const QString& settingsGroup, FactMetaData& metaData)
@@ -915,7 +988,7 @@ void CustomPlugin::downloadLogs()
     bool success = ftpManager->download(
                         MAV_COMP_ID_ONBOARD_COMPUTER,
                         "/home/vmware/MavlinkTagController.log",
-                        qgcApp()->toolbox()->settingsManager()->appSettings()->logSavePath());
+                        _csvLogFilePath());
     if (!success) {
         qCDebug(CustomPluginLog) << "FTP download failed to start";
     }
