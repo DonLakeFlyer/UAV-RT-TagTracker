@@ -26,4 +26,5 @@ public:
     DEFINE_SETTINGFACT(k)
     DEFINE_SETTINGFACT(falseAlarmProbability)
     DEFINE_SETTINGFACT(sdrType)
+    DEFINE_SETTINGFACT(showPulseOnMap)
 };

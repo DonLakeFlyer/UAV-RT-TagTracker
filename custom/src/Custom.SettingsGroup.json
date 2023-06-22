@@ -40,6 +40,12 @@
     "default":      1
 },
 {
+    "name":         "showPulseOnMap",
+    "shortDesc":    "Show pulse strength on Fly View map",
+    "type":         "bool",
+    "default":      false
+},
+{
     "name":             "maxPulse",
     "shortDesc":        "Maximum pulse value",
     "type":             "double",
