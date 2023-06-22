@@ -24,7 +24,8 @@ Rectangle {
     anchors.fill:       parent
     anchors.margins:    ScreenTools.defaultFontPixelWidth
 
-    property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+    property var _activeVehicle:    QGroundControl.multiVehicleManager.activeVehicle
+    property var _customSettings:   QGroundControl.corePlugin.customSettings
 
     QGCFlickable {
         clip:               true
@@ -36,15 +37,20 @@ Rectangle {
             id:         column
             spacing:    ScreenTools.defaultFontPixelHeight
 
+            FactCheckBox {
+                text:   qsTr("Show pulse strength on map")
+                fact:   _customSettings.showPulseOnMap
+            }
+
             FactTextFieldGrid {
                 id: grid
 
                 factList: [
-                    QGroundControl.corePlugin.customSettings.altitude,
-                    QGroundControl.corePlugin.customSettings.divisions,
-                    QGroundControl.corePlugin.customSettings.k,
-                    QGroundControl.corePlugin.customSettings.falseAlarmProbability,
-                    QGroundControl.corePlugin.customSettings.maxPulse,
+                    _customSettings.altitude,
+                    _customSettings.divisions,
+                    _customSettings.k,
+                    _customSettings.falseAlarmProbability,
+                    _customSettings.maxPulse,
                 ]
             }
 
