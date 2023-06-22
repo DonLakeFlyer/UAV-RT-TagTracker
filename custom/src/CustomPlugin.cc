@@ -235,6 +235,13 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         if (!foundTag) {
             qWarning() << "_handleTunnelPulse: Unable to find tag in pulse log" << evenTagId;
         }
+
+        // Add pulse to map
+        if (_customSettings->showPulseOnMap()->rawValue().toBool() && pulseInfo.snr != 0) {
+            QUrl url = QUrl::fromUserInput("qrc:/qml/PulseMapItem.qml");
+            PulseMapItem* mapItem = new PulseMapItem(url, QGeoCoordinate(pulseInfo.position_x, pulseInfo.position_y), pulseInfo.tag_id, pulseInfo.snr, this);
+            _customMapItems.append(mapItem);
+        }
     } else {
         qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
                                     "UNCONFIRMED tag_id" <<
