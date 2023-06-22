@@ -3,6 +3,7 @@
         <file alias="PulseLogIndicator.qml">src/PulseLogIndicator.qml</file>
         <file alias="CustomSettings.qml">src/CustomSettings.qml</file>
         <file alias="CustomPulseRoseMapItem.qml">src/CustomPulseRoseMapItem.qml</file>
+        <file alias="PulseMapItem.qml">src/PulseMapItem.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewToolStripActionList.qml">src/CustomFlyViewToolStripActionList.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionSendTags.qml">src/CustomGuidedActionSendTags.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStartDetection.qml">src/CustomGuidedActionStartDetection.qml</file>
