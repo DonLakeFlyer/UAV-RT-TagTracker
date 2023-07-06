@@ -6,7 +6,6 @@ CustomFirmwarePluginFactory CustomFirmwarePluginFactoryImp;
 
 CustomFirmwarePluginFactory::CustomFirmwarePluginFactory(void)
 {
-
 }
 
 FirmwarePlugin* CustomFirmwarePluginFactory::firmwarePluginForAutopilot(MAV_AUTOPILOT autopilotType, MAV_TYPE vehicleType)

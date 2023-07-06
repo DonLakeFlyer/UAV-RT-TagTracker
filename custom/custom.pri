@@ -33,7 +33,6 @@ CONFIG  +=  \
 
 # Disable things we don't need
 CONFIG += DISABLE_VIDEOSTREAMING
-#DEFINES += DISABLE_AIRMAP
 
 # Branding
 

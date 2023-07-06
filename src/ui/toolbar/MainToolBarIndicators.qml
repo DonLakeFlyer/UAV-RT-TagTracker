@@ -63,6 +63,12 @@ Row {
             anchors.bottom:     parent.bottom
             source:             modelData
             visible:            item.showIndicator
+
+            onStatusChanged: {
+                if (status == Loader.Error) {
+                    console.error("MainToolBarIndicators - Failed to load", source)
+                }
+            }
         }
     }
 

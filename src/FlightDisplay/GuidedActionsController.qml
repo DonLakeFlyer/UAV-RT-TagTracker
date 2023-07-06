@@ -531,7 +531,7 @@ Item {
             confirmDialog.message = gripperMessage
             _widgetLayer._gripperMenu.createObject(mainWindow).open()
             break
-        // Start UAV-RT mods
+// Start UAV-RT mods
         case actionSendTags:
             confirmDialog.hideTrigger = true
             confirmDialog.title = sendTagsTitle
@@ -654,7 +654,7 @@ Item {
             break
         case actionGripper:           
             _gripperFunction === undefined ? _activeVehicle.sendGripperAction(Vehicle.Invalid_option) : _activeVehicle.sendGripperAction(_gripperFunction)
-        // Start UAV-RT mods
+// Start UAV-RT mods
         case actionSendTags:
             QGroundControl.corePlugin.sendTags()
             break

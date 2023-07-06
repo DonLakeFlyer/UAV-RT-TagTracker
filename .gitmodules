@@ -25,12 +25,12 @@
 [submodule "libs/shapelib"]
 	path = libs/shapelib
 	url = https://github.com/OSGeo/shapelib.git
+[submodule "custom/uavrt_interfaces"]
+	path = custom/uavrt_interfaces
+	url = https://github.com/dynamic-and-active-systems-lab/uavrt_interfaces.git
 [submodule "src/FirmwarePlugin/APM/ArduPilot-Parameter-Repository"]
 	path = src/FirmwarePlugin/APM/ArduPilot-Parameter-Repository
 	url = https://github.com/ArduPilot/ArduPilot-Parameter-Repository
 [submodule "custom/matlab-coder-utils"]
 	path = custom/matlab-coder-utils
 	url = https://github.com/DonLakeFlyer/matlab-coder-utils.git
-[submodule "custom/uavrt_interfaces"]
-	path = custom/uavrt_interfaces
-	url = https://github.com/dynamic-and-active-systems-lab/uavrt_interfaces.git
