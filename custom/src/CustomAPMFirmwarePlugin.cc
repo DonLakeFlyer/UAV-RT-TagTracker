@@ -1,11 +1,11 @@
-#include "CustomFirmwarePlugin.h"
+#include "CustomAPMFirmwarePlugin.h"
 
-CustomFirmwarePlugin::CustomFirmwarePlugin(void)
+CustomAPMFirmwarePlugin::CustomAPMFirmwarePlugin(void)
 {
 
 }
 
-const QVariantList& CustomFirmwarePlugin::toolIndicators(const Vehicle*)
+const QVariantList& CustomAPMFirmwarePlugin::toolIndicators(const Vehicle*)
 {
     //-- Default list of indicators for all vehicles.
     if(_toolIndicatorList.size() == 0) {

@@ -1,14 +1,14 @@
 #pragma once
 
 #include "FirmwarePlugin.h"
-#include "PX4FirmwarePlugin.h"
+#include "APMFirmwarePlugin.h"
 
-class CustomFirmwarePlugin : public PX4FirmwarePlugin
+class CustomAPMFirmwarePlugin : public APMFirmwarePlugin
 {
     Q_OBJECT
 
 public:
-    CustomFirmwarePlugin(void);
+    CustomAPMFirmwarePlugin(void);
 
     // FirmwarePlugin overrides
     const QVariantList& toolIndicators(const Vehicle* vehicle) final;
