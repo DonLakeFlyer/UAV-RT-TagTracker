@@ -110,12 +110,12 @@ Item {
     readonly property int actionGripper:                    26
 
 // Start UAV-RT mods
-    readonly property int actionSendTags:                   26
-    readonly property int actionStartDetection:             27
-    readonly property int actionStopDetection:              28
-    readonly property int actionStartRotation:              29
-    readonly property int actionRawCapture:                 30
-    readonly property int actionDownloadLogs:               31
+    readonly property int actionSendTags:                   27
+    readonly property int actionStartDetection:             28
+    readonly property int actionStopDetection:              29
+    readonly property int actionStartRotation:              30
+    readonly property int actionRawCapture:                 31
+    readonly property int actionDownloadLogs:               32
 
     readonly property string sendTagsTitle:                 qsTr("Tagsꜛ")
     readonly property string startDetectionTitle:           qsTr("Start")
