@@ -1,5 +1,5 @@
 #include "CustomFirmwarePluginFactory.h"
-#include "CustomAPMFirmwarePlugin.h"
+#include "CustomArduCopterFirmwarePlugin.h"
 #include "CustomPX4FirmwarePlugin.h"
 
 CustomFirmwarePluginFactory CustomFirmwarePluginFactoryImp;
@@ -10,7 +10,6 @@ CustomFirmwarePluginFactory::CustomFirmwarePluginFactory(void)
 
 FirmwarePlugin* CustomFirmwarePluginFactory::firmwarePluginForAutopilot(MAV_AUTOPILOT autopilotType, MAV_TYPE vehicleType)
 {
-    Q_UNUSED(vehicleType);
     switch (autopilotType) {
         case MAV_AUTOPILOT_PX4:
             if (!_px4PluginInstance) {
@@ -18,13 +17,26 @@ FirmwarePlugin* CustomFirmwarePluginFactory::firmwarePluginForAutopilot(MAV_AUTO
             }
             return _px4PluginInstance;
         case MAV_AUTOPILOT_ARDUPILOTMEGA:
-            if (!_apmPluginInstance) {
-                _apmPluginInstance = new CustomAPMFirmwarePlugin;
+            switch (vehicleType) {
+            case MAV_TYPE_QUADROTOR:
+            case MAV_TYPE_HEXAROTOR:
+            case MAV_TYPE_OCTOROTOR:
+            case MAV_TYPE_TRICOPTER:
+            case MAV_TYPE_COAXIAL:
+            case MAV_TYPE_HELICOPTER:
+                if (!_arduCopterPluginInstance) {
+                    _arduCopterPluginInstance = new ArduCopterFirmwarePlugin;
+                }
+                return _arduCopterPluginInstance;
+            default:
+                break;
             }
-            return _apmPluginInstance;
+            break;
         default:
-            return NULL;
+            break;
     }
+
+    return NULL;
 }
 
 QList<QGCMAVLink::FirmwareClass_t> CustomFirmwarePluginFactory::supportedFirmwareClasses(void) const

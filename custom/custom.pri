@@ -66,7 +66,7 @@ SOURCES += \
     $$PWD/src/CustomOptions.cc \
     $$PWD/src/CustomPlugin.cc \
     $$PWD/src/CustomPX4FirmwarePlugin.cc \
-    $$PWD/src/CustomAPMFirmwarePlugin.cc \
+    $$PWD/src/CustomArduCopterFirmwarePlugin.cc \
     $$PWD/src/CustomSettings.cc \
     $$PWD/src/TagInfoList.cc \
     $$PWD/src/PulseInfo.cc \
@@ -77,7 +77,7 @@ HEADERS += \
     $$PWD/src/CustomOptions.h \
     $$PWD/src/CustomPlugin.h \
     $$PWD/src/CustomPX4FirmwarePlugin.h \
-    $$PWD/src/CustomAPMFirmwarePlugin.h \
+    $$PWD/src/CustomArduCopterFirmwarePlugin.h \
     $$PWD/src/CustomSettings.h \
     $$PWD/src/TagInfoList.h \
     $$PWD/src/PulseInfo.h \

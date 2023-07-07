@@ -1,11 +1,11 @@
-#include "CustomAPMFirmwarePlugin.h"
+#include "CustomArduCopterFirmwarePlugin.h"
 
-CustomAPMFirmwarePlugin::CustomAPMFirmwarePlugin(void)
+CustomArduCopterFirmwarePlugin::CustomArduCopterFirmwarePlugin(void)
 {
 
 }
 
-const QVariantList& CustomAPMFirmwarePlugin::toolIndicators(const Vehicle*)
+const QVariantList& CustomArduCopterFirmwarePlugin::toolIndicators(const Vehicle*)
 {
     //-- Default list of indicators for all vehicles.
     if(_toolIndicatorList.size() == 0) {

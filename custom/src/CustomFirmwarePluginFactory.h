@@ -3,7 +3,7 @@
 #include "FirmwarePlugin.h"
 
 class PX4FirmwarePlugin;
-class APMFirmwarePlugin;
+class ArduCopterFirmwarePlugin;
 
 class CustomFirmwarePluginFactory : public FirmwarePluginFactory
 {
@@ -17,6 +17,6 @@ public:
     QList<QGCMAVLink::VehicleClass_t>   supportedVehicleClasses(void) const final;
 
 private:
-    PX4FirmwarePlugin* _px4PluginInstance = NULL;
-    APMFirmwarePlugin* _apmPluginInstance = NULL;
+    PX4FirmwarePlugin*          _px4PluginInstance          = NULL;
+    ArduCopterFirmwarePlugin*   _arduCopterPluginInstance   = NULL;
 };

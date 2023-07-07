@@ -1,14 +1,14 @@
 #pragma once
 
 #include "FirmwarePlugin.h"
-#include "APMFirmwarePlugin.h"
+#include "APM/ArduCopterFirmwarePlugin.h"
 
-class CustomAPMFirmwarePlugin : public APMFirmwarePlugin
+class CustomArduCopterFirmwarePlugin : public ArduCopterFirmwarePlugin
 {
     Q_OBJECT
 
 public:
-    CustomAPMFirmwarePlugin(void);
+    CustomArduCopterFirmwarePlugin(void);
 
     // FirmwarePlugin overrides
     const QVariantList& toolIndicators(const Vehicle* vehicle) final;
