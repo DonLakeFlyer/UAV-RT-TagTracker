@@ -570,6 +570,35 @@ Item {
         confirmDialog.show(showImmediate)
     }
 
+// Start UAV-RT mods
+    function customExecuteAction(actionCode) {
+        switch (actionCode) {
+        case actionSendTags:
+            QGroundControl.corePlugin.sendTags()
+            break
+        case actionStartDetection:
+            QGroundControl.corePlugin.startDetection()
+            break
+        case actionStopDetection:
+            QGroundControl.corePlugin.stopDetection()
+            break
+        case actionStartRotation:
+            QGroundControl.corePlugin.startRotation()
+            break
+        case actionRawCapture:
+            QGroundControl.corePlugin.rawCapture()
+            break
+        case actionDownloadLogs:
+            QGroundControl.corePlugin.downloadLogs()
+            break
+        default:
+            return false;
+        }
+
+        return true;
+    }
+// End UAV-RT modes
+
     // Executes the specified action
     function executeAction(actionCode, actionData, sliderOutputValue, optionChecked) {
         var i;
@@ -652,28 +681,11 @@ Item {
                 }
             }
             break
-// Start UAV-RT mods
-        case actionSendTags:
-            QGroundControl.corePlugin.sendTags()
-            break
-        case actionStartDetection:
-            QGroundControl.corePlugin.startDetection()
-            break
-        case actionStopDetection:
-            QGroundControl.corePlugin.stopDetection()
-            break
-        case actionStartRotation:
-            QGroundControl.corePlugin.startRotation()
-            break
-        case actionRawCapture:
-            QGroundControl.corePlugin.rawCapture()
-            break
-        case actionDownloadLogs:
-            QGroundControl.corePlugin.downloadLogs()
-            break
-// End UAV-RT modes
         default:
-            console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
+            if (!customExecuteAction(actionCode)) {
+                console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
+                return
+            }
             break
         }
     }
