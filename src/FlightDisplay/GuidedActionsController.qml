@@ -430,6 +430,7 @@ Item {
         }
 
         return true;
+    }
 // End UAV-RT modes
 
 
