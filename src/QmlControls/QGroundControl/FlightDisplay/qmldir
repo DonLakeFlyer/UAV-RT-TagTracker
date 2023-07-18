@@ -1,5 +1,14 @@
 Module QGroundControl.FlightDisplay
 
+// Start UAV-RT mods
+CustomGuidedActionSendTags          1.0 CustomGuidedActionSendTags.qml
+CustomGuidedActionStartDetection    1.0 CustomGuidedActionStartDetection.qml
+CustomGuidedActionStopDetection     1.0 CustomGuidedActionStopDetection.qml
+CustomGuidedActionStartRotation     1.0 CustomGuidedActionStartRotation.qml
+CustomGuidedActionDownloadLogs      1.0 CustomGuidedActionDownloadLogs.qml
+CustomGuidedActionRawCapture        1.0 CustomGuidedActionRawCapture.qml
+// End UAV-RT mods
+
 FlightDisplayViewWidgets        1.0 FlightDisplayViewWidgets.qml
 FlyView                         1.0 FlyView.qml
 FlyViewCustomLayer              1.0 FlyViewCustomLayer.qml
@@ -46,10 +55,3 @@ ObstacleDistanceOverlay         1.0 ObstacleDistanceOverlay.qml
 ObstacleDistanceOverlayMap      1.0 ObstacleDistanceOverlayMap.qml
 ObstacleDistanceOverlayVideo    1.0 ObstacleDistanceOverlayVideo.qml
 GripperMenu                     1.0 GripperMenu.qml
-
-CustomGuidedActionSendTags          1.0 CustomGuidedActionSendTags.qml
-CustomGuidedActionStartDetection    1.0 CustomGuidedActionStartDetection.qml
-CustomGuidedActionStopDetection     1.0 CustomGuidedActionStopDetection.qml
-CustomGuidedActionStartRotation     1.0 CustomGuidedActionStartRotation.qml
-CustomGuidedActionDownloadLogs      1.0 CustomGuidedActionDownloadLogs.qml
-CustomGuidedActionRawCapture        1.0 CustomGuidedActionRawCapture.qml
