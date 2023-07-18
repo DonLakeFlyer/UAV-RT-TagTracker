@@ -392,6 +392,47 @@ Item {
         guidedValueSlider.visible =    false
     }
 
+// Start UAV-RT mods
+    function customConfirmAction(actionCode) {
+        switch (actionCode) {
+        case actionSendTags:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = sendTagsTitle
+            confirmDialog.message = sendTagsMessage
+            break
+        case actionStartDetection:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = startDetectionTitle
+            confirmDialog.message = startDetectionMessage
+            break
+        case actionStopDetection:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = stopDetectionTitle
+            confirmDialog.message = stopDetectionMessage
+            break
+        case actionStartRotation:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = startRotationTitle
+            confirmDialog.message = startRotationMessage
+            break
+        case actionRawCapture:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = rawCaptureTitle
+            confirmDialog.message = rawCaptureMessage
+            break
+        case actionDownloadLogs:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = downloadLogsTitle
+            confirmDialog.message = downloadLogsMessage
+            break
+        default:
+            return false;
+        }
+
+        return true;
+// End UAV-RT modes
+
+
     // Called when an action is about to be executed in order to confirm
     function confirmAction(actionCode, actionData, mapIndicator) {
         var showImmediate = true
@@ -555,40 +596,10 @@ Item {
             break
         // Start UAV-RT mods
         default:
-            console.warn("Unknown actionCode", actionCode)
-            return
-// Start UAV-RT mods
-        case actionSendTags:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = sendTagsTitle
-            confirmDialog.message = sendTagsMessage
-            break
-        case actionStartDetection:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = startDetectionTitle
-            confirmDialog.message = startDetectionMessage
-            break
-        case actionStopDetection:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = stopDetectionTitle
-            confirmDialog.message = stopDetectionMessage
-            break
-        case actionStartRotation:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = startRotationTitle
-            confirmDialog.message = startRotationMessage
-            break
-        case actionRawCapture:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = rawCaptureTitle
-            confirmDialog.message = rawCaptureMessage
-            break
-        case actionDownloadLogs:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = downloadLogsTitle
-            confirmDialog.message = downloadLogsMessage
-            break
-// End UAV-RT modes
+            if (!customConfirmAction(actionCode)) {
+                console.warn("Unknown actionCode", actionCode)
+                return
+            }
         }
         confirmDialog.show(showImmediate)
     }
