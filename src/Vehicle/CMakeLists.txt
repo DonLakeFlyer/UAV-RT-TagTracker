@@ -34,6 +34,8 @@ add_library(Vehicle
 	ComponentInformationCache.h
 	ComponentInformationManager.cc
 	ComponentInformationManager.h
+	ComponentInformationTranslation.cc
+	ComponentInformationTranslation.h
 	EventHandler.cc
 	EventHandler.h
 	FTPManager.cc
@@ -96,6 +98,8 @@ add_library(Vehicle
 	VehicleWindFactGroup.h
         VehicleHygrometerFactGroup.cc
         VehicleHygrometerFactGroup.h
+	RemoteIDManager.h
+	RemoteIDManager.cc
 
 	${EXTRA_SRC}
 )

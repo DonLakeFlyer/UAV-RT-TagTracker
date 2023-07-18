@@ -65,18 +65,20 @@ public:
     DEFINE_SETTINGFACT(firstRunPromptIdsShown)
     DEFINE_SETTINGFACT(forwardMavlink)
     DEFINE_SETTINGFACT(forwardMavlinkHostName)
+    DEFINE_SETTINGFACT(forwardMavlinkAPMSupportHostName)
 
 
     // Although this is a global setting it only affects ArduPilot vehicle since PX4 automatically starts the stream from the vehicle side
     DEFINE_SETTINGFACT(apmStartMavlinkStreams)
 
-    Q_PROPERTY(QString missionSavePath      READ missionSavePath    NOTIFY savePathsChanged)
-    Q_PROPERTY(QString parameterSavePath    READ parameterSavePath  NOTIFY savePathsChanged)
-    Q_PROPERTY(QString telemetrySavePath    READ telemetrySavePath  NOTIFY savePathsChanged)
-    Q_PROPERTY(QString logSavePath          READ logSavePath        NOTIFY savePathsChanged)
-    Q_PROPERTY(QString videoSavePath        READ videoSavePath      NOTIFY savePathsChanged)
-    Q_PROPERTY(QString photoSavePath        READ photoSavePath      NOTIFY savePathsChanged)
-    Q_PROPERTY(QString crashSavePath        READ crashSavePath      NOTIFY savePathsChanged)
+    Q_PROPERTY(QString missionSavePath          READ missionSavePath            NOTIFY savePathsChanged)
+    Q_PROPERTY(QString parameterSavePath        READ parameterSavePath          NOTIFY savePathsChanged)
+    Q_PROPERTY(QString telemetrySavePath        READ telemetrySavePath          NOTIFY savePathsChanged)
+    Q_PROPERTY(QString logSavePath              READ logSavePath                NOTIFY savePathsChanged)
+    Q_PROPERTY(QString videoSavePath            READ videoSavePath              NOTIFY savePathsChanged)
+    Q_PROPERTY(QString photoSavePath            READ photoSavePath              NOTIFY savePathsChanged)
+    Q_PROPERTY(QString crashSavePath            READ crashSavePath              NOTIFY savePathsChanged)
+    Q_PROPERTY(QString customActionsSavePath    READ customActionsSavePath      NOTIFY savePathsChanged)
 
     Q_PROPERTY(QString planFileExtension        MEMBER planFileExtension        CONSTANT)
     Q_PROPERTY(QString missionFileExtension     MEMBER missionFileExtension     CONSTANT)
@@ -87,13 +89,14 @@ public:
     Q_PROPERTY(QString shpFileExtension         MEMBER shpFileExtension         CONSTANT)
     Q_PROPERTY(QString logFileExtension         MEMBER logFileExtension         CONSTANT)
 
-    QString missionSavePath     ();
-    QString parameterSavePath   ();
-    QString telemetrySavePath   ();
-    QString logSavePath         ();
-    QString videoSavePath       ();
-    QString photoSavePath       ();
-    QString crashSavePath       ();
+    QString missionSavePath       ();
+    QString parameterSavePath     ();
+    QString telemetrySavePath     ();
+    QString logSavePath           ();
+    QString videoSavePath         ();
+    QString photoSavePath         ();
+    QString crashSavePath         ();
+    QString customActionsSavePath ();
 
     // Helper methods for working with firstRunPromptIds QVariant settings string list
     static QList<int> firstRunPromptsIdsVariantToList   (const QVariant& firstRunPromptIds);
@@ -120,6 +123,7 @@ public:
     static const char* videoDirectory;
     static const char* photoDirectory;
     static const char* crashDirectory;
+    static const char* customActionsDirectory;
 
     // Returns the current qLocaleLanguage setting bypassing the standard SettingsGroup path. This should only be used
     // by QGCApplication::setLanguage to query the language setting as early in the boot process as possible.

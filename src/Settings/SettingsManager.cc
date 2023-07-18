@@ -14,9 +14,6 @@
 
 SettingsManager::SettingsManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool(app, toolbox)
-#if defined(QGC_AIRMAP_ENABLED)
-    , _airMapSettings       (nullptr)
-#endif
     , _appSettings                  (nullptr)
     , _unitsSettings                (nullptr)
     , _autoConnectSettings          (nullptr)
@@ -32,6 +29,7 @@ SettingsManager::SettingsManager(QGCApplication* app, QGCToolbox* toolbox)
 #if !defined(NO_ARDUPILOT_DIALECT)
     , _apmMavlinkStreamRateSettings (nullptr)
 #endif
+    , _remoteIDSettings             (nullptr)
 {
 
 }
@@ -57,7 +55,5 @@ void SettingsManager::setToolbox(QGCToolbox *toolbox)
 #if !defined(NO_ARDUPILOT_DIALECT)
     _apmMavlinkStreamRateSettings = new APMMavlinkStreamRateSettings(this);
 #endif
-#if defined(QGC_AIRMAP_ENABLED)
-    _airMapSettings =               new AirMapSettings          (this);
-#endif
+    _remoteIDSettings =             new RemoteIDSettings            (this); 
 }
