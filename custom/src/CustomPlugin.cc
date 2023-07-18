@@ -560,7 +560,7 @@ void CustomPlugin::_mavCommandResult(int vehicleId, int component, int command, 
             _say(QStringLiteral("takeoff command failed"));
             _updateFlightMachineActive(false);
         }
-    } else if (currentState.command == CommandSetHeading && command == MAV_CMD_DO_REPOSITION) {
+    } else if (currentState.command == CommandSetHeading && command == (vehicle->px4Firmware() ? MAV_CMD_DO_REPOSITION : MAV_CMD_CONDITION_YAW)) {
         disconnect(vehicle, &Vehicle::mavCommandResult, this, &CustomPlugin::_mavCommandResult);
         if (noResponseFromVehicle) {
             if (_retryRotation) {
@@ -601,15 +601,27 @@ void CustomPlugin::_takeoff(Vehicle* vehicle, double takeoffAltRel)
 
 void CustomPlugin::_rotateVehicle(Vehicle* vehicle, double headingDegrees)
 {
-    _sendCommandAndVerify(
-                vehicle,
-                MAV_CMD_DO_REPOSITION,
-                -1,                                     // no change in ground speed
-                MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,    // switch to guided mode
-                0,                                      // reserved
-                qDegreesToRadians(headingDegrees),      // change heading
-                qQNaN(), qQNaN(), qQNaN());             // no change lat, lon, alt
+    if (vehicle->px4Firmware()) {
+        _sendCommandAndVerify(
+            vehicle,
+            MAV_CMD_DO_REPOSITION,
+            -1,                                     // no change in ground speed
+            MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,    // switch to guided mode
+            0,                                      // reserved
+            qDegreesToRadians(headingDegrees),      // change heading
+            qQNaN(), qQNaN(), qQNaN());             // no change lat, lon, alt
+    } else if (vehicle->apmFirmware()){
+        _sendCommandAndVerify(
+            vehicle,
+            MAV_CMD_CONDITION_YAW,
+            headingDegrees,
+            0,                                      // Use default angular speed
+            1,                                      // Rotate clockwise
+            0,                                      // heading specified as absolute angle
+            0, 0, 0);                               // Unused
+    }
 }
+
 
 void CustomPlugin::_setupDelayForHeartbeats(void)
 {
@@ -657,7 +669,8 @@ void CustomPlugin::_advanceStateMachine(void)
 
     const VehicleState_t& currentState = _vehicleStates[++_vehicleStateIndex];
 
-    if (currentState.command != CommandTakeoff && vehicle->flightMode() != "Takeoff" && vehicle->flightMode() != "Hold") {
+    QString holdFlightMode(vehicle->px4Firmware() ? "Hold" : "Guided");
+    if (currentState.command != CommandTakeoff && vehicle->flightMode() != "Takeoff" && vehicle->flightMode() != holdFlightMode) {
         // User cancel
         _say(QStringLiteral("Collection cancelled."));
         _updateFlightMachineActive(false);
