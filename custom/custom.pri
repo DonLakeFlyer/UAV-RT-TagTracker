@@ -26,15 +26,13 @@ DEFINES += APP_VERSION_STR=\"\\\"$$CUSTOM_QGC_VERSION\\\"\"
 
 message(Custom QGC Version: $${CUSTOM_QGC_VERSION})
 
-# Build a single flight stack by disabling APM support
-CONFIG  += QGC_DISABLE_APM_MAVLINK
-CONFIG  += QGC_DISABLE_APM_PLUGIN QGC_DISABLE_APM_PLUGIN_FACTORY
-
-# We implement our own PX4 plugin factory
-CONFIG  += QGC_DISABLE_PX4_PLUGIN_FACTORY
+# We implement our own plugin factories
+CONFIG  +=  \
+    QGC_DISABLE_PX4_PLUGIN_FACTORY \
+    QGC_DISABLE_APM_PLUGIN_FACTORY
 
 # Disable things we don't need
-CONFIG += DISABLE_AIRMAP DISABLE_VIDEOSTREAMING
+CONFIG += DISABLE_VIDEOSTREAMING
 
 # Branding
 
@@ -64,20 +62,22 @@ QML_IMPORT_PATH += \
 
 # Our own, custom sources
 SOURCES += \
-    $$PWD/src/CustomFirmwarePlugin.cc \
     $$PWD/src/CustomFirmwarePluginFactory.cc \
     $$PWD/src/CustomOptions.cc \
     $$PWD/src/CustomPlugin.cc \
+    $$PWD/src/CustomPX4FirmwarePlugin.cc \
+    $$PWD/src/CustomArduCopterFirmwarePlugin.cc \
     $$PWD/src/CustomSettings.cc \
     $$PWD/src/TagInfoList.cc \
     $$PWD/src/PulseInfo.cc \
     $$PWD/src/PulseInfoList.cc \
 
 HEADERS += \
-    $$PWD/src/CustomFirmwarePlugin.h \
     $$PWD/src/CustomFirmwarePluginFactory.h \
     $$PWD/src/CustomOptions.h \
     $$PWD/src/CustomPlugin.h \
+    $$PWD/src/CustomPX4FirmwarePlugin.h \
+    $$PWD/src/CustomArduCopterFirmwarePlugin.h \
     $$PWD/src/CustomSettings.h \
     $$PWD/src/TagInfoList.h \
     $$PWD/src/PulseInfo.h \
