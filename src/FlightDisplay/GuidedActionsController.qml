@@ -107,12 +107,13 @@ Item {
     readonly property int actionChangeSpeed:                25
 
 // Start UAV-RT mods
-    readonly property int actionSendTags:                   26
-    readonly property int actionStartDetection:             27
-    readonly property int actionStopDetection:              28
-    readonly property int actionStartRotation:              29
-    readonly property int actionRawCapture:                 30
-    readonly property int actionDownloadLogs:               31
+    readonly property int customActionStart:                10000
+    readonly property int actionSendTags:                   customActionStart + 1
+    readonly property int actionStartDetection:             customActionStart + 2
+    readonly property int actionStopDetection:              customActionStart + 3
+    readonly property int actionStartRotation:              customActionStart + 4
+    readonly property int actionRawCapture:                 customActionStart + 5
+    readonly property int actionDownloadLogs:               customActionStart + 6
 
     readonly property string sendTagsTitle:                 qsTr("Tagsꜛ")
     readonly property string startDetectionTitle:           qsTr("Start")
@@ -519,6 +520,9 @@ Item {
             confirmDialog.message = changeSpeedMessage
             guidedValueSlider.visible = true
             break
+        default:
+            console.warn("Unknown actionCode", actionCode)
+            return
 // Start UAV-RT mods
         case actionSendTags:
             confirmDialog.hideTrigger = true
@@ -551,9 +555,6 @@ Item {
             confirmDialog.message = downloadLogsMessage
             break
 // End UAV-RT modes
-        default:
-            console.warn("Unknown actionCode", actionCode)
-            return
         }
         confirmDialog.show(showImmediate)
     }
