@@ -39,6 +39,7 @@ Item {
     readonly property string disarmTitle:                   qsTr("Disarm")
     readonly property string rtlTitle:                      qsTr("Return")
     readonly property string takeoffTitle:                  qsTr("Takeoff")
+    readonly property string gripperTitle:                  qsTr("Gripper Function")
     readonly property string landTitle:                     qsTr("Land")
     readonly property string startMissionTitle:             qsTr("Start Mission")
     readonly property string mvStartMissionTitle:           qsTr("Start Mission (MV)")
@@ -55,6 +56,7 @@ Item {
     readonly property string gotoTitle:                     qsTr("Go To Location")
     readonly property string vtolTransitionTitle:           qsTr("VTOL Transition")
     readonly property string roiTitle:                      qsTr("ROI")
+    readonly property string setHomeTitle:                  qsTr("Set Home")
     readonly property string actionListTitle:               qsTr("Action")
 
     readonly property string armMessage:                        qsTr("Arm the vehicle.")
@@ -62,6 +64,7 @@ Item {
     readonly property string disarmMessage:                     qsTr("Disarm the vehicle")
     readonly property string emergencyStopMessage:              qsTr("WARNING: THIS WILL STOP ALL MOTORS. IF VEHICLE IS CURRENTLY IN THE AIR IT WILL CRASH.")
     readonly property string takeoffMessage:                    qsTr("Takeoff from ground and hold position.")
+    readonly property string gripperMessage:                       qsTr("Grab or Release the cargo")
     readonly property string startMissionMessage:               qsTr("Takeoff from ground and start the current mission.")
     readonly property string continueMissionMessage:            qsTr("Continue the mission from the current waypoint.")
     readonly property string resumeMissionUploadFailMessage:    qsTr("Upload of resume mission failed. Confirm to retry upload")
@@ -79,6 +82,7 @@ Item {
     readonly property string vtolTransitionFwdMessage:          qsTr("Transition VTOL to fixed wing flight.")
     readonly property string vtolTransitionMRMessage:           qsTr("Transition VTOL to multi-rotor flight.")
     readonly property string roiMessage:                        qsTr("Make the specified location a Region Of Interest.")
+    readonly property string setHomeMessage:                    qsTr("Set vehicle home as the specified location. This will affect Return to Home position")
 
     readonly property int actionRTL:                        1
     readonly property int actionLand:                       2
@@ -105,14 +109,17 @@ Item {
     readonly property int actionActionList:                 23
     readonly property int actionForceArm:                   24
     readonly property int actionChangeSpeed:                25
+    readonly property int actionGripper:                    26
+    readonly property int actionSetHome:                    27
 
 // Start UAV-RT mods
-    readonly property int actionSendTags:                   26
-    readonly property int actionStartDetection:             27
-    readonly property int actionStopDetection:              28
-    readonly property int actionStartRotation:              29
-    readonly property int actionRawCapture:                 30
-    readonly property int actionDownloadLogs:               31
+    readonly property int customActionStart:                10000
+    readonly property int actionSendTags:                   customActionStart + 1
+    readonly property int actionStartDetection:             customActionStart + 2
+    readonly property int actionStopDetection:              customActionStart + 3
+    readonly property int actionStartRotation:              customActionStart + 4
+    readonly property int actionRawCapture:                 customActionStart + 5
+    readonly property int actionDownloadLogs:               customActionStart + 6
 
     readonly property string sendTagsTitle:                 qsTr("Tagsꜛ")
     readonly property string startDetectionTitle:           qsTr("Start")
@@ -136,6 +143,7 @@ Item {
     property bool   _canArm:                    _activeVehicle ? (_checklistPassed && (!_activeVehicle.healthAndArmingCheckReport.supported || _activeVehicle.healthAndArmingCheckReport.canArm)) : false
     property bool   _canTakeoff:                _activeVehicle ? (_checklistPassed && (!_activeVehicle.healthAndArmingCheckReport.supported || _activeVehicle.healthAndArmingCheckReport.canTakeoff)) : false
     property bool   _canStartMission:           _activeVehicle ? (_checklistPassed && (!_activeVehicle.healthAndArmingCheckReport.supported || _activeVehicle.healthAndArmingCheckReport.canStartMission)) : false
+    property bool   _initialConnectComplete:    _activeVehicle ? _activeVehicle.initialConnectComplete : false
 
     property bool showEmergenyStop:     _guidedActionsEnabled && !_hideEmergenyStop && _vehicleArmed && _vehicleFlying
     property bool showArm:              _guidedActionsEnabled && !_vehicleArmed && _canArm
@@ -153,7 +161,9 @@ Item {
     property bool showROI:              _guidedActionsEnabled && _vehicleFlying && __roiSupported && !_missionActive
     property bool showLandAbort:        _guidedActionsEnabled && _vehicleFlying && _fixedWingOnApproach
     property bool showGotoLocation:     _guidedActionsEnabled && _vehicleFlying
-    property bool showActionList:       _guidedActionsEnabled && (showStartMission || showResumeMission || showChangeAlt || showLandAbort)
+    property bool showSetHome:          _guidedActionsEnabled
+    property bool showActionList:       _guidedActionsEnabled && (showStartMission || showResumeMission || showChangeAlt || showLandAbort || actionList.hasCustomActions)
+    property bool showGripper:          _initialConnectComplete ? _activeVehicle.hasGripper : false
     property string changeSpeedTitle:   _fixedWing ? changeAirspeedTitle : changeCruiseSpeedTitle
     property string changeSpeedMessage: _fixedWing ? changeAirspeedMessage : changeCruiseSpeedMessage
 
@@ -186,6 +196,7 @@ Item {
     property bool   _fixedWingOnApproach:   _activeVehicle ? _activeVehicle.fixedWing && _vehicleLanding : false
     property bool   _fixedWing:             _activeVehicle ? _activeVehicle.fixedWing || _activeVehicle.vtolInFwdFlight : false
     property bool  _speedLimitsAvailable:   _activeVehicle && ((_fixedWing && _activeVehicle.haveFWSpeedLimits) || (!_fixedWing && _activeVehicle.haveMRSpeedLimits))
+    property var   _gripperFunction:        undefined
 
     // You can turn on log output for GuidedActionsController by turning on GuidedActionsControllerLog category
     property bool __guidedModeSupported:    _activeVehicle ? _activeVehicle.guidedModeSupported : false
@@ -373,6 +384,48 @@ Item {
         guidedValueSlider.visible =    false
     }
 
+// Start UAV-RT mods
+    function customConfirmAction(actionCode) {
+        switch (actionCode) {
+        case actionSendTags:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = sendTagsTitle
+            confirmDialog.message = sendTagsMessage
+            break
+        case actionStartDetection:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = startDetectionTitle
+            confirmDialog.message = startDetectionMessage
+            break
+        case actionStopDetection:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = stopDetectionTitle
+            confirmDialog.message = stopDetectionMessage
+            break
+        case actionStartRotation:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = startRotationTitle
+            confirmDialog.message = startRotationMessage
+            break
+        case actionRawCapture:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = rawCaptureTitle
+            confirmDialog.message = rawCaptureMessage
+            break
+        case actionDownloadLogs:
+            confirmDialog.hideTrigger = true
+            confirmDialog.title = downloadLogsTitle
+            confirmDialog.message = downloadLogsMessage
+            break
+        default:
+            return false;
+        }
+
+        return true;
+    }
+// End UAV-RT modes
+
+
     // Called when an action is about to be executed in order to confirm
     function confirmAction(actionCode, actionData, mapIndicator) {
         var showImmediate = true
@@ -519,44 +572,54 @@ Item {
             confirmDialog.message = changeSpeedMessage
             guidedValueSlider.visible = true
             break
-// Start UAV-RT mods
-        case actionSendTags:
+        case actionGripper:
             confirmDialog.hideTrigger = true
-            confirmDialog.title = sendTagsTitle
-            confirmDialog.message = sendTagsMessage
+            confirmDialog.title = gripperTitle
+            confirmDialog.message = gripperMessage
+            _widgetLayer._gripperMenu.createObject(mainWindow).open()
             break
-        case actionStartDetection:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = startDetectionTitle
-            confirmDialog.message = startDetectionMessage
+        case actionSetHome:
+            confirmDialog.title = setHomeTitle
+            confirmDialog.message = setHomeMessage
+            confirmDialog.hideTrigger = Qt.binding(function() { return !showSetHome })
             break
-        case actionStopDetection:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = stopDetectionTitle
-            confirmDialog.message = stopDetectionMessage
-            break
-        case actionStartRotation:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = startRotationTitle
-            confirmDialog.message = startRotationMessage
-            break
-        case actionRawCapture:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = rawCaptureTitle
-            confirmDialog.message = rawCaptureMessage
-            break
-        case actionDownloadLogs:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = downloadLogsTitle
-            confirmDialog.message = downloadLogsMessage
-            break
-// End UAV-RT modes
         default:
-            console.warn("Unknown actionCode", actionCode)
-            return
+            if (!customConfirmAction(actionCode)) {
+                console.warn("Unknown actionCode", actionCode)
+                return
+            }
         }
         confirmDialog.show(showImmediate)
     }
+
+// Start UAV-RT mods
+    function customExecuteAction(actionCode) {
+        switch (actionCode) {
+        case actionSendTags:
+            QGroundControl.corePlugin.sendTags()
+            break
+        case actionStartDetection:
+            QGroundControl.corePlugin.startDetection()
+            break
+        case actionStopDetection:
+            QGroundControl.corePlugin.stopDetection()
+            break
+        case actionStartRotation:
+            QGroundControl.corePlugin.startRotation()
+            break
+        case actionRawCapture:
+            QGroundControl.corePlugin.rawCapture()
+            break
+        case actionDownloadLogs:
+            QGroundControl.corePlugin.downloadLogs()
+            break
+        default:
+            return false;
+        }
+
+        return true;
+    }
+// End UAV-RT modes
 
     // Executes the specified action
     function executeAction(actionCode, actionData, sliderOutputValue, optionChecked) {
@@ -640,28 +703,17 @@ Item {
                 }
             }
             break
-// Start UAV-RT mods
-        case actionSendTags:
-            QGroundControl.corePlugin.sendTags()
+        case actionGripper:           
+            _gripperFunction === undefined ? _activeVehicle.sendGripperAction(Vehicle.Invalid_option) : _activeVehicle.sendGripperAction(_gripperFunction)
             break
-        case actionStartDetection:
-            QGroundControl.corePlugin.startDetection()
+        case actionSetHome:
+            _activeVehicle.doSetHome(actionData)
             break
-        case actionStopDetection:
-            QGroundControl.corePlugin.stopDetection()
-            break
-        case actionStartRotation:
-            QGroundControl.corePlugin.startRotation()
-            break
-        case actionRawCapture:
-            QGroundControl.corePlugin.rawCapture()
-            break
-        case actionDownloadLogs:
-            QGroundControl.corePlugin.downloadLogs()
-            break
-// End UAV-RT modes
         default:
-            console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
+            if (!customExecuteAction(actionCode)) {
+                console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
+                return
+            }
             break
         }
     }

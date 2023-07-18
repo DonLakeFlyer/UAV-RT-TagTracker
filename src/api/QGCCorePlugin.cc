@@ -55,10 +55,6 @@ public:
         if(pMicrohard)
             delete pMicrohard;
 #endif
-#if defined(QGC_AIRMAP_ENABLED)
-        if(pAirmap)
-            delete pAirmap;
-#endif
         if(pMAVLink)
             delete pMAVLink;
         if(pConsole)
@@ -71,6 +67,8 @@ public:
         if(pQmlTest)
             delete pQmlTest;
 #endif
+        if(pRemoteID)
+            delete pRemoteID;
         if(defaultOptions)
             delete defaultOptions;
     }
@@ -84,9 +82,6 @@ public:
 #if defined(QGC_GST_MICROHARD_ENABLED)
     QmlComponentInfo* pMicrohard                = nullptr;
 #endif
-#if defined(QGC_AIRMAP_ENABLED)
-    QmlComponentInfo* pAirmap                   = nullptr;
-#endif
     QmlComponentInfo* pMAVLink                  = nullptr;
     QmlComponentInfo* pConsole                  = nullptr;
     QmlComponentInfo* pHelp                     = nullptr;
@@ -95,6 +90,7 @@ public:
     QmlComponentInfo* pDebug                    = nullptr;
     QmlComponentInfo* pQmlTest                  = nullptr;
 #endif
+    QmlComponentInfo* pRemoteID                  = nullptr;
 
     QGCOptions*         defaultOptions          = nullptr;
     QVariantList        settingsList;
@@ -155,16 +151,13 @@ QVariantList &QGCCorePlugin::settingsPages()
                                               QUrl::fromUserInput(""));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pMicrohard)));
 #endif
-#if defined(QGC_AIRMAP_ENABLED)
-        _p->pAirmap = new QmlComponentInfo(tr("AirMap"),
-                                           QUrl::fromUserInput("qrc:/qml/AirmapSettings.qml"),
-                                           QUrl::fromUserInput(""));
-        _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pAirmap)));
-#endif
         _p->pMAVLink = new QmlComponentInfo(tr("MAVLink"),
                                             QUrl::fromUserInput("qrc:/qml/MavlinkSettings.qml"),
                                             QUrl::fromUserInput("qrc:/res/waves.svg"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pMAVLink)));
+        _p->pRemoteID = new QmlComponentInfo(tr("Remote ID"),
+                                            QUrl::fromUserInput("qrc:/qml/RemoteIDSettings.qml"));
+        _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pRemoteID)));
         _p->pConsole = new QmlComponentInfo(tr("Console"),
                                             QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/AppMessages.qml"));
         _p->settingsList.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(_p->pConsole)));
