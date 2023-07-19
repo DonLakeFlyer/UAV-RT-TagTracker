@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="custom/img">
+    </qresource>
+    <qresource prefix="/qmlimages">
+    </qresource>
+    <qresource prefix="Custom/Widgets">
+    </qresource>
+    <qresource prefix="/qml">
+    </qresource>
+</RCC>
