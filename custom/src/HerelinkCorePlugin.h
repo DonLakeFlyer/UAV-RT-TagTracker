@@ -17,7 +17,9 @@ public:
     HerelinkCorePlugin(QGCApplication* app, QGCToolbox* toolbox);
 
     // Overrides from QGCCorePlugin
-    QGCOptions* options (void) final { return qobject_cast<QGCOptions*>(_herelinkOptions); }
+    QGCOptions* options                         (void) final { return qobject_cast<QGCOptions*>(_herelinkOptions); }
+    bool        overrideSettingsGroupVisibility (QString name) final;
+    bool        adjustSettingMetaData           (const QString& settingsGroup, FactMetaData& metaData) final;
 
     // Overrides from QGCTool
     void setToolbox(QGCToolbox* toolbox) final;
