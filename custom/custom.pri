@@ -69,6 +69,10 @@ DEFINES += \
     NO_SERIAL_LINK
     QGC_DISABLE_BLUETOOTH
 
+# Remove code which the Herelink doesn't needf
+DEFINES += \
+    QGC_GST_TAISYNC_DISABLED
+
 # Our own, custom resources
 RESOURCES += \
     $$PWD/custom.qrc
