@@ -25,16 +25,6 @@ jobs:
   build:
     runs-on:  ubuntu-20.04
 
-    strategy:
-      matrix:
-       include:
-         - architecture: 32bits
-           eabi: armeabi-v7a
-           ARTIFACT: QGroundControl32.apk
-         - architecture: 64bits
-           eabi: arm64-v8a
-           ARTIFACT: QGroundControl64.apk
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -115,8 +105,8 @@ jobs:
           ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
         run:  |
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="${{ matrix.eabi }}"
-            make -j2
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang ANDROID_ABIS=arm64-v8a
+            make -j2 apk
 
       - name: ccache post-run
         run:  ccache -s
@@ -124,21 +114,5 @@ jobs:
       - name: Save artifact
         uses: actions/upload-artifact@master
         with:
-          name: ${{ matrix.ARTIFACT }}
-          path: ${{ runner.temp }}/shadow_build_dir/package/${{ matrix.ARTIFACT }}
-
-      - name: Upload build to S3 Bucket
-        if:                 github.event_name == 'push'
-        working-directory:  ${{ runner.temp }}/shadow_build_dir/package
-        run: |
-              aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws s3 cp ${{ matrix.ARTIFACT }} s3://qgroundcontrol/builds/${{ github.ref_name }}/${{ matrix.ARTIFACT }} --region us-west-2 --acl public-read
-
-      - name: Upload tagged stable build to S3 latest Bucket
-        if:                 github.event_name == 'push' && github.ref_type == 'tag'
-        working-directory:  ${{ runner.temp }}/shadow_build_dir/package
-        run: |
-              aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-              aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-              aws s3 cp ${{ matrix.ARTIFACT }} s3://qgroundcontrol/latest/${{ matrix.ARTIFACT }} --region us-west-2 --acl public-read
+          name: Herelink-QGroundControl.apk
+          path: ${{ runner.temp }}/shadow_build_dir/android-build/Herelink-QGroundControl.apk
