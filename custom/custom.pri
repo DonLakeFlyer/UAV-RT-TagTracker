@@ -57,7 +57,7 @@ DEFINES += \
 QML_IMPORT_PATH += \
    $$PWD/src
 
-# Our own, custom sources
+# Herelink specific custom sources
 SOURCES += \
     $$PWD/src/HerelinkCorePlugin.cc \
     $$PWD/src/HerelinkOptions.cc \
@@ -68,3 +68,5 @@ HEADERS += \
 
 INCLUDEPATH += \
     $$PWD/src \
+
+# Custom versions of a Herelink build should only add changes below here to prevent conflicts
