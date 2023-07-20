@@ -13,7 +13,7 @@
 #include <QQmlEngine>
 #include <QtQml>
 
-DECLARE_SETTINGGROUP(AutoConnect, "AutoConnect")
+DECLARE_SETTINGGROUP(AutoConnect, "LinkManager")
 {
     qmlRegisterUncreatableType<AutoConnectSettings>("QGroundControl.SettingsManager", 1, 0, "AutoConnectSettings", "Reference only"); \
 }
