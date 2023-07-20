@@ -10,7 +10,7 @@ public:
     HerelinkOptions(HerelinkCorePlugin* plugin, QObject* parent = NULL);
 
     // QGCOptions overrides
-    bool wifiReliableForCalibration () const final { return true; }
-    bool showFirmwareUpgrade        () const final { return false; }
-    bool multiVehicleEnabled        () const final { return false; }
+    bool wifiReliableForCalibration () const override { return true; }
+    bool showFirmwareUpgrade        () const override { return false; }
+    bool multiVehicleEnabled        () const override { return false; }
 };

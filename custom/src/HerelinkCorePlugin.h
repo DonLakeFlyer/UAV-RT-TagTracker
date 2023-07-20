@@ -17,12 +17,12 @@ public:
     HerelinkCorePlugin(QGCApplication* app, QGCToolbox* toolbox);
 
     // Overrides from QGCCorePlugin
-    QGCOptions* options                         (void) final { return qobject_cast<QGCOptions*>(_herelinkOptions); }
-    bool        overrideSettingsGroupVisibility (QString name) final;
-    bool        adjustSettingMetaData           (const QString& settingsGroup, FactMetaData& metaData) final;
+    QGCOptions* options                         (void) override { return qobject_cast<QGCOptions*>(_herelinkOptions); }
+    bool        overrideSettingsGroupVisibility (QString name) override;
+    bool        adjustSettingMetaData           (const QString& settingsGroup, FactMetaData& metaData) override;
 
     // Overrides from QGCTool
-    void setToolbox(QGCToolbox* toolbox) final;
+    void setToolbox(QGCToolbox* toolbox) override;
 
 private:
     HerelinkOptions* _herelinkOptions = nullptr;
