@@ -1,0 +1,117 @@
+# The 32 and 64 bit version of these actions should be kept in sync
+name: Android 32/64-bit Release
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'Stable*'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+    - '*'
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SOURCE_DIR:   ${{ github.workspace }}
+  QT_VERSION:   5.15.2
+  BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
+
+jobs:
+  build:
+    runs-on:  ubuntu-20.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Get all tags for correct version determination
+        working-directory:  ${{ github.workspace }}
+        run: |
+          git fetch --all --tags -f
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version:      ${{ env.QT_VERSION }}
+          host:         linux
+          target:       android
+          dir:          ${{ runner.temp }}
+          modules:      qtcharts
+          setup-python: true
+
+      - name: Install Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r21e
+          add-to-path: false
+
+      - name: Remove Android SDK android-33-ext
+        run: |
+            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext5"
+            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext4"
+
+      - name: Install ccache
+        run:  sudo apt-get install ccache
+
+      - name: Prepare ccache timestamp
+        id: ccache_cache_timestamp
+        run: echo "name=timestamp::$(date --utc +'%Y-%m-%d-%H\;%M\;%S')" >> $GITHUB_OUTPUT
+
+      - name: ccache cache files
+        uses: actions/cache@v3
+        with:
+          path:         ~/.ccache
+          key:          ${{ runner.os }}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{ runner.os }}-ccache-
+
+      - name: Setup ccache
+        run: |
+            mkdir -p ~/.ccache
+            echo "base_dir = ${GITHUB_WORKSPACE}" > ~/.ccache/ccache.conf
+            echo "compression = true" >> ~/.ccache/ccache.conf
+            echo "compression_level = 5" >> ~/.ccache/ccache.conf
+            ccache -s
+            ccache -z
+
+      - name: Create build directory
+        run:  mkdir ${{ runner.temp }}/shadow_build_dir
+
+      - name:               Install gstreamer
+        working-directory:  ${{ github.workspace }}
+        run: |
+            wget --quiet https://gstreamer.freedesktop.org/data/pkg/android/1.18.5/gstreamer-1.0-android-universal-1.18.5.tar.xz
+            mkdir gstreamer-1.0-android-universal-1.18.5
+            tar xf gstreamer-1.0-android-universal-1.18.5.tar.xz -C gstreamer-1.0-android-universal-1.18.5
+
+      - name: Update android manifest for Herelink Home app support
+        run: |
+            ${SOURCE_DIR}/custom/update_herelink_manifest.sh
+
+      - name: Build
+        working-directory: ${{ runner.temp }}/shadow_build_dir
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
+        run:  |
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang ANDROID_ABIS=arm64-v8a Config+=Herelink_Build
+            make -j2 apk
+
+      - name: ccache post-run
+        run:  ccache -s
+
+      - name: Save artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: TagTracker.apk
+          path: ${{ runner.temp }}/shadow_build_dir/android-build/TagTracker.apk
