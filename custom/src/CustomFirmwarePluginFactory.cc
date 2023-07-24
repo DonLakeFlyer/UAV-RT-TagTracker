@@ -25,7 +25,7 @@ FirmwarePlugin* CustomFirmwarePluginFactory::firmwarePluginForAutopilot(MAV_AUTO
             case MAV_TYPE_COAXIAL:
             case MAV_TYPE_HELICOPTER:
                 if (!_arduCopterPluginInstance) {
-                    _arduCopterPluginInstance = new ArduCopterFirmwarePlugin;
+                    _arduCopterPluginInstance = new CustomArduCopterFirmwarePlugin;
                 }
                 return _arduCopterPluginInstance;
             default:
