@@ -1,5 +1,4 @@
-# The 32 and 64 bit version of these actions should be kept in sync
-name: Android 32/64-bit Release
+name: Herelink Andoird
 
 on:
   push:
@@ -90,10 +89,6 @@ jobs:
             wget --quiet https://gstreamer.freedesktop.org/data/pkg/android/1.18.5/gstreamer-1.0-android-universal-1.18.5.tar.xz
             mkdir gstreamer-1.0-android-universal-1.18.5
             tar xf gstreamer-1.0-android-universal-1.18.5.tar.xz -C gstreamer-1.0-android-universal-1.18.5
-
-      - name: Update android manifest for Herelink Home app support
-        run: |
-            ${SOURCE_DIR}/custom/update_herelink_manifest.sh
 
       - name: Build
         working-directory: ${{ runner.temp }}/shadow_build_dir
