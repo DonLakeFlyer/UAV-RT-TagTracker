@@ -91,6 +91,10 @@ jobs:
             mkdir gstreamer-1.0-android-universal-1.18.5
             tar xf gstreamer-1.0-android-universal-1.18.5.tar.xz -C gstreamer-1.0-android-universal-1.18.5
 
+      - name: Update android manifest for Herelink Home app support
+        run: |
+            ${SOURCE_DIR}/custom/update_herelink_manifest.sh
+
       - name: Build
         working-directory: ${{ runner.temp }}/shadow_build_dir
         env:
@@ -100,7 +104,7 @@ jobs:
           ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
         run:  |
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang ANDROID_ABIS=armeabi-v7a
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang ANDROID_ABIS=arm64-v8a Config+=Herelink_Build
             make -j2 apk
 
       - name: ccache post-run
@@ -109,5 +113,5 @@ jobs:
       - name: Save artifact
         uses: actions/upload-artifact@master
         with:
-          name: TagTracker32.apk
+          name: TagTracker.apk
           path: ${{ runner.temp }}/shadow_build_dir/android-build/TagTracker.apk

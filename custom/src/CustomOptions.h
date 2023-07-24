@@ -1,10 +1,19 @@
 #pragma once
 
-#include "QGCOptions.h"
+#ifdef HERELINK_BUILD
+    #include "HerelinkOptions.h"
+#else
+    #include "QGCOptions.h"
+#endif
 
 class CustomPlugin;
 
-class CustomOptions : public QGCOptions
+class CustomOptions : 
+#ifdef HERELINK_BUILD
+    public HerelinkOptions
+#else
+    public QGCOptions
+#endif
 {
 public:
     CustomOptions(CustomPlugin* plugin, QObject* parent = NULL);
