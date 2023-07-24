@@ -41,16 +41,20 @@ DEFINES += CUSTOMCLASS=CustomPlugin
 TARGET   = TagTracker
 DEFINES += QGC_APPLICATION_NAME='"\\\"Tag Tracker\\\""'
 
-DEFINES += QGC_ORG_NAME=\"\\\"qgroundcontrol.org\\\"\"
-DEFINES += QGC_ORG_DOMAIN=\"\\\"org.qgroundcontrol\\\"\"
+DEFINES += QGC_ORG_NAME=\"\\\"thegagnes.com\\\"\"
+DEFINES += QGC_ORG_DOMAIN=\"\\\"com.thegagnes\\\"\"
 
 QGC_APP_NAME        = "Tag Tracker"
 QGC_BINARY_NAME     = "TagTracker"
-QGC_ORG_NAME        = "Custom"
-QGC_ORG_DOMAIN      = "org.custom"
-QGC_ANDROID_PACKAGE = "org.custom.qgroundcontrol"
-QGC_APP_DESCRIPTION = "Tag Telemetry"
-QGC_APP_COPYRIGHT   = "Copyright (C) 2020 QGroundControl Development Team. All rights reserved."
+QGC_ORG_NAME        = "thegagnes"
+QGC_ORG_DOMAIN      = "org.thegagnes.com"
+QGC_ANDROID_PACKAGE = "org.thegagnes.qgroundcontrol"
+QGC_APP_DESCRIPTION = "Tag Tracker"
+QGC_APP_COPYRIGHT   = "Copyright (C) 2023 Latest Fiasco Dev Team. All rights reserved."
+
+# Remove code which the Herelink doesn't need
+DEFINES += \
+    QGC_GST_TAISYNC_DISABLED
 
 # Our own, custom resources
 RESOURCES += \
@@ -59,7 +63,22 @@ RESOURCES += \
 QML_IMPORT_PATH += \
    $$PWD/src
 
-# Our own, custom sources
+Herelink {
+    message("Building for Herelink")
+
+    DEFINES += HERELINK_BUILD
+
+# Herelink sources
+SOURCES += \
+    $$PWD/src/HerelinkCorePlugin.cc \
+    $$PWD/src/HerelinkOptions.cc \
+
+HEADERS += \
+    $$PWD/src/HerelinkCorePlugin.h \
+    $$PWD/src/HerelinkOptions.h \
+}
+
+# TagTracker custom sources
 SOURCES += \
     $$PWD/src/CustomFirmwarePluginFactory.cc \
     $$PWD/src/CustomOptions.cc \
@@ -88,18 +107,3 @@ INCLUDEPATH += \
 # Shared header files for Tunnel Protocol
 INCLUDEPATH += \
     $$PWD/uavrt_interfaces/include/uavrt_interfaces \
-
-# Setup to build uavrt_thresholds
-
-SOURCES += \
-    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.cpp, false) \
-    $$files($$PWD/uavrt_thresholds/codegen/lib/threshold_appender/*.c, false) \
-
-INCLUDEPATH += \
-    $$PWD/uavrt_thresholds/codegen/lib/threshold_appender \
-    $$PWD/uavrt_thresholds/matlab-coder-utils/coder-headers \
-
-QMAKE_CXXFLAGS += -fopenmp
-QMAKE_LFLAGS += -fopenmp
-
-
