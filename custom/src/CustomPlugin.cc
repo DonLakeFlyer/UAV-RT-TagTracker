@@ -82,10 +82,12 @@ QVariantList& CustomPlugin::settingsPages(void)
 
 bool CustomPlugin::mavlinkMessage(Vehicle* vehicle, LinkInterface* linkInterface, mavlink_message_t message)
 {
+    #if 0
 #ifdef HERELINK_BUILD
     if (!HerelinkCorePlugin::mavlinkMessage(vehicle, linkInterface, message)) {
         return false;
     }
+#endif
 #endif
 
     if (message.msgid == MAVLINK_MSG_ID_TUNNEL) {
