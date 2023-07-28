@@ -4,8 +4,9 @@
 #include "AppSettings.h"
 #include "CustomPlugin.h"
 #include "CustomSettings.h"
-#ifdef HERELINK_BUILD
-    #include "AndroidInterface.h"
+
+#if 0
+#include "threshold_appender.h"
 #endif
 
 #include <QFile>
@@ -27,7 +28,7 @@ void TagInfoList::checkForTagFile (void)
     if (!tagFile.open(QIODevice::ReadOnly)) {
         qgcApp()->showAppMessage(QStringLiteral("TagInfo.txt does not exist. Creating default file at: %1").arg(tagFilename));
         if (!QFile::copy(":/res/TagInfo.txt", tagFilename)) {
-            qgcApp()->showAppMessage(QStringLiteral("Unable to create default TagInfo.txt file"));
+            qgcApp()->showAppMessage(QStringLiteral("Unable to create default TagIndo.txt file"));
         }
     }
 }
@@ -37,7 +38,8 @@ bool TagInfoList::loadTags(uint32_t sdrType)
     clear();
     _setupTunerVars(sdrType);
 
-    QString tagFilename = _tagInfoFilePath();
+    QString tagFilename = QString::asprintf("%s/TagInfo.txt",
+                                            qgcApp()->toolbox()->settingsManager()->appSettings()->parameterSavePath().toStdString().c_str());
     QFile   tagFile(tagFilename);
 
     if (!tagFile.open(QIODevice::ReadOnly)) {
@@ -442,16 +444,9 @@ int TagInfoList::_firstChannelFreqHz(const int centerFreqHz)
 
 QString TagInfoList::_tagInfoFilePath()
 {
-#ifdef HERELINK_BUILD
-    QDir sdCardDir(AndroidInterface::getSdcardPath());
-    qDebug() << "SD card path" << AndroidInterface::getSdcardPath() << sdCardDir.exists();
-
-    return QString::asprintf("%s/TagInfo.txt",
-                             AndroidInterface::getSdcardPath().toStdString().c_str());
-#else
     return QString::asprintf("%s/TagInfo.txt",
                              qgcApp()->toolbox()->settingsManager()->appSettings()->parameterSavePath().toStdString().c_str());
-#endif
+
 }
 
 #if 0

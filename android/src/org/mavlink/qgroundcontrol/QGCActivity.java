@@ -38,7 +38,6 @@ import java.util.concurrent.Executors;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.io.IOException;
-import java.lang.reflect.Method;
 
 import android.app.Activity;
 import android.app.PendingIntent;
@@ -59,9 +58,6 @@ import android.app.PendingIntent;
 import android.view.WindowManager;
 import android.os.Bundle;
 import android.bluetooth.BluetoothDevice;
-import android.os.storage.StorageManager;
-import android.os.storage.StorageVolume;
-
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 
@@ -669,35 +665,6 @@ public class QGCActivity extends QtActivity
 
 
     public static String getSDCardPath() {
-        StorageManager storageManager = (StorageManager)_instance.getSystemService(Activity.STORAGE_SERVICE);
-        List<StorageVolume> volumes = storageManager.getStorageVolumes();
-        Method mMethodGetPath;
-        String path = "";
-        for (StorageVolume vol : volumes) {
-            try {
-                mMethodGetPath = vol.getClass().getMethod("getPath");
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-                continue;
-            }
-            try {
-                path = (String) mMethodGetPath.invoke(vol);
-            } catch (Exception e) {
-                e.printStackTrace();
-                continue;
-            }
-
-            if (vol.isRemovable() == true) {
-                Log.i(TAG, "removable sd card mounted " + path);
-                return path;
-            } else {
-                Log.i(TAG, "storage mounted " + path);
-            }
-        }
-        return "";
-    }
-
-    public static String getSdcardPath() {
         StorageManager storageManager = (StorageManager)_instance.getSystemService(Activity.STORAGE_SERVICE);
         List<StorageVolume> volumes = storageManager.getStorageVolumes();
         Method mMethodGetPath;
