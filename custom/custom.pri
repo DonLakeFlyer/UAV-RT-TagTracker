@@ -70,12 +70,10 @@ Herelink {
 
 # Herelink sources
 SOURCES += \
-    $$PWD/src/AndroidInterface.cc \
     $$PWD/src/HerelinkCorePlugin.cc \
     $$PWD/src/HerelinkOptions.cc \
 
 HEADERS += \
-    $$PWD/src/AndroidInterface.h \
     $$PWD/src/HerelinkCorePlugin.h \
     $$PWD/src/HerelinkOptions.h \
 }
