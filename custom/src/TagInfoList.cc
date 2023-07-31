@@ -38,8 +38,7 @@ bool TagInfoList::loadTags(uint32_t sdrType)
     clear();
     _setupTunerVars(sdrType);
 
-    QString tagFilename = QString::asprintf("%s/TagInfo.txt",
-                                            qgcApp()->toolbox()->settingsManager()->appSettings()->parameterSavePath().toStdString().c_str());
+    QString tagFilename = _tagInfoFilePath();
     QFile   tagFile(tagFilename);
 
     if (!tagFile.open(QIODevice::ReadOnly)) {
