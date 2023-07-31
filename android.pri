@@ -16,12 +16,9 @@ exists($$PWD/custom/android) {
         android_source_dir_target.commands = $$QMAKE_MKDIR $$ANDROID_PACKAGE_SOURCE_DIR && \
                 $$QMAKE_COPY_DIR $$PWD/android/* $$OUT_PWD/ANDROID_PACKAGE_SOURCE_DIR && \
                 $$QMAKE_COPY_DIR $$PWD/custom/android/* $$OUT_PWD/ANDROID_PACKAGE_SOURCE_DIR && \
-                $$QMAKE_STREAM_EDITOR -i \"s/package=\\\"org.mavlink.qgroundcontrol\\\"/package=\\\"$$QGC_ANDROID_PACKAGE\\\"/\" $$ANDROID_PACKAGE_SOURCE_DIR/AndroidManifest.xml
-        AndroidHomeApp {  
-                android_source_dir_target.commands = $$android_source_dir_target.commands && \              
+                $$QMAKE_STREAM_EDITOR -i \"s/package=\\\"org.mavlink.qgroundcontrol\\\"/package=\\\"$$QGC_ANDROID_PACKAGE\\\"/\" $$ANDROID_PACKAGE_SOURCE_DIR/AndroidManifest.xml &&\
                 $$QMAKE_STREAM_EDITOR -i \"s/<!--%%INSERT_CATEGORY_HOME%%-->/<category android:name=\\\"android.intent.category.HOME\\\"\\/>/\" $$ANDROID_PACKAGE_SOURCE_DIR/AndroidManifest.xml && \
                 $$QMAKE_STREAM_EDITOR -i \"s/<!--%%INSERT_CATEGORY_DEFAULT%%-->/<category android:name=\\\"android.intent.category.DEFAULT\\\"\\/>/\" $$ANDROID_PACKAGE_SOURCE_DIR/AndroidManifest.xml
-        }
     } else {
         android_source_dir_target.commands = $$QMAKE_MKDIR $$ANDROID_PACKAGE_SOURCE_DIR && \
                 $$QMAKE_COPY_DIR $$PWD/android/* $$OUT_PWD/ANDROID_PACKAGE_SOURCE_DIR && \
