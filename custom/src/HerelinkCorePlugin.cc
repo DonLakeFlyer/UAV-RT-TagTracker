@@ -1,6 +1,7 @@
 #include "HerelinkCorePlugin.h"
 
 #include "AutoConnectSettings.h"
+#include "VideoSettings.h"
 
 #include <list>
 
@@ -52,6 +53,11 @@ bool HerelinkCorePlugin::adjustSettingMetaData(const QString& settingsGroup, Fac
                 }
             }
         }
+    } else if (settingsGroup == VideoSettings::settingsGroup) {
+        if (metaData.name() == VideoSettings::rtspTimeoutName) {
+            metaData.setRawDefaultValue(60);
+        }
+
     }
 
     return true; // Show all settings in ui
