@@ -212,11 +212,12 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
 
         if (pulseInfo.frequency_hz != 0) {
             qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
-                                        "CONFIRMED tag_id:frequency_hz:seq_ctr:snr" <<
+                                        "CONFIRMED tag_id:frequency_hz:seq_ctr:snr:noise_psd" <<
                                         pulseInfo.tag_id <<
                                         pulseInfo.frequency_hz <<
                                         pulseInfo.group_seq_counter <<
-                                        pulseInfo.snr;
+                                        pulseInfo.snr <<
+                                        pulseInfo.noise_psd;
             _csvLogPulse(_csvFullPulseLogFile, pulseInfo);
             _csvLogPulse(_csvRotationPulseLogFile, pulseInfo);
         } else {
@@ -315,7 +316,7 @@ void CustomPlugin::_csvStopRotationPulseLog(void)
 void CustomPlugin::_csvLogPulse(QFile& csvFile, const PulseInfo_t& pulseInfo)
 {
     if (csvFile.isOpen()) {
-        csvFile.write(QString("%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19\n")
+        csvFile.write(QString("%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19,%20\n")
             .arg(COMMAND_ID_PULSE)
             .arg(pulseInfo.tag_id)
             .arg(pulseInfo.frequency_hz)
@@ -326,6 +327,7 @@ void CustomPlugin::_csvLogPulse(QFile& csvFile, const PulseInfo_t& pulseInfo)
             .arg(pulseInfo.group_seq_counter)
             .arg(pulseInfo.group_ind)
             .arg(pulseInfo.group_snr,                   0, 'f', 6)
+            .arg(pulseInfo.noise_psd,                   0, 'f', 6)
             .arg(pulseInfo.detection_status)
             .arg(pulseInfo.confirmed_status)
             .arg(pulseInfo.position_x,                  0, 'f', 6)
