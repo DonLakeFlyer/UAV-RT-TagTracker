@@ -23,7 +23,7 @@
     "type":             "double",
     "units":            "%",
     "decimalPlaces":    2,
-    "default":          0.8
+    "default":          1.0
 },
 {
     "name":         "divisions",
