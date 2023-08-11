@@ -3,7 +3,6 @@
 Use WIP version on Herelink - based on QGC master
 * Support still not working
     * Video
-    * Buttons page
     * Save video to SD card
 * Download the latest APK from GitHub Actions Artifacts
 * Put it on an sd card
