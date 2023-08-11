@@ -45,9 +45,11 @@ QGC_ANDROID_PACKAGE = "org.cubepilot.herelink_qgroundcontrol"
 QGC_APP_DESCRIPTION = "Herelink QGroundControl"
 QGC_APP_COPYRIGHT   = "Copyright (C) 2023 Cubepilot. All rights reserved."
 
-# Remove code which the Herelink doesn't needf
+# Remove code which the Herelink doesn't need
 DEFINES += \
     QGC_GST_TAISYNC_DISABLED
+    NO_SERIAL_LINK
+    QGC_DISABLE_BLUETOOTH
 
 # Our own, custom resources
 # Not yet used
