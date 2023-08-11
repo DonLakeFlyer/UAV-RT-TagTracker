@@ -69,9 +69,11 @@ DEFINES += \
     NO_SERIAL_LINK
     QGC_DISABLE_BLUETOOTH
 
-# Remove code which the Herelink doesn't needf
+# Remove code which the Herelink doesn't need
 DEFINES += \
     QGC_GST_TAISYNC_DISABLED
+    NO_SERIAL_LINK
+    QGC_DISABLE_BLUETOOTH
 
 # Our own, custom resources
 RESOURCES += \
