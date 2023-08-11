@@ -2,6 +2,7 @@
 
 #include "AutoConnectSettings.h"
 #include "VideoSettings.h"
+#include "AppSettings.h"
 
 #include <list>
 
@@ -57,7 +58,10 @@ bool HerelinkCorePlugin::adjustSettingMetaData(const QString& settingsGroup, Fac
         if (metaData.name() == VideoSettings::rtspTimeoutName) {
             metaData.setRawDefaultValue(60);
         }
-
+    } else if (settingsGroup == AppSettings::settingsGroup) {
+        if (metaData.name() == AppSettings::androidSaveToSDCardName) {
+            metaData.setRawDefaultValue(true);
+        }
     }
 
     return true; // Show all settings in ui
