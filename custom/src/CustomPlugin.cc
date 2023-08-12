@@ -211,7 +211,7 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_2_id : extTagInfo.ip_msecs_1_id);
 
         if (pulseInfo.frequency_hz != 0) {
-            qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
+            qCDebug(CustomPluginLog) << //qSetRealNumberPrecision(6) <<
                                         "CONFIRMED tag_id:frequency_hz:seq_ctr:snr:noise_psd" <<
                                         pulseInfo.tag_id <<
                                         pulseInfo.frequency_hz <<
@@ -320,23 +320,23 @@ void CustomPlugin::_csvLogPulse(QFile& csvFile, const PulseInfo_t& pulseInfo)
             .arg(COMMAND_ID_PULSE)
             .arg(pulseInfo.tag_id)
             .arg(pulseInfo.frequency_hz)
-            .arg(pulseInfo.start_time_seconds,          0, 'f', 6)
-            .arg(pulseInfo.predict_next_start_seconds,  0, 'f', 6)
-            .arg(pulseInfo.snr,                         0, 'f', 6)
-            .arg(pulseInfo.stft_score,                  0, 'f', 6)
+            .arg(pulseInfo.start_time_seconds,          0, 'g', 6)
+            .arg(pulseInfo.predict_next_start_seconds,  0, 'g', 6)
+            .arg(pulseInfo.snr,                         0, 'g', 6)
+            .arg(pulseInfo.stft_score,                  0, 'g', 6)
             .arg(pulseInfo.group_seq_counter)
             .arg(pulseInfo.group_ind)
-            .arg(pulseInfo.group_snr,                   0, 'f', 6)
-            .arg(pulseInfo.noise_psd,                   0, 'f', 6)
+            .arg(pulseInfo.group_snr,                   0, 'g', 6)
+            .arg(pulseInfo.noise_psd,                   0, 'g', 6)
             .arg(pulseInfo.detection_status)
             .arg(pulseInfo.confirmed_status)
-            .arg(pulseInfo.position_x,                  0, 'f', 6)
-            .arg(pulseInfo.position_y,                  0, 'f', 6)
-            .arg(pulseInfo.position_z,                  0, 'f', 6)
-            .arg(pulseInfo.orientation_x,               0, 'f', 6)
-            .arg(pulseInfo.orientation_y,               0, 'f', 6)
-            .arg(pulseInfo.orientation_z,               0, 'f', 6)
-            .arg(pulseInfo.orientation_w,               0, 'f', 6)
+            .arg(pulseInfo.position_x,                  0, 'g', 6)
+            .arg(pulseInfo.position_y,                  0, 'g', 6)
+            .arg(pulseInfo.position_z,                  0, 'g', 6)
+            .arg(pulseInfo.orientation_x,               0, 'g', 6)
+            .arg(pulseInfo.orientation_y,               0, 'g', 6)
+            .arg(pulseInfo.orientation_z,               0, 'g', 6)
+            .arg(pulseInfo.orientation_w,               0, 'g', 6)
             .toUtf8());
     }
 }
