@@ -55,6 +55,8 @@ QGC_APP_COPYRIGHT   = "Copyright (C) 2023 Latest Fiasco Dev Team. All rights res
 # Remove code which the Herelink doesn't need
 DEFINES += \
     QGC_GST_TAISYNC_DISABLED
+    NO_SERIAL_LINK
+    QGC_DISABLE_BLUETOOTH
 
 # Our own, custom resources
 RESOURCES += \
