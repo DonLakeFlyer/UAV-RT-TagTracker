@@ -34,6 +34,9 @@ CONFIG  +=  \
 # Disable things we don't need
 CONFIG += DISABLE_VIDEOSTREAMING
 
+# Tag Tracker is set as an android Home App
+CONFIG += AndroidHomeApp
+
 # Branding
 
 DEFINES += CUSTOMHEADER=\"\\\"CustomPlugin.h\\\"\"
