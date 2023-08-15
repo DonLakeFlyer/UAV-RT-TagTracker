@@ -33,6 +33,9 @@ CONFIG  += QGC_DISABLE_APM_PLUGIN QGC_DISABLE_APM_PLUGIN_FACTORY
 # Disable things we don't need
 CONFIG += DISABLE_VIDEOSTREAMING
 
+# Tag Tracker is set as an android Home App
+CONFIG += AndroidHomeApp
+
 # Branding
 
 DEFINES += CUSTOMHEADER=\"\\\"CustomPlugin.h\\\"\"
