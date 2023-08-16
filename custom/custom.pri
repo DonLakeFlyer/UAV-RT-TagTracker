@@ -30,8 +30,11 @@ message(Custom QGC Version: $${CUSTOM_QGC_VERSION})
 CONFIG  += QGC_DISABLE_APM_MAVLINK
 CONFIG  += QGC_DISABLE_APM_PLUGIN QGC_DISABLE_APM_PLUGIN_FACTORY
 
-# Disable things we don't need
-CONFIG += DISABLE_VIDEOSTREAMING
+# Remove code which the Herelink doesn't need
+DEFINES += \
+    QGC_GST_TAISYNC_DISABLED
+    NO_SERIAL_LINK
+    QGC_DISABLE_BLUETOOTH
 
 # Tag Tracker is set as an android Home App
 CONFIG += AndroidHomeApp
