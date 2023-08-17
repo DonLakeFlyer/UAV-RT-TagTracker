@@ -722,10 +722,13 @@ void Joystick::startPolling(Vehicle* vehicle)
         }
         // Always set up the new vehicle
         _activeVehicle = vehicle;
+        #if 0
+        // FIXME: Logic bug causes this code to go into an infinite loop of repeated calls
         // If joystick is not calibrated, disable it
         if ( !_calibrated ) {
             vehicle->setJoystickEnabled(false);
         }
+        #endif
         // Update qml in case of joystick transition
         emit calibratedChanged(_calibrated);
         _buildActionList(vehicle);
