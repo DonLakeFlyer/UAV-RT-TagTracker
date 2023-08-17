@@ -10,9 +10,8 @@ public:
     HerelinkOptions(HerelinkCorePlugin* plugin, QObject* parent = NULL);
 
     // QGCOptions overrides
-#ifdef HERELINK_BUILD
     bool wifiReliableForCalibration () const override { return true; }
     bool showFirmwareUpgrade        () const override { return false; }
     bool multiVehicleEnabled        () const override { return false; }
-#endif
+    bool joystickUseButtonsOnly     () const override { return true; }
 };
