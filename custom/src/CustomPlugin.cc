@@ -28,7 +28,7 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _flightStateMachineActive  (false)
     , _vehicleFrequency     (0)
     , _lastPulseSendIndex   (-1)
-    , _missedPulseCount     (0)
+    , _missedPulseCount     (0)    
 {
     static_assert(TunnelProtocolValidateSizes, "TunnelProtocolValidateSizes failed");
 
@@ -38,7 +38,7 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     _controllerHeartbeatTimer.setSingleShot(true);
     _controllerHeartbeatTimer.setInterval(6000);    // We should get heartbeats every 5 seconds
 
-    connect(&_vehicleStateTimeoutTimer,     &QTimer::timeout, this, &CustomPlugin::_vehicleStateWaitFailed);
+    connect(&_vehicleStateTimeoutTimer,     &QTimer::timeout, this, &CustomPlugin::_vehicleStateTimeout);
     connect(&_tunnelCommandAckTimer,        &QTimer::timeout, this, &CustomPlugin::_tunnelCommandAckFailed);
     connect(&_controllerHeartbeatTimer,     &QTimer::timeout, this, &CustomPlugin::_controllerHeartbeatFailed);
 }
@@ -57,8 +57,11 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     QGCCorePlugin::setToolbox(toolbox);
 #endif
 
-    _customSettings = new CustomSettings(nullptr);
-    _customOptions = new CustomOptions(this, nullptr);
+    _customSettings             = new CustomSettings            (nullptr);
+    _customOptions              = new CustomOptions             (this, nullptr);
+    _detectorsHeartbeatTracker  = new DetectorsHeartbeatTracker (this);
+
+    connect(_detectorsHeartbeatTracker, &DetectorsHeartbeatTracker::detectorsLostHeartbeatChanged, this, &CustomPlugin::detectorsLostHeartbeatChanged);
 
     _tagInfoList.checkForTagFile();
 
@@ -125,8 +128,8 @@ void CustomPlugin::_handleTunnelHeartbeat(const mavlink_tunnel_t& tunnel)
     switch (heartbeat.system_id) {
     case HEARTBEAT_SYSTEM_MAVLINKCONTROLLER:
         qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController" << counter++;
-        _controllerHeartbeat = true;
-        emit controllerHeartbeatChanged();
+        _controllerLostHeartbeat = false;
+        emit controllerLostHeartbeatChanged();
         _controllerHeartbeatTimer.start();
         break;
     case HEARTBEAT_SYSTEM_CHANNELIZER:
@@ -210,7 +213,8 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         if (isDetectorHeartbeat) {
             tagRateChar = "H" + tagRateChar;
             qCDebug(CustomPluginLog) << "HEARTBEAT from Detector" << pulseInfo.tag_id;
-            _updateDetectorHeartbeat(pulseInfo.tag_id);
+
+            _detectorsHeartbeatTracker->heartbeatReceived(pulseInfo.tag_id);
         } else {
             qCDebug(CustomPluginLog) << //qSetRealNumberPrecision(6) <<
                                         "CONFIRMED tag_id:frequency_hz:seq_ctr:snr:noise_psd" <<
@@ -268,7 +272,7 @@ void CustomPlugin::_csvStartFullPulseLog(void)
 
     _csvFullPulseLogFile.setFileName(QString("%1/Pulse-%2.csv").arg(_csvLogFilePath(), QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data()));
     qCDebug(CustomPluginLog) << "Full CSV Pulse logging to:" << _csvFullPulseLogFile;
-    if (!_csvFullPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!_csvFullPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Unbuffered)) {
         qgcApp()->showAppMessage(QString("Open of full pulse csv log file failed: %1").arg(_csvFullPulseLogFile.errorString()));
         return;
     }
@@ -298,7 +302,7 @@ void CustomPlugin::_csvStartRotationPulseLog(int rotationCount)
 
     _csvRotationPulseLogFile.setFileName(QString("%1/Rotation-%2.csv").arg(_csvLogFilePath()).arg(rotationCount));
     qCDebug(CustomPluginLog) << "Rotation CSV Pulse logging to:" << _csvRotationPulseLogFile;
-    if (!_csvRotationPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    if (!_csvRotationPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Unbuffered)) {
         qgcApp()->showAppMessage(QString("Open of rotation pulse csv log file failed: %1").arg(_csvRotationPulseLogFile.errorString()));
         return;
     }
@@ -315,27 +319,33 @@ void CustomPlugin::_csvStopRotationPulseLog(void)
 void CustomPlugin::_csvLogPulse(QFile& csvFile, const PulseInfo_t& pulseInfo)
 {
     if (csvFile.isOpen()) {
-        csvFile.write(QString("%1,%2,%3,%4,%5,%6,%7,%8,%9,%10,%11,%12,%13,%14,%15,%16,%17,%18,%19,%20\n")
+        if (csvFile.size() == 0) {
+            csvFile.write(QString("# %1, tag_id, frequency_hz, start_time_seconds, predict_next_start_seconds, snr, stft_score, group_seq_counter, group_ind, group_snr, noise_psd, detection_status, confirmed_status, position_x, _y, _z, orientation_x, _y, _z, _w, antenna_offset\n")
+                .arg(COMMAND_ID_PULSE)
+                .toUtf8());
+        }
+        csvFile.write(QString("%1, %2, %3, %4, %5, %6, %7, %8, %9, %10, %11, %12, %13, %14, %15, %16, %17, %18, %19, %20, %21\n")
             .arg(COMMAND_ID_PULSE)
             .arg(pulseInfo.tag_id)
             .arg(pulseInfo.frequency_hz)
-            .arg(pulseInfo.start_time_seconds,          0, 'g', 6)
-            .arg(pulseInfo.predict_next_start_seconds,  0, 'g', 6)
-            .arg(pulseInfo.snr,                         0, 'g', 6)
-            .arg(pulseInfo.stft_score,                  0, 'g', 6)
+            .arg(pulseInfo.start_time_seconds,          0, 'f', 6)
+            .arg(pulseInfo.predict_next_start_seconds,  0, 'f', 6)
+            .arg(pulseInfo.snr,                         0, 'f', 6)
+            .arg(pulseInfo.stft_score,                  0, 'f', 6)
             .arg(pulseInfo.group_seq_counter)
             .arg(pulseInfo.group_ind)
-            .arg(pulseInfo.group_snr,                   0, 'g', 6)
-            .arg(pulseInfo.noise_psd,                   0, 'g', 6)
+            .arg(pulseInfo.group_snr,                   0, 'f', 6)
+            .arg(pulseInfo.noise_psd,                   0, 'g', 7)
             .arg(pulseInfo.detection_status)
             .arg(pulseInfo.confirmed_status)
-            .arg(pulseInfo.position_x,                  0, 'g', 6)
-            .arg(pulseInfo.position_y,                  0, 'g', 6)
-            .arg(pulseInfo.position_z,                  0, 'g', 6)
-            .arg(pulseInfo.orientation_x,               0, 'g', 6)
-            .arg(pulseInfo.orientation_y,               0, 'g', 6)
-            .arg(pulseInfo.orientation_z,               0, 'g', 6)
-            .arg(pulseInfo.orientation_w,               0, 'g', 6)
+            .arg(pulseInfo.position_x,                  0, 'f', 6)
+            .arg(pulseInfo.position_y,                  0, 'f', 6)
+            .arg(pulseInfo.position_z,                  0, 'f', 6)
+            .arg(pulseInfo.orientation_x,               0, 'f', 6)
+            .arg(pulseInfo.orientation_y,               0, 'f', 6)
+            .arg(pulseInfo.orientation_z,               0, 'f', 6)
+            .arg(pulseInfo.orientation_w,               0, 'f', 6)
+            .arg(_customSettings->antennaOffset()->rawValue().toDouble(), 0, 'f', 6)
             .toUtf8());
     }
 }
@@ -407,37 +417,44 @@ void CustomPlugin::startRotation(void)
     PulseRoseMapItem* mapItem = new PulseRoseMapItem(url, _rgAngleStrengths.count() - 1, vehicle->coordinate(), this);
     _customMapItems.append(mapItem);
 
-    // First heading is adjusted to be at the center of the closest subdivision
-    double vehicleHeading = vehicle->heading()->rawValue().toDouble();
-    double divisionDegrees = 360.0 / _cSlice;
-    _firstSlice = _nextSlice = static_cast<int>((vehicleHeading + (divisionDegrees / 2.0)) / divisionDegrees);
-    _firstHeading = divisionDegrees * _firstSlice;
+    // We always start our rotation pulse captures with the antenna a 0 degrees heading
+    double antennaOffset    = _customSettings->antennaOffset()->rawValue().toDouble();
+    double sliceDegrees     = 360.0 / _cSlice;
+    double nextHeading = -antennaOffset;
+
+    // We wait at each rotation for enough time to go by to capture a user specified set of k groups
+    uint32_t maxK;
+    auto        kGroups                     = _customSettings->rotationKWaitCount()->rawValue().toInt();
+    auto        maxIntraPulseMsecs          = _tagInfoList.maxIntraPulseMsecs(maxK);
+    uint32_t    rotationCaptureWaitMsecs    = maxIntraPulseMsecs * ((kGroups * maxK) + 1);
+
+    _currentSlice = 0;
 
     _vehicleStates.clear();
 
     // Build rotation state machine entries
-    double headingIncrement = 360.0 / _cSlice;
-    double nextHeading = _firstHeading - headingIncrement;
     for (int i=0; i<_cSlice; i++) {
         VehicleState_t vehicleState;
 
         if (nextHeading >= 360) {
             nextHeading -= 360;
+        } else if (nextHeading < 0) {
+            nextHeading += 360;
         }
 
-        vehicleState.command =              CommandSetHeading;
-        vehicleState.fact =                 vehicle->heading();
-        vehicleState.targetValueWaitSecs =  10;
-        vehicleState.targetValue =          nextHeading;
-        vehicleState.targetVariance =       1;
+        vehicleState.command                = CommandSetHeading;
+        vehicleState.fact                   = vehicle->heading();
+        vehicleState.targetValueWaitMsecs   = 10 * 1000;
+        vehicleState.targetValue            = nextHeading;
+        vehicleState.targetVariance         = 1;
         _vehicleStates.append(vehicleState);
 
-        vehicleState.command =              CommandWaitForHeartbeats;
-        vehicleState.fact =                 nullptr;
-        vehicleState.targetValueWaitSecs =  30; // Should be enough for 3 k=3 groupings at 2 second intra-pulse interval
+        vehicleState.command                = CommandWaitForHeartbeats;
+        vehicleState.fact                   = nullptr;
+        vehicleState.targetValueWaitMsecs   = rotationCaptureWaitMsecs;
         _vehicleStates.append(vehicleState);
 
-        nextHeading += headingIncrement;
+        nextHeading += sliceDegrees;
     }
 
     _captureRotationPulses  = true;
@@ -465,8 +482,6 @@ void CustomPlugin::stopDetection(void)
 
     stopDetectionInfo.header.command = COMMAND_ID_STOP_DETECTION;
     _sendTunnelCommand((uint8_t*)&stopDetectionInfo, sizeof(stopDetectionInfo));
-
-    _clearDetectorHeartbeats();
 }
 
 void CustomPlugin::rawCapture(void)
@@ -489,7 +504,7 @@ void CustomPlugin::sendTags(void)
     }
     _nextTagToSend = _tagInfoList.begin();
 
-    _setupDetectorHeartbeats();
+    _detectorsHeartbeatTracker->setupFromTags(_tagInfoList);
 
     StartTagsInfo_t startTagsInfo;
 
@@ -631,14 +646,8 @@ void CustomPlugin::_rotateVehicle(Vehicle* vehicle, double headingDegrees)
 
 void CustomPlugin::_setupDelayForHeartbeats(void)
 {
-    // Start all heartbeat counts at zero
-    for (auto& info: _detectorHeartbeatInfoMap) {
-        info.heartbeatCount = 0;
-    }
-
-    // Clear previous rotation pulse info
+    _detectorsHeartbeatTracker->startHeartbeatWait();
     _rotationPulseInfoMap.clear();
-
     _rgPulseValues.clear();
 }
 
@@ -654,7 +663,7 @@ void CustomPlugin::_advanceStateMachine(void)
     if (_vehicleStateIndex > 0) {
         const VehicleState_t& previousState = _vehicleStates[_vehicleStateIndex];
 
-        if (previousState.targetValueWaitSecs) {
+        if (previousState.targetValueWaitMsecs) {
             _vehicleStateTimeoutTimer.stop();
             if (previousState.fact) {
                 disconnect(previousState.fact, &Fact::rawValueChanged, this, &CustomPlugin::_vehicleStateRawValueChanged);
@@ -696,13 +705,13 @@ void CustomPlugin::_advanceStateMachine(void)
         _rotateVehicle(vehicle, currentState.targetValue);
         break;
     case CommandWaitForHeartbeats:
-        _say(QStringLiteral("Collecting data for %1 seconds max").arg(currentState.targetValueWaitSecs));
+        _say(QStringLiteral("Collecting data for %1 seconds max").arg(currentState.targetValueWaitMsecs / 1000));
         _setupDelayForHeartbeats();
         break;
     }
 
-    if (currentState.targetValueWaitSecs) {
-        _vehicleStateTimeoutTimer.setInterval(currentState.targetValueWaitSecs * 1000);
+    if (currentState.targetValueWaitMsecs) {
+        _vehicleStateTimeoutTimer.setInterval(currentState.targetValueWaitMsecs);
         _vehicleStateTimeoutTimer.start();
         if (currentState.fact) {
             connect(currentState.fact, &Fact::rawValueChanged, this, &CustomPlugin::_vehicleStateRawValueChanged);
@@ -714,12 +723,13 @@ void CustomPlugin::_advanceStateMachine(void)
 // This will advance the state machine if the value reaches the target value
 void CustomPlugin::_vehicleStateRawValueChanged(QVariant rawValue)
 {
+    Fact* fact = dynamic_cast<Fact*>(sender());
+    if (!fact) {
+        qCritical() << "Dynamic cast failed!";
+        return;
+    }
+
     if (!_flightStateMachineActive) {
-        Fact* fact = dynamic_cast<Fact*>(sender());
-        if (!fact) {
-            qWarning() << "Dynamic cast failed!";
-            return;
-        }
         disconnect(fact, &Fact::rawValueChanged, this, &CustomPlugin::_vehicleStateRawValueChanged);
     }
 
@@ -729,6 +739,7 @@ void CustomPlugin::_vehicleStateRawValueChanged(QVariant rawValue)
 
     if (qAbs(rawValue.toDouble() - currentState.targetValue) <= currentState.targetVariance) {
         // Target value reached
+        disconnect(fact, &Fact::rawValueChanged, this, &CustomPlugin::_vehicleStateRawValueChanged);
         _advanceStateMachine();
     }
 }
@@ -757,7 +768,7 @@ void CustomPlugin::_rotationDelayComplete(void)
         }
     }
     qCDebug(CustomPluginLog) << "_rotationDelayComplete: max snr" << maxSNR;
-    _rgAngleStrengths.last()[_nextSlice] = maxSNR;
+    _rgAngleStrengths.last()[_currentSlice] = maxSNR;
 
     // Adjust the angle ratios to this new information
     maxSNR = 0;
@@ -775,17 +786,18 @@ void CustomPlugin::_rotationDelayComplete(void)
     emit angleRatiosChanged();
 
     // Advance to next slice
-    if (++_nextSlice >= _cSlice) {
-        _nextSlice = 0;
+    if (++_currentSlice >= _cSlice) {
+        _currentSlice = 0;
     }
 
     _advanceStateMachine();
 }
 
-void CustomPlugin::_vehicleStateWaitFailed(void)
+void CustomPlugin::_vehicleStateTimeout(void)
 {
     if (_vehicleStates[_vehicleStateIndex].command == CommandWaitForHeartbeats) {
-        _say("Failed to wait for pulses.");
+        _rotationDelayComplete();
+        return;
     } else {
         _say("Failed to reach target.");
     }
@@ -876,7 +888,9 @@ void CustomPlugin::_resetStateAndRTL(void)
         }
     }
 
+#if 0
     _setRTLFlightModeAndValidate(vehicle);
+#endif    
 
     _updateFlightMachineActive(false);
 
@@ -1026,85 +1040,6 @@ void CustomPlugin::downloadLogs()
 
 void CustomPlugin::_controllerHeartbeatFailed()
 {
-    _controllerHeartbeat = false;
-    emit controllerHeartbeatChanged();
-}
-
-void CustomPlugin::_clearDetectorHeartbeats(void)
-{
-    for (auto detectorHeartbeatInfo: _detectorHeartbeatInfoMap) {
-        delete detectorHeartbeatInfo.pTimer;
-    }
-    _detectorHeartbeatInfoMap.clear();
-    _detectorHeartbeats.clear();
-
-    emit detectorHeartbeatsChanged();
-}
-
-void CustomPlugin::_setupDetectorHeartbeatInfo(DetectorHeartbeatInfo_t& detectorHeartbeatInfo, ExtendedTagInfo_t& extTagInfo, bool rate1)
-{
-    uint32_t k = _customSettings->k()->rawValue().toUInt();
-
-    detectorHeartbeatInfo.heartbeatTimerInterval    = (k + 1) * (rate1 ?  extTagInfo.tagInfo.intra_pulse1_msecs : extTagInfo.tagInfo.intra_pulse2_msecs);
-    detectorHeartbeatInfo.pTimer                    = new QTimer(this);
-    detectorHeartbeatInfo.pTimer->setSingleShot(true);
-    detectorHeartbeatInfo.pTimer->setInterval(detectorHeartbeatInfo.heartbeatTimerInterval);
-    detectorHeartbeatInfo.pTimer->callOnTimeout([this, &detectorHeartbeatInfo]() {
-        detectorHeartbeatInfo.heartbeat = false;
-        _rebuildDetectorHeartbeats();
-    });
-}
-
-void CustomPlugin::_setupDetectorHeartbeats(void)
-{
-    _clearDetectorHeartbeats();
-
-    for (auto& extTagInfo: _tagInfoList) {
-        _setupDetectorHeartbeatInfo(_detectorHeartbeatInfoMap[extTagInfo.tagInfo.id], extTagInfo, true /* rate1 */);
-
-        if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
-            _setupDetectorHeartbeatInfo(_detectorHeartbeatInfoMap[extTagInfo.tagInfo.id + 1], extTagInfo, false /* rate1 */);
-        }
-    }
-
-    _rebuildDetectorHeartbeats();
-}
-
-void  CustomPlugin::_updateDetectorHeartbeat(int tagId)
-{
-    // Rebuild heartbeat status list
-    DetectorHeartbeatInfo_t& detectorHeartbeatInfo  = _detectorHeartbeatInfoMap[tagId];
-    detectorHeartbeatInfo.heartbeat                 = true;
-    detectorHeartbeatInfo.heartbeatCount++;
-    detectorHeartbeatInfo.pTimer->start(detectorHeartbeatInfo.heartbeatTimerInterval);
-    _rebuildDetectorHeartbeats();
-
-    // If we are waiting on heartbeats for a rotation pause, check whether we've seen them all
-    if (_flightStateMachineActive && _vehicleStates[_vehicleStateIndex].command == CommandWaitForHeartbeats) {
-        for (auto& info: _detectorHeartbeatInfoMap) {
-            if (info.heartbeatCount < 3) {
-                return;
-            }
-        }
-
-        // We have seen all the heartbeats we were waiting for, we can advance the state machine
-        _rotationDelayComplete();
-    }
-}
-
-void CustomPlugin::_rebuildDetectorHeartbeats(void)
-{
-    _detectorHeartbeats.clear();
-
-    for (auto& extTagInfo: _tagInfoList) {
-        DetectorHeartbeatInfo_t& detectorHeartbeatInfo = _detectorHeartbeatInfoMap[extTagInfo.tagInfo.id];
-        _detectorHeartbeats.append(QVariant::fromValue(detectorHeartbeatInfo.heartbeat));
-
-        if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
-            DetectorHeartbeatInfo_t& detectorHeartbeatInfo = _detectorHeartbeatInfoMap[extTagInfo.tagInfo.id + 1];
-            _detectorHeartbeats.append(QVariant::fromValue(detectorHeartbeatInfo.heartbeat));
-        }
-    }
-
-    emit detectorHeartbeatsChanged();
+    _controllerLostHeartbeat = true;
+    emit controllerLostHeartbeatChanged();
 }

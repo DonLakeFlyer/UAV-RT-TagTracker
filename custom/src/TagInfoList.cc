@@ -448,6 +448,25 @@ QString TagInfoList::_tagInfoFilePath()
 
 }
 
+uint32_t TagInfoList::maxIntraPulseMsecs(uint32_t& k)
+{
+    uint32_t maxIntraPulseMsecs = 0;
+
+    k = 0;
+    for (auto tagInfo : *this) {
+        if (tagInfo.tagInfo.intra_pulse1_msecs >= maxIntraPulseMsecs) {
+            maxIntraPulseMsecs = tagInfo.tagInfo.intra_pulse1_msecs;
+            k = std::max(k, tagInfo.tagInfo.k);
+        }
+        if (tagInfo.tagInfo.intra_pulse2_msecs >= maxIntraPulseMsecs) {
+            maxIntraPulseMsecs = tagInfo.tagInfo.intra_pulse2_msecs;
+            k = std::max(k, tagInfo.tagInfo.k);
+        }
+    }
+
+    return maxIntraPulseMsecs;
+}
+
 #if 0
 bool TagInfoList::_generateThresholds()
 {

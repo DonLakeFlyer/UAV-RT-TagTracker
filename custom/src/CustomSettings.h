@@ -27,4 +27,6 @@ public:
     DEFINE_SETTINGFACT(falseAlarmProbability)
     DEFINE_SETTINGFACT(sdrType)
     DEFINE_SETTINGFACT(showPulseOnMap)
+    DEFINE_SETTINGFACT(antennaOffset)
+    DEFINE_SETTINGFACT(rotationKWaitCount)
 };

@@ -11,6 +11,7 @@
 #include "TunnelProtocol.h"
 #include "TagInfoList.h"
 #include "PulseInfo.h"
+#include "DetectorsHeartbeatTracker.h"
 
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
@@ -35,14 +36,16 @@ public:
     CustomPlugin(QGCApplication* app, QGCToolbox* toolbox);
     ~CustomPlugin();
 
-    Q_PROPERTY(CustomSettings*  customSettings      READ    customSettings          CONSTANT)
-    Q_PROPERTY(QList<QList<double>> angleRatios     MEMBER  _rgAngleRatios          NOTIFY angleRatiosChanged)
-    Q_PROPERTY(bool             flightMachineActive MEMBER  _flightStateMachineActive    NOTIFY flightMachineActiveChanged)
-    Q_PROPERTY(QVariantList     pulseLog            MEMBER  _pulseLog               NOTIFY pulseLogChanged)
-    Q_PROPERTY(bool             controllerHeartbeat MEMBER  _controllerHeartbeat    NOTIFY controllerHeartbeatChanged)
-    Q_PROPERTY(QVariantList     detectorHeartbeats  MEMBER  _detectorHeartbeats     NOTIFY detectorHeartbeatsChanged)
+    Q_PROPERTY(CustomSettings*  customSettings          READ    customSettings              CONSTANT)
+    Q_PROPERTY(QList<QList<double>> angleRatios         MEMBER  _rgAngleRatios              NOTIFY angleRatiosChanged)
+    Q_PROPERTY(bool             flightMachineActive     MEMBER  _flightStateMachineActive   NOTIFY flightMachineActiveChanged)
+    Q_PROPERTY(QVariantList     pulseLog                MEMBER  _pulseLog                   NOTIFY pulseLogChanged)
+    Q_PROPERTY(bool             controllerLostHeartbeat MEMBER  _controllerLostHeartbeat    NOTIFY controllerLostHeartbeatChanged)
+    Q_PROPERTY(QVariantList     detectorsLostHeartbeat  READ    detectorsLostHeartbeat      NOTIFY detectorsLostHeartbeatChanged)
 
     CustomSettings* customSettings() { return _customSettings; }
+
+    QVariantList detectorsLostHeartbeat() { return _detectorsHeartbeatTracker->detectorsLostHeartbeatList(); }
 
     Q_INVOKABLE void startRotation      (void);
     Q_INVOKABLE void cancelAndReturn    (void);
@@ -63,17 +66,17 @@ public:
     void setToolbox(QGCToolbox* toolbox) final;
 
 signals:
-    void angleRatiosChanged         (void);
-    void flightMachineActiveChanged (bool flightMachineActive);
-    void pulseInfoListsChanged      (void);
-    void pulseLogChanged            ();
-    void controllerHeartbeatChanged ();
-    void detectorHeartbeatsChanged  ();
+    void angleRatiosChanged             (void);
+    void flightMachineActiveChanged     (bool flightMachineActive);
+    void pulseInfoListsChanged          (void);
+    void pulseLogChanged                ();
+    void controllerLostHeartbeatChanged ();
+    void detectorsLostHeartbeatChanged  ();
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
     void _advanceStateMachine           (void);
-    void _vehicleStateWaitFailed        (void);
+    void _vehicleStateTimeout        (void);
     void _updateFlightMachineActive     (bool flightMachineActive);
     void _mavCommandResult              (int vehicleId, int component, int command, int result, bool noResponseFromVehicle);
     void _tunnelCommandAckFailed        (void);
@@ -91,17 +94,17 @@ private:
     typedef struct VehicleState_t {
         VehicleStateCommand_t   command;
         Fact*                   fact;
-        int                     targetValueWaitSecs;
+        int                     targetValueWaitMsecs;
         double                  targetValue;
         double                  targetVariance;
     } VehicleState_t;
 
-    typedef struct DetectorHeartbeatInfo_t {
-        bool    heartbeat               { false };
-        uint    heartbeatTimerInterval  { 0 };
-        QTimer* pTimer                  { NULL };
-        uint    heartbeatCount          { 0 };
-    } DetectorHeartbeatInfo_t;
+    typedef struct HeartbeatInfo_t {
+        bool    heartbeatLost               { true };
+        uint    heartbeatTimerInterval      { 0 };
+        QTimer  timer;
+        uint    rotationDelayHeartbeatCount { 0 };
+    } HeartbeatInfo_t;
 
     void    _handleTunnelCommandAck     (const mavlink_tunnel_t& tunnel);
     void    _handleTunnelPulse          (const mavlink_tunnel_t& tunnel);
@@ -122,12 +125,6 @@ private:
     void    _sendNextTag                (void);
     void    _sendEndTags                (void);
     void    _resetPulseLog              (void);
-    void    _clearDetectorHeartbeats    (void);
-    void    _setupDetectorHeartbeats    (void);
-    void    _updateDetectorHeartbeat    (int tagId);
-    void    _rebuildDetectorHeartbeats  (void);
-    void    _setupDetectorHeartbeatInfo (DetectorHeartbeatInfo_t& detectorHeartbeatInfo, ExtendedTagInfo_t& extTagInfo, bool rate1);
-    void    _resetRotationPauseCounts   (void);
     void    _setupDelayForHeartbeats    (void);
     void    _rotationDelayComplete      (void);
     QString _csvLogFilePath             (void);
@@ -147,9 +144,7 @@ private:
     QList<QList<double>>    _rgAngleStrengths;
     QList<QList<double>>    _rgAngleRatios;
     bool                    _flightStateMachineActive;
-    double                  _firstHeading;
-    int                     _firstSlice;
-    int                     _nextSlice;
+    int                     _currentSlice;
     int                     _cSlice;
     int                     _detectionStatus = -1;
     bool                    _retryRotation = false;
@@ -171,11 +166,10 @@ private:
     TagInfoList             _tagInfoList;
     TagInfoList::const_iterator _nextTagToSend;
 
-    bool                    _controllerHeartbeat { false };
-    QTimer                  _controllerHeartbeatTimer;
+    DetectorsHeartbeatTracker*  _detectorsHeartbeatTracker = nullptr;
 
-    QVariantList                            _detectorHeartbeats;
-    QMap<uint32_t, DetectorHeartbeatInfo_t> _detectorHeartbeatInfoMap;
+    bool                    _controllerLostHeartbeat { false };
+    QTimer                  _controllerHeartbeatTimer;
 
     bool                                               _captureRotationPulses { false };
     QMap<uint32_t, QList<TunnelProtocol::PulseInfo_t>> _rotationPulseInfoMap;
