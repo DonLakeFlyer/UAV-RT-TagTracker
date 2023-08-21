@@ -95,6 +95,7 @@ SOURCES += \
     $$PWD/src/CustomPX4FirmwarePlugin.cc \
     $$PWD/src/CustomArduCopterFirmwarePlugin.cc \
     $$PWD/src/CustomSettings.cc \
+    $$PWD/src/DetectorsHeartbeatTracker.cc \
     $$PWD/src/TagInfoList.cc \
     $$PWD/src/PulseInfo.cc \
     $$PWD/src/PulseInfoList.cc \
@@ -106,6 +107,7 @@ HEADERS += \
     $$PWD/src/CustomPX4FirmwarePlugin.h \
     $$PWD/src/CustomArduCopterFirmwarePlugin.h \
     $$PWD/src/CustomSettings.h \
+    $$PWD/src/DetectorsHeartbeatTracker.h \
     $$PWD/src/TagInfoList.h \
     $$PWD/src/PulseInfo.h \
     $$PWD/src/PulseInfoList.h \

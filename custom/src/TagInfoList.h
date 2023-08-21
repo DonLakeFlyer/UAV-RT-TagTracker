@@ -18,10 +18,11 @@ class TagInfoList : public QList<ExtendedTagInfo_t>
 public:
     TagInfoList();
 
-    void                checkForTagFile (void);
-    bool                loadTags        (uint32_t sdrType);
-    ExtendedTagInfo_t   getTagInfo      (uint32_t tag_id, bool& exists);
-    uint32_t            radioCenterHz   () { return _radioCenterHz; }
+    void                checkForTagFile     (void);
+    bool                loadTags            (uint32_t sdrType);
+    ExtendedTagInfo_t   getTagInfo          (uint32_t tag_id, bool& exists);
+    uint32_t            radioCenterHz       () { return _radioCenterHz; }
+    uint32_t            maxIntraPulseMsecs  (uint32_t& k);
 
 private:
     void    _setupTunerVars     (uint32_t sdrType);

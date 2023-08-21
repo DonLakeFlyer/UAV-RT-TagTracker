@@ -18,6 +18,12 @@
     "default":      3
 },
 {
+    "name":         "rotationKWaitCount",
+    "shortDesc":    "Number f K groups to wait for at each rotation pause",
+    "type":         "UInt32",
+    "default":      2
+},
+{
     "name":             "falseAlarmProbability",
     "shortDesc":        "Detector false alarm probability in percent. Example: 1 percent = 1.0",
     "type":             "double",
@@ -52,6 +58,16 @@
     "min":              0,
     "decimalPlaces":    1,
     "default":          60
+},
+{
+    "name":             "antennaOffset",
+    "shortDesc":        "Antenna rotation offset from vehicle heading",
+    "type":             "double",
+    "min":              0,
+    "max":              360,
+    "decimalPlaces":    0,
+    "units":            "deg",
+    "default":          0
 }
 ]
 }

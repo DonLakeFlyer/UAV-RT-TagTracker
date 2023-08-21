@@ -37,16 +37,16 @@ Item {
         Rectangle {
             height: parent.height
             width:  ScreenTools.defaultFontPixelWidth * 3
-            color:  QGroundControl.corePlugin.controllerHeartbeat ? "green" : "red" 
+            color:  QGroundControl.corePlugin.controllerLostHeartbeat ? "red" : "green" 
         }
 
         Repeater {
-            model: QGroundControl.corePlugin.detectorHeartbeats
+            model: QGroundControl.corePlugin.detectorsLostHeartbeat
 
             Rectangle {
                 height: parent.height
                 width:  ScreenTools.defaultFontPixelWidth
-                color:  modelData ? "green" : "red" 
+                color:  modelData ? "red" : "green" 
             }
         }
     }

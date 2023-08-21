@@ -51,6 +51,7 @@ Rectangle {
                     _customSettings.k,
                     _customSettings.falseAlarmProbability,
                     _customSettings.maxPulse,
+                    _customSettings.antennaOffset,
                 ]
             }
 
