@@ -9,14 +9,18 @@
 #include "TunnelProtocol.h"
 #include "PulseInfoList.h"
 #include "FTPManager.h"
+#include "DetectorInfoListModel.h"
 
 #include <QDebug>
 #include <QPointF>
 #include <QLineF>
+#include <QQmlEngine>
 
 using namespace TunnelProtocol;
 
 QGC_LOGGING_CATEGORY(CustomPluginLog, "CustomPluginLog")
+
+Q_DECLARE_METATYPE(CustomPlugin::ControllerStatus)
 
 CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
 #ifdef HERELINK_BUILD
@@ -31,6 +35,10 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _missedPulseCount     (0)    
 {
     static_assert(TunnelProtocolValidateSizes, "TunnelProtocolValidateSizes failed");
+
+    qmlRegisterUncreatableType<CustomPlugin>("QGroundControl", 1, 0, "CustomPlugin", "Reference only");
+
+    _setupDetectorInfoListModel();
 
     _vehicleStateTimeoutTimer.setSingleShot(true);
     _tunnelCommandAckTimer.setSingleShot(true);
@@ -59,9 +67,6 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
 
     _customSettings             = new CustomSettings            (nullptr);
     _customOptions              = new CustomOptions             (this, nullptr);
-    _detectorsHeartbeatTracker  = new DetectorsHeartbeatTracker (this);
-
-    connect(_detectorsHeartbeatTracker, &DetectorsHeartbeatTracker::detectorsLostHeartbeatChanged, this, &CustomPlugin::detectorsLostHeartbeatChanged);
 
     _tagInfoList.checkForTagFile();
 
@@ -126,13 +131,17 @@ void CustomPlugin::_handleTunnelHeartbeat(const mavlink_tunnel_t& tunnel)
     memcpy(&heartbeat, tunnel.payload, sizeof(heartbeat));
 
     switch (heartbeat.system_id) {
-    case HEARTBEAT_SYSTEM_MAVLINKCONTROLLER:
-        qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController" << counter++;
+    case HEARTBEAT_SYSTEM_ID_MAVLINKCONTROLLER:
+        qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController - counter:status" << counter++ << heartbeat.status;
         _controllerLostHeartbeat = false;
         emit controllerLostHeartbeatChanged();
         _controllerHeartbeatTimer.start();
+        if (_controllerStatus != heartbeat.status) {
+            _controllerStatus = (ControllerStatus)heartbeat.status;
+            emit controllerStatusChanged();
+        }
         break;
-    case HEARTBEAT_SYSTEM_CHANNELIZER:
+    case HEARTBEAT_SYSTEM_ID_CHANNELIZER:
         qCDebug(CustomPluginLog) << "HEARTBEAT from Channelizer";
         break;
     }
@@ -156,7 +165,7 @@ void CustomPlugin::_handleTunnelCommandAck(const mavlink_tunnel_t& tunnel)
                 _sendNextTag();
                 break;
             case COMMAND_ID_END_TAGS:
-                _resetPulseLog();
+                _setupDetectorInfoListModel();
                 break;
             case COMMAND_ID_START_DETECTION:
                 _csvStartFullPulseLog();
@@ -187,11 +196,13 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
     }
 
     if (_tagInfoList.empty()) {
-        // Vehicle sending still sending pulses but QGC has not yet loaded any.
+        // Vehicle still sending pulses but QGC has not yet loaded any.
         // This can happen if you restart QGC while the vehicle is still running.
         qCDebug(CustomPluginLog) << "No tags loaded, ignoring pulse";
         return;
     }
+
+    _detectorInfoListModel->handleTunnelPulse(tunnel);
 
     PulseInfo_t pulseInfo;
     memcpy(&pulseInfo, tunnel.payload, sizeof(pulseInfo));
@@ -201,47 +212,15 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         bool extTagInfoExists   = false;
         auto evenTagId          = pulseInfo.tag_id - (pulseInfo.tag_id % 2);
         auto extTagInfo         = _tagInfoList.getTagInfo(evenTagId, extTagInfoExists);
-        bool rate2Tag           = pulseInfo.tag_id % 2;
 
         if (!extTagInfoExists) {
             qWarning() << "_handleTunnelPulse: Received pulse for unknown tag_id" << pulseInfo.tag_id;
             return;
         }
 
-        QString tagRateChar(rate2Tag ? extTagInfo.ip_msecs_2_id : extTagInfo.ip_msecs_1_id);
-
-        if (isDetectorHeartbeat) {
-            tagRateChar = "H" + tagRateChar;
-            qCDebug(CustomPluginLog) << "HEARTBEAT from Detector" << pulseInfo.tag_id;
-
-            _detectorsHeartbeatTracker->heartbeatReceived(pulseInfo.tag_id);
-        } else {
-            qCDebug(CustomPluginLog) << //qSetRealNumberPrecision(6) <<
-                                        "CONFIRMED tag_id:frequency_hz:seq_ctr:snr:noise_psd" <<
-                                        pulseInfo.tag_id <<
-                                        pulseInfo.frequency_hz <<
-                                        pulseInfo.group_seq_counter <<
-                                        pulseInfo.snr <<
-                                        pulseInfo.noise_psd;
+        if (!isDetectorHeartbeat) {
             _csvLogPulse(_csvFullPulseLogFile, pulseInfo);
             _csvLogPulse(_csvRotationPulseLogFile, pulseInfo);
-
-            _rotationPulseInfoMap[pulseInfo.tag_id].append(pulseInfo);
-
-            // Find the tag in the pulse log
-            bool foundTag = false;
-            for (int i=0; i<_pulseLog.count(); i++) {
-                auto listModel = qvariant_cast<PulseInfoList*>(_pulseLog[i]);
-                if (listModel->tagId() == evenTagId) {
-                    auto pInfo = new PulseInfo(pulseInfo, extTagInfo.name, tagRateChar);
-                    listModel->insert(0, pInfo);
-                    foundTag = true;
-                    break;
-                }
-            }
-            if (!foundTag) {
-                qWarning() << "_handleTunnelPulse: Unable to find tag in pulse log" << evenTagId;
-            }
 
             // Add pulse to map
             if (_customSettings->showPulseOnMap()->rawValue().toBool() && pulseInfo.snr != 0) {
@@ -397,7 +376,6 @@ void CustomPlugin::startRotation(void)
     _updateFlightMachineActive(true);
 
     // Setup new rotation data
-    _rgPulseValues.clear();
     _rgAngleStrengths.append(QList<double>());
     _rgAngleRatios.append(QList<double>());
 
@@ -457,7 +435,6 @@ void CustomPlugin::startRotation(void)
         nextHeading += sliceDegrees;
     }
 
-    _captureRotationPulses  = true;
     _vehicleStateIndex      = -1;
     _retryRotation          = false;
     _advanceStateMachine();
@@ -503,8 +480,6 @@ void CustomPlugin::sendTags(void)
         return;
     }
     _nextTagToSend = _tagInfoList.begin();
-
-    _detectorsHeartbeatTracker->setupFromTags(_tagInfoList);
 
     StartTagsInfo_t startTagsInfo;
 
@@ -643,12 +618,10 @@ void CustomPlugin::_rotateVehicle(Vehicle* vehicle, double headingDegrees)
     }
 }
 
-
-void CustomPlugin::_setupDelayForHeartbeats(void)
+void CustomPlugin::_setupDelayForSteadyCapture(void)
 {
-    _detectorsHeartbeatTracker->startHeartbeatWait();
-    _rotationPulseInfoMap.clear();
-    _rgPulseValues.clear();
+    _detectorInfoListModel->resetMaxSNR();
+    _detectorInfoListModel->resetPulseGroupCount();
 }
 
 void CustomPlugin::_advanceStateMachine(void)
@@ -670,7 +643,6 @@ void CustomPlugin::_advanceStateMachine(void)
             }
         }
 
-        _rotationPulseInfoMap.clear();
         _retryRotation = false;
     }
 
@@ -706,7 +678,7 @@ void CustomPlugin::_advanceStateMachine(void)
         break;
     case CommandWaitForHeartbeats:
         _say(QStringLiteral("Collecting data for %1 seconds max").arg(currentState.targetValueWaitMsecs / 1000));
-        _setupDelayForHeartbeats();
+        _setupDelayForSteadyCapture();
         break;
     }
 
@@ -758,15 +730,7 @@ int CustomPlugin::_rawPulseToPct(double rawPulse)
 
 void CustomPlugin::_rotationDelayComplete(void)
 {
-    // Find the strongest pulse in the current slice
-    double maxSNR = 0;
-    for (const auto& pulseList: _rotationPulseInfoMap) {
-        for (const auto& pulseInfo: pulseList) {
-            if (pulseInfo.snr > maxSNR) {
-                maxSNR = pulseInfo.snr;
-            }
-        }
-    }
+    double maxSNR = _detectorInfoListModel->maxSNR();
     qCDebug(CustomPluginLog) << "_rotationDelayComplete: max snr" << maxSNR;
     _rgAngleStrengths.last()[_currentSlice] = maxSNR;
 
@@ -994,18 +958,6 @@ QmlObjectListModel* CustomPlugin::customMapItems(void)
     return &_customMapItems;
 }
 
-void CustomPlugin::_resetPulseLog(void)
-{
-    _pulseLog.clear();
-
-    for (auto& extTagInfo: _tagInfoList) {
-        auto listModel = new PulseInfoList(extTagInfo.tagInfo.id, extTagInfo.name, extTagInfo.tagInfo.frequency_hz, this);
-        _pulseLog.append(QVariant::fromValue(listModel));
-    }
-
-    emit pulseLogChanged();
-}
-
 void CustomPlugin::_ftpDownloadComplete(const QString& file, const QString& errorMsg)
 {
     qgcApp()->showAppMessage(QString("Download Complete %1").arg(errorMsg), file);
@@ -1042,4 +994,11 @@ void CustomPlugin::_controllerHeartbeatFailed()
 {
     _controllerLostHeartbeat = true;
     emit controllerLostHeartbeatChanged();
+}
+
+void CustomPlugin::_setupDetectorInfoListModel()
+{
+    delete _detectorInfoListModel;
+    _detectorInfoListModel = new DetectorInfoListModel(_tagInfoList, this);
+    emit detectorInfoListChanged();
 }

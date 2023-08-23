@@ -10,14 +10,17 @@
 import QGroundControl               1.0
 import QGroundControl.FlightDisplay 1.0
 
+// The action handles:
+//  Send Tags
+//  Start/Stop Detection
 GuidedToolStripAction {
-    text:       _guidedController.sendTagsTitle
+    text:       _guidedController.startDetectionTitle
     iconSource: "/res/action.svg"
     visible:    true
     enabled:    QGroundControl.multiVehicleManager.activeVehicle && actionEnabled
-    actionID:   _guidedController.actionSendTags
+    actionID:   _guidedController.actionStartDetection
 
-    property bool actionEnabled: true
+    property bool actionEnabled: false
     property var controllerStatus: QGroundControl.corePlugin.controllerStatus
 
     onControllerStatusChanged: _update(controllerStatus)
@@ -26,11 +29,23 @@ GuidedToolStripAction {
         switch (controllerStatus) {
         case CustomPlugin.ControllerStatusIdle:
         case CustomPlugin.ControllerStatusReceivingTags:
-        case CustomPlugin.ControllerStatusHasTags:
-            actionEnabled = true
+            text            = _guidedController.startDetectionTitle
+            actionEnabled   = false
             break
-        default:
-            actionEnabled = false
+        case CustomPlugin.ControllerStatusHasTags:
+            text            = _guidedController.startDetectionTitle
+            actionEnabled   = true
+            actionID        = _guidedController.actionStartDetection
+            break
+        case CustomPlugin.ControllerStatusDetecting:
+            text            = _guidedController.stopDetectionTitle
+            actionEnabled   = true
+            actionID        = _guidedController.actionStopDetection
+            break
+        case CustomPlugin.ControllerStatusCapture:
+            text            = _guidedController.startDetectionTitle
+            actionEnabled   = false
+            break
         }
     }
 }

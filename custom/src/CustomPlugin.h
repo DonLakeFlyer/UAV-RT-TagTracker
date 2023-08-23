@@ -11,7 +11,7 @@
 #include "TunnelProtocol.h"
 #include "TagInfoList.h"
 #include "PulseInfo.h"
-#include "DetectorsHeartbeatTracker.h"
+#include "DetectorInfoListModel.h"
 
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
@@ -38,16 +38,25 @@ public:
     CustomPlugin(QGCApplication* app, QGCToolbox* toolbox);
     ~CustomPlugin();
 
-    Q_PROPERTY(CustomSettings*  customSettings          READ    customSettings              CONSTANT)
-    Q_PROPERTY(QList<QList<double>> angleRatios         MEMBER  _rgAngleRatios              NOTIFY angleRatiosChanged)
-    Q_PROPERTY(bool             flightMachineActive     MEMBER  _flightStateMachineActive   NOTIFY flightMachineActiveChanged)
-    Q_PROPERTY(QVariantList     pulseLog                MEMBER  _pulseLog                   NOTIFY pulseLogChanged)
-    Q_PROPERTY(bool             controllerLostHeartbeat MEMBER  _controllerLostHeartbeat    NOTIFY controllerLostHeartbeatChanged)
-    Q_PROPERTY(QVariantList     detectorsLostHeartbeat  READ    detectorsLostHeartbeat      NOTIFY detectorsLostHeartbeatChanged)
+    // IMPORTANT: This enum must match the heartbeat status values in TunnelProtocol.h
+    Q_ENUMS(ControllerStatus)
+    enum ControllerStatus {
+        ControllerStatusIdle           = HEARTBEAT_STATUS_IDLE,
+        ControllerStatusReceivingTags  = HEARTBEAT_STATUS_RECEIVING_TAGS,
+        ControllerStatusHasTags        = HEARTBEAT_STATUS_HAS_TAGS,
+        ControllerStatusDetecting      = HEARTBEAT_STATUS_DETECTING,
+        ControllerStatusCapture        = HEARTBEAT_STATUS_CAPTURE
+    };
 
-    CustomSettings* customSettings() { return _customSettings; }
+    Q_PROPERTY(CustomSettings*      customSettings          READ    customSettings              CONSTANT)
+    Q_PROPERTY(QList<QList<double>> angleRatios             MEMBER  _rgAngleRatios              NOTIFY angleRatiosChanged)
+    Q_PROPERTY(bool                 flightMachineActive     MEMBER  _flightStateMachineActive   NOTIFY flightMachineActiveChanged)
+    Q_PROPERTY(bool                 controllerLostHeartbeat MEMBER  _controllerLostHeartbeat    NOTIFY controllerLostHeartbeatChanged)
+    Q_PROPERTY(int                  controllerStatus        MEMBER  _controllerStatus           NOTIFY controllerStatusChanged)
+    Q_PROPERTY(QmlObjectListModel*  detectorInfoList        READ    detectorInfoList            NOTIFY detectorInfoListChanged)
 
-    QVariantList detectorsLostHeartbeat() { return _detectorsHeartbeatTracker->detectorsLostHeartbeatList(); }
+    CustomSettings*     customSettings  () { return _customSettings; }
+    QmlObjectListModel* detectorInfoList() { return dynamic_cast<QmlObjectListModel*>(_detectorInfoListModel); }
 
     Q_INVOKABLE void startRotation      (void);
     Q_INVOKABLE void cancelAndReturn    (void);
@@ -71,9 +80,9 @@ signals:
     void angleRatiosChanged             (void);
     void flightMachineActiveChanged     (bool flightMachineActive);
     void pulseInfoListsChanged          (void);
-    void pulseLogChanged                ();
     void controllerLostHeartbeatChanged ();
-    void detectorsLostHeartbeatChanged  ();
+    void controllerStatusChanged        ();
+    void detectorInfoListChanged        ();
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
@@ -126,8 +135,7 @@ private:
     bool    _pulseConfirmed             (void) { return _lastPulseInfo.confirmed_status; }
     void    _sendNextTag                (void);
     void    _sendEndTags                (void);
-    void    _resetPulseLog              (void);
-    void    _setupDelayForHeartbeats    (void);
+    void    _setupDelayForSteadyCapture    (void);
     void    _rotationDelayComplete      (void);
     QString _csvLogFilePath             (void);
     void    _csvStartFullPulseLog       (void);
@@ -137,19 +145,20 @@ private:
     void    _csvStopRotationPulseLog    (void);
     void    _csvLogPulse                (QFile& csvFile, const TunnelProtocol::PulseInfo_t& pulseInfo);
     void    _csvLogRotationStartStop    (QFile& csvFile, bool startRotation);
+    void    _setupDetectorInfoListModel      ();
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
     int                     _vehicleStateIndex;
     QList<VehicleState_t>   _vehicleStates;
-    QList<double>           _rgPulseValues;
     QList<QList<double>>    _rgAngleStrengths;
     QList<QList<double>>    _rgAngleRatios;
     bool                    _flightStateMachineActive;
     int                     _currentSlice;
     int                     _cSlice;
-    int                     _detectionStatus = -1;
-    bool                    _retryRotation = false;
+    int                     _detectionStatus    = -1;
+    bool                    _retryRotation      = false;
+    int                     _controllerStatus   = ControllerStatusIdle;
 
     QTimer                  _vehicleStateTimeoutTimer;
     QTimer                  _tunnelCommandAckTimer;
@@ -165,18 +174,13 @@ private:
     int                     _csvRotationCount = 1;
     TunnelProtocol::PulseInfo_t _lastPulseInfo;
 
+    DetectorInfoListModel*  _detectorInfoListModel = nullptr;
+
     TagInfoList             _tagInfoList;
     TagInfoList::const_iterator _nextTagToSend;
 
-    DetectorsHeartbeatTracker*  _detectorsHeartbeatTracker = nullptr;
-
     bool                    _controllerLostHeartbeat { false };
     QTimer                  _controllerHeartbeatTimer;
-
-    bool                                               _captureRotationPulses { false };
-    QMap<uint32_t, QList<TunnelProtocol::PulseInfo_t>> _rotationPulseInfoMap;
-
-    QVariantList            _pulseLog;
 };
 
 class PulseRoseMapItem : public QObject
