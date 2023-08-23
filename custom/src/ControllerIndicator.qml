@@ -19,14 +19,16 @@ import QGroundControl.Palette               1.0
 import MAVLink                              1.0
 
 Item {
-    id:             _root
-    anchors.top:    parent.top
-    anchors.bottom: parent.bottom
-    width:          rowLayout.width
+    id:                 _root
+    anchors.margins:    -ScreenTools.defaultFontPixelHeight / 2
+    anchors.top:        parent.top
+    anchors.bottom:     parent.bottom
+    width:              rowLayout.width
 
     property bool showIndicator: true
 
-    property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+    property var    activeVehicle:  QGroundControl.multiVehicleManager.activeVehicle
+    property real   maxSNR:         QGroundControl.corePlugin.customSettings.maxPulse.rawValue
 
     Row {
         id:             rowLayout
@@ -40,13 +42,44 @@ Item {
             color:  QGroundControl.corePlugin.controllerLostHeartbeat ? "red" : "green" 
         }
 
-        Repeater {
-            model: QGroundControl.corePlugin.detectorsLostHeartbeat
+        ColumnLayout {
+            height:     parent.height
+            spacing:    2
 
-            Rectangle {
-                height: parent.height
-                width:  ScreenTools.defaultFontPixelWidth
-                color:  modelData ? "red" : "green" 
+            Repeater {
+                model: QGroundControl.corePlugin.detectorInfoList
+
+                RowLayout {
+                    Rectangle {
+                        id:                     pulseRect
+                        Layout.fillHeight:      true
+                        Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 20
+                        color:                  object.heartbeatLost ? "red" : "transparent" 
+                        border.color:           object.heartbeatLost ? "red" : "green" 
+
+                        Rectangle {
+                            anchors.topMargin:      2
+                            anchors.bottomMargin:   2
+                            anchors.leftMargin:     2
+                            anchors.rightMargin:    ((maxSNR - filteredSNR) / maxSNR) *  (parent.width - 4)
+                            anchors.fill:           parent
+                            color:                  object.lastPulseStale ? "transparent" : "green"
+                            border.color:           "green"
+                            visible:                !object.heartbeatLost
+
+                            property real filteredSNR: Math.max(0, Math.min(object.lastPulseSNR, maxSNR))
+                        }
+                    }
+
+                    QGCLabel {
+                        Layout.preferredHeight: pulseRect.height
+                        text:                   object.tagId + object.tagLabel
+                        fontSizeMode:           Text.VerticalFit
+                        verticalAlignment:      Text.AlignVCenter
+
+                        Component.onCompleted: console.log("Label", object.tagId, object.tagLabel)
+                    }
+                }
             }
         }
     }

@@ -133,7 +133,7 @@ Item {
     readonly property string downloadLogsTitle:             qsTr("Download")
 
     readonly property string sendTagsMessage:               qsTr("Send tag(s) to vehicle.")
-    readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag.")
+    readonly property string startDetectionMessage:         qsTr("Start pulse detection for the specified tag(s).")
     readonly property string stopDetectionMessage:          qsTr("Stop all pulse detection.")
     readonly property string startRotationMessage:          qsTr("Start rotation in place.")
     readonly property string rawCaptureMessage:             qsTr("Start sdr raw capture.")

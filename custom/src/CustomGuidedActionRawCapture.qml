@@ -14,6 +14,6 @@ GuidedToolStripAction {
     text:       _guidedController.rawCaptureTitle
     iconSource: "/res/action.svg"
     visible:    true
-    enabled:    QGroundControl.multiVehicleManager.activeVehicle
+    enabled:    QGroundControl.multiVehicleManager.activeVehicle && QGroundControl.corePlugin.controllerStatus == CustomPlugin.ControllerStatusHasTags
     actionID:   _guidedController.actionRawCapture
 }

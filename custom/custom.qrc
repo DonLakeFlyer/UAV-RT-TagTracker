@@ -1,13 +1,12 @@
 <RCC>
     <qresource prefix="/qml">
-        <file alias="PulseLogIndicator.qml">src/PulseLogIndicator.qml</file>
+        <file alias="ControllerIndicator.qml">src/ControllerIndicator.qml</file>
         <file alias="CustomSettings.qml">src/CustomSettings.qml</file>
         <file alias="CustomPulseRoseMapItem.qml">src/CustomPulseRoseMapItem.qml</file>
         <file alias="PulseMapItem.qml">src/PulseMapItem.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewToolStripActionList.qml">src/CustomFlyViewToolStripActionList.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionSendTags.qml">src/CustomGuidedActionSendTags.qml</file>
-        <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStartDetection.qml">src/CustomGuidedActionStartDetection.qml</file>
-        <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStopDetection.qml">src/CustomGuidedActionStopDetection.qml</file>
+        <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStartStopDetection.qml">src/CustomGuidedActionStartStopDetection.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStartRotation.qml">src/CustomGuidedActionStartRotation.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionDownloadLogs.qml">src/CustomGuidedActionDownloadLogs.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionRawCapture.qml">src/CustomGuidedActionRawCapture.qml</file>
