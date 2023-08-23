@@ -53,10 +53,10 @@ public:
     Q_PROPERTY(bool                 flightMachineActive     MEMBER  _flightStateMachineActive   NOTIFY flightMachineActiveChanged)
     Q_PROPERTY(bool                 controllerLostHeartbeat MEMBER  _controllerLostHeartbeat    NOTIFY controllerLostHeartbeatChanged)
     Q_PROPERTY(int                  controllerStatus        MEMBER  _controllerStatus           NOTIFY controllerStatusChanged)
-    Q_PROPERTY(QmlObjectListModel*  detectorInfoList        READ    detectorInfoList            NOTIFY detectorInfoListChanged)
+    Q_PROPERTY(QmlObjectListModel*  detectorInfoList        READ    detectorInfoList            CONSTANT)
 
     CustomSettings*     customSettings  () { return _customSettings; }
-    QmlObjectListModel* detectorInfoList() { return dynamic_cast<QmlObjectListModel*>(_detectorInfoListModel); }
+    QmlObjectListModel* detectorInfoList() { return dynamic_cast<QmlObjectListModel*>(&_detectorInfoListModel); }
 
     Q_INVOKABLE void startRotation      (void);
     Q_INVOKABLE void cancelAndReturn    (void);
@@ -82,7 +82,6 @@ signals:
     void pulseInfoListsChanged          (void);
     void controllerLostHeartbeatChanged ();
     void controllerStatusChanged        ();
-    void detectorInfoListChanged        ();
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
@@ -135,7 +134,7 @@ private:
     bool    _pulseConfirmed             (void) { return _lastPulseInfo.confirmed_status; }
     void    _sendNextTag                (void);
     void    _sendEndTags                (void);
-    void    _setupDelayForSteadyCapture    (void);
+    void    _setupDelayForSteadyCapture (void);
     void    _rotationDelayComplete      (void);
     QString _csvLogFilePath             (void);
     void    _csvStartFullPulseLog       (void);
@@ -145,7 +144,6 @@ private:
     void    _csvStopRotationPulseLog    (void);
     void    _csvLogPulse                (QFile& csvFile, const TunnelProtocol::PulseInfo_t& pulseInfo);
     void    _csvLogRotationStartStop    (QFile& csvFile, bool startRotation);
-    void    _setupDetectorInfoListModel      ();
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -174,7 +172,7 @@ private:
     int                     _csvRotationCount = 1;
     TunnelProtocol::PulseInfo_t _lastPulseInfo;
 
-    DetectorInfoListModel*  _detectorInfoListModel = nullptr;
+    DetectorInfoListModel   _detectorInfoListModel;
 
     TagInfoList             _tagInfoList;
     TagInfoList::const_iterator _nextTagToSend;
