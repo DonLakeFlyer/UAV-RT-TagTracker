@@ -12,7 +12,9 @@ public:
 
     // FirmwarePlugin overrides
     const QVariantList& toolIndicators(const Vehicle* vehicle) final;
+    const QVariantList& modeIndicators(const Vehicle* vehicle) final;
 
 private:
     QVariantList _toolIndicatorList;
+    QVariantList _modeIndicatorList;
 };

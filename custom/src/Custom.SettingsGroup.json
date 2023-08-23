@@ -57,7 +57,7 @@
     "type":             "double",
     "min":              0,
     "decimalPlaces":    1,
-    "default":          60
+    "default":          70
 },
 {
     "name":             "antennaOffset",
