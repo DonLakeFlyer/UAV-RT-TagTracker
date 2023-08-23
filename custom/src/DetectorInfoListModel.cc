@@ -6,9 +6,21 @@
 #include <QLineF>
 #include <QQmlEngine>
 
-DetectorInfoListModel::DetectorInfoListModel(const TagInfoList& tagInfoList, QObject* parent)
+DetectorInfoListModel::DetectorInfoListModel(QObject* parent)
     : QmlObjectListModel(parent)
 {
+
+}
+
+DetectorInfoListModel::~DetectorInfoListModel()
+{
+
+}
+
+void DetectorInfoListModel::setupFromTags(const TagInfoList& tagInfoList)
+{
+    clearAndDeleteContents();
+    
     for (auto& extTagInfo: tagInfoList) {
         DetectorInfo* detectorInfo = new DetectorInfo(extTagInfo.tagInfo.id, extTagInfo.ip_msecs_1_id, extTagInfo.tagInfo.intra_pulse1_msecs, extTagInfo.tagInfo.k, this);
         append(detectorInfo);
@@ -18,11 +30,6 @@ DetectorInfoListModel::DetectorInfoListModel(const TagInfoList& tagInfoList, QOb
             append(detectorInfo);
         }
     }
-}
-
-DetectorInfoListModel::~DetectorInfoListModel()
-{
-
 }
 
 void DetectorInfoListModel::handleTunnelPulse(const mavlink_tunnel_t& tunnel)

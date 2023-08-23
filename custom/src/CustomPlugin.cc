@@ -38,8 +38,6 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
 
     qmlRegisterUncreatableType<CustomPlugin>("QGroundControl", 1, 0, "CustomPlugin", "Reference only");
 
-    _setupDetectorInfoListModel();
-
     _vehicleStateTimeoutTimer.setSingleShot(true);
     _tunnelCommandAckTimer.setSingleShot(true);
     _tunnelCommandAckTimer.setInterval(2000);
@@ -165,7 +163,7 @@ void CustomPlugin::_handleTunnelCommandAck(const mavlink_tunnel_t& tunnel)
                 _sendNextTag();
                 break;
             case COMMAND_ID_END_TAGS:
-                _setupDetectorInfoListModel();
+                _detectorInfoListModel.setupFromTags(_tagInfoList);
                 break;
             case COMMAND_ID_START_DETECTION:
                 _csvStartFullPulseLog();
@@ -202,7 +200,7 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         return;
     }
 
-    _detectorInfoListModel->handleTunnelPulse(tunnel);
+    _detectorInfoListModel.handleTunnelPulse(tunnel);
 
     PulseInfo_t pulseInfo;
     memcpy(&pulseInfo, tunnel.payload, sizeof(pulseInfo));
@@ -620,8 +618,8 @@ void CustomPlugin::_rotateVehicle(Vehicle* vehicle, double headingDegrees)
 
 void CustomPlugin::_setupDelayForSteadyCapture(void)
 {
-    _detectorInfoListModel->resetMaxSNR();
-    _detectorInfoListModel->resetPulseGroupCount();
+    _detectorInfoListModel.resetMaxSNR();
+    _detectorInfoListModel.resetPulseGroupCount();
 }
 
 void CustomPlugin::_advanceStateMachine(void)
@@ -730,7 +728,7 @@ int CustomPlugin::_rawPulseToPct(double rawPulse)
 
 void CustomPlugin::_rotationDelayComplete(void)
 {
-    double maxSNR = _detectorInfoListModel->maxSNR();
+    double maxSNR = _detectorInfoListModel.maxSNR();
     qCDebug(CustomPluginLog) << "_rotationDelayComplete: max snr" << maxSNR;
     _rgAngleStrengths.last()[_currentSlice] = maxSNR;
 
@@ -994,11 +992,4 @@ void CustomPlugin::_controllerHeartbeatFailed()
 {
     _controllerLostHeartbeat = true;
     emit controllerLostHeartbeatChanged();
-}
-
-void CustomPlugin::_setupDetectorInfoListModel()
-{
-    delete _detectorInfoListModel;
-    _detectorInfoListModel = new DetectorInfoListModel(_tagInfoList, this);
-    emit detectorInfoListChanged();
 }

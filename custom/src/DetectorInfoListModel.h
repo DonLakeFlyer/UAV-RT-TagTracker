@@ -9,9 +9,10 @@ class DetectorInfoListModel : public QmlObjectListModel
     Q_OBJECT
 
 public:
-    DetectorInfoListModel(const TagInfoList& tagInfoList, QObject* parent = nullptr);
+    DetectorInfoListModel(QObject* parent = nullptr);
     ~DetectorInfoListModel();
 
+    void    setupFromTags               (const TagInfoList& tagInfoList);
     void    handleTunnelPulse           (const mavlink_tunnel_t& tunnel);
     void    resetMaxSNR                 ();
     void    resetPulseGroupCount        ();
