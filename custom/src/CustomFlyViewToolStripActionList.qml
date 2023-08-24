@@ -23,8 +23,7 @@ ToolStripActionList {
         GuidedActionLand { },
         GuidedActionRTL { },
         CustomGuidedActionSendTags { },
-        CustomGuidedActionStartDetection { },
-        CustomGuidedActionStopDetection { },
+        CustomGuidedActionStartStopDetection { },
         CustomGuidedActionStartRotation { },
         CustomGuidedActionRawCapture { }
     ]
