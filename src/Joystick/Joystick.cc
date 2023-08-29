@@ -16,12 +16,10 @@
 #include "VideoManager.h"
 #include "QGCCameraManager.h"
 #include "QGCCameraControl.h"
-#include "QGCCorePlugin.h"
-#include "QGCOptions.h"
 
 #include <QSettings>
 
-QGC_LOGGING_CATEGORY(JoystickLog,       "JoystickLog")
+// JoystickLog Category declaration moved to QGCLoggingCategory.cc to allow access in Vehicle
 QGC_LOGGING_CATEGORY(JoystickValuesLog, "JoystickValuesLog")
 
 const char* Joystick::_settingsGroup =                  "Joysticks";
@@ -110,8 +108,6 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     , _totalButtonCount(_buttonCount+_hatButtonCount)
     , _multiVehicleManager(multiVehicleManager)
 {
-    _useButtonsOnly = qgcApp()->toolbox()->corePlugin()->options()->joystickUseButtonsOnly();
-
     qRegisterMetaType<GRIPPER_ACTIONS>();
 
     _rgAxisValues   = new int[static_cast<size_t>(_axisCount)];
@@ -128,6 +124,7 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     _updateTXModeSettingsKey(_multiVehicleManager->activeVehicle());
     _loadSettings();
     connect(_multiVehicleManager, &MultiVehicleManager::activeVehicleChanged, this, &Joystick::_activeVehicleChanged);
+    connect(qgcApp()->toolbox()->multiVehicleManager()->vehicles(), &QmlObjectListModel::countChanged, this, &Joystick::_vehicleCountChanged);
 
     _customMavCommands = JoystickMavCommand::load("JoystickMavCommands.json");
 }
@@ -223,6 +220,16 @@ void Joystick::_activeVehicleChanged(Vehicle* activeVehicle)
         settings.beginGroup(_settingsGroup);
         int mode = settings.value(_txModeSettingsKey, activeVehicle->firmwarePlugin()->defaultJoystickTXMode()).toInt();
         setTXMode(mode);
+    }
+}
+
+void Joystick::_vehicleCountChanged(int count)
+{
+    if(count == 0)
+    {
+        // then the last vehicle has been deleted
+        qCDebug(JoystickLog) << "Stopping joystick thread due to last active vehicle deletion";
+        this->stopPolling();
     }
 }
 
@@ -494,7 +501,9 @@ void Joystick::run()
     while (!_exitThread) {
         _update();
         _handleButtons();
-        _handleAxis();
+        if (axisCount() != 0) {
+            _handleAxis();
+        }
         QGC::SLEEP::msleep(qMin(static_cast<int>(1000.0f / _maxAxisFrequencyHz), static_cast<int>(1000.0f / _maxButtonFrequencyHz)) / 2);
     }
     _close();
@@ -712,14 +721,15 @@ void Joystick::startPolling(Vehicle* vehicle)
         // Always set up the new vehicle
         _activeVehicle = vehicle;
         // If joystick is not calibrated, disable it
-        if ( !_calibrated ) {
+        if ( axisCount() != 0 && !_calibrated ) {
             vehicle->setJoystickEnabled(false);
         }
         // Update qml in case of joystick transition
         emit calibratedChanged(_calibrated);
+        // Build action list
         _buildActionList(vehicle);
-
-        if (vehicle->joystickEnabled() || _useButtonsOnly) {
+        // Only connect the new vehicle if it wants joystick data
+        if (vehicle->joystickEnabled()) {
             _pollingStartedForCalibration = false;
             connect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmedShowError);
             connect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
@@ -741,7 +751,7 @@ void Joystick::startPolling(Vehicle* vehicle)
 void Joystick::stopPolling(void)
 {
     if (isRunning()) {
-        if (_activeVehicle && (_activeVehicle->joystickEnabled() || _useButtonsOnly)) {
+        if (_activeVehicle && _activeVehicle->joystickEnabled()) {
             disconnect(this, &Joystick::setArmed,           _activeVehicle, &Vehicle::setArmedShowError);
             disconnect(this, &Joystick::setVtolInFwdFlight, _activeVehicle, &Vehicle::setVtolInFwdFlight);
             disconnect(this, &Joystick::setFlightMode,      _activeVehicle, &Vehicle::setFlightMode);
@@ -988,10 +998,9 @@ void Joystick::setCalibrationMode(bool calibrating)
 
 void Joystick::_executeButtonAction(const QString& action, bool buttonDown)
 {
-    if (!_activeVehicle || (!_activeVehicle->joystickEnabled() && !_useButtonsOnly) || action == _buttonActionNone) {
+    if (!_activeVehicle || !_activeVehicle->joystickEnabled() || action == _buttonActionNone) {
         return;
     }
-
     if (action == _buttonActionArm) {
         if (buttonDown) emit setArmed(true);
     } else if (action == _buttonActionDisarm) {
