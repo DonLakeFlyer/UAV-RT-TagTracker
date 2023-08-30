@@ -12,6 +12,8 @@
 #include <QFile>
 #include <QTextStream>
 
+//#define DEBUG_TUNER
+
 using namespace TunnelProtocol;
 
 TagInfoList::TagInfoList()
@@ -203,6 +205,15 @@ void TagInfoList::_setupTunerVars(uint32_t sdrType)
     _halfBwHz           = _fullBwHz / 2;
     _channelBwHz        = _sampleRateHz / _nChannels;
     _halfChannelBwHz    = _channelBwHz / 2;
+
+#ifdef DEBUG_TUNER
+    qDebug() <<
+        "_sampleRateHz:" << _sampleRateHz <<
+        "_fullBwHz:" << _fullBwHz <<
+        "_halfBwHz:" << _halfBwHz <<
+        "_channelBwHz:" << _channelBwHz <<
+        "_halfChannelBwHz:" << _halfChannelBwHz;
+#endif
 }
 
 // Find the best center frequency for the requested frequencies such that the there is only one frequency per channel
@@ -241,7 +252,9 @@ bool TagInfoList::_channelizerTuner()
             nextPossibleHz += stepSizeHz;
         }
     }
-    //qDebug() << "testCentersHz-raw:" << testCentersHz;
+#ifdef DEBUG_TUNER
+    qDebug() << "testCentersHz-raw:" << testCentersHz;
+#endif
 
     // Remove any test centers for which a requested frequency would fall outside the full bandwidth
     for (auto testCenterHzIter = testCentersHz.begin(); testCenterHzIter != testCentersHz.end(); ) {
@@ -251,7 +264,9 @@ bool TagInfoList::_channelizerTuner()
             ++testCenterHzIter;
         }
     }
-    //qDebug() << "testCentersHz-filtered:" << testCentersHz;
+#ifdef DEBUG_TUNER
+    qDebug() << "testCentersHz-filtered:" << testCentersHz;
+#endif
 
     QVector <uint>          channelBucketUsageCountsForTestCenter (_nChannels);
     QList   <QList<uint>>   oneBasedChannelBucketsArray;
@@ -278,31 +293,36 @@ bool TagInfoList::_channelizerTuner()
                 }
             });
 
-#if 0
+#ifdef DEBUG_TUNER
         qDebug() << "freqListHz:" << freqListHz << "wrappedRequestedFreqsHz:" << wrappedRequestedFreqsHz;
 #endif
 
         for (auto wrappedFreqHz : wrappedRequestedFreqsHz) {
-            uint32_t adjustedFreqHz         = wrappedFreqHz - ((int)testCenterHz - (int)_halfChannelBwHz); // Adjust to zero-based within total bandwidth
-            uint32_t zeroBasedChannelBucket = adjustedFreqHz  / _channelBwHz;
-            uint32_t distanceFromCenter     = abs((int)(adjustedFreqHz % _channelBwHz) - (int)_halfChannelBwHz);
+            uint32_t tagFreqZeroBasedBandwidthHz        = wrappedFreqHz - ((int)testCenterHz - (int)_halfChannelBwHz);      // Adjust to zero-based within total bandwidth
+            uint32_t zeroBasedChannelBucket             = tagFreqZeroBasedBandwidthHz  / _channelBwHz;
+            uint32_t channelStartZeroBasedHz            = zeroBasedChannelBucket * _channelBwHz;                            // Zero based Hz of channel starting point
+            uint32_t tagFreqZeroBasedWithinChannelHz    = tagFreqZeroBasedBandwidthHz - channelStartZeroBasedHz;            // Tag freq adjusted to zero based from start of containing channel
+            uint32_t distanceFromChannelCenter          = abs((int)tagFreqZeroBasedWithinChannelHz - (int)_halfChannelBwHz);
 
             double  shoulderPercent = 0.85; // Shoulder is 15% from channel edge
-            bool    inShoulder      = distanceFromCenter > _halfChannelBwHz * shoulderPercent;
+            bool    inShoulder      = distanceFromChannelCenter > _halfChannelBwHz * shoulderPercent;
 
-#if 0
+#ifdef DEBUG_TUNER
             qDebug() << "---- single freq build begin ---";
-            qDebug() << "wrappedFreqHz:" << wrappedFreqHz <<
-                        "testCenterHz:" << testCenterHz <<
-                        "adjustedFreqHz:" << adjustedFreqHz <<
-                        "distanceFromCenter:" << distanceFromCenter <<
-                        "zeroBasedChannelBucket" << zeroBasedChannelBucket <<
-                        "inShoulder:" << inShoulder;
-            _printChannelMap(testCenterHz, QVector<uint32_t>({wrappedFreqHz}));
+            qDebug() <<
+                "testCenterHz:" << testCenterHz <<
+                "wrappedFreqHz:" << wrappedFreqHz <<
+                "tagFreqZeroBasedBandwidthHz:" << tagFreqZeroBasedBandwidthHz <<
+                "zeroBasedChannelBucket:" << zeroBasedChannelBucket <<
+                "channelStartZeroBasedHz:" << channelStartZeroBasedHz <<
+                "tagFreqZeroBasedWithinChannelHz:" << tagFreqZeroBasedWithinChannelHz <<
+                "distanceFromChannelCenter:" << distanceFromChannelCenter <<
+                "inShoulder:" << inShoulder;
+            //_printChannelMap(testCenterHz, QVector<uint32_t>({wrappedFreqHz}));
             qDebug() << "---- single freq build end ---";
 #endif
 
-            distanceFromCenters.push_back(distanceFromCenter);
+            distanceFromCenters.push_back(distanceFromChannelCenter);
             inShoulders.push_back(inShoulder);
             oneBasedChannelBuckets.push_back(zeroBasedChannelBucket + 1);
 
@@ -317,10 +337,10 @@ bool TagInfoList::_channelizerTuner()
         auto averageDistanceFromCenter = std::accumulate(distanceFromCenters.begin(), distanceFromCenters.end(), 0) / distanceFromCenters.size();
         distanceFromCenterAverages.push_back(averageDistanceFromCenter);
 
-#if 0
+#ifdef DEBUG_TUNER
         qDebug() << "---- test center build begin ---";
         qDebug() << "testCenterHz" << testCenterHz;
-        _printChannelMap(testCenterHz, wrappedRequestedFreqsHz);
+        //_printChannelMap(testCenterHz, wrappedRequestedFreqsHz);
         qDebug() << "averageDistanceFromCenter:" << averageDistanceFromCenter;
         qDebug() << "---- test center build end ---";
 #endif
