@@ -71,19 +71,11 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     _csvClearPrevRotationLogs();
 }
 
-QVariantList& CustomPlugin::settingsPages(void)
+const QVariantList& CustomPlugin::toolBarIndicators(void)
 {
-    if(_settingsPages.size() == 0) {
-        _settingsPages = QGCCorePlugin::settingsPages();
-
-        QmlComponentInfo* customPage = new QmlComponentInfo(tr("Tags"),
-                                                  QUrl::fromUserInput("qrc:/qml/CustomSettings.qml"),
-                                                  QUrl::fromUserInput("qrc:/res/gear-white.svg"));
-        _settingsPages.append(QVariant::fromValue(reinterpret_cast<QmlComponentInfo*>(customPage)));
-
-    }
-
-    return _settingsPages;
+    QGCCorePlugin::toolBarIndicators();
+    _toolBarIndicatorList.append(QVariant::fromValue(QUrl::fromUserInput("qrc:/qml/ControllerIndicator.qml")));
+    return _toolBarIndicatorList;
 }
 
 bool CustomPlugin::mavlinkMessage(Vehicle* vehicle, LinkInterface* linkInterface, mavlink_message_t message)
