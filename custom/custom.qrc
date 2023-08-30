@@ -1,7 +1,6 @@
 <RCC>
     <qresource prefix="/qml">
         <file alias="ControllerIndicator.qml">src/ControllerIndicator.qml</file>
-        <file alias="CustomSettings.qml">src/CustomSettings.qml</file>
         <file alias="CustomPulseRoseMapItem.qml">src/CustomPulseRoseMapItem.qml</file>
         <file alias="PulseMapItem.qml">src/PulseMapItem.qml</file>
         <file alias="QGroundControl/FlightDisplay/FlyViewToolStripActionList.qml">src/CustomFlyViewToolStripActionList.qml</file>
