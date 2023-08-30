@@ -13,6 +13,7 @@ import QtQuick.Controls 2.15
 
 import QGroundControl                       1.0
 import QGroundControl.Controls              1.0
+import QGroundControl.FactControls          1.0
 import QGroundControl.MultiVehicleManager   1.0
 import QGroundControl.ScreenTools           1.0
 import QGroundControl.Palette               1.0
@@ -93,44 +94,46 @@ Item {
         id: indicatorPopup
 
         Rectangle {
-            id:         popupRect
-            width:      mainWindow.width * 0.75
-            height:     mainWindow.height
-            color:          "white"
+            id:     popupRect
+            width:  mainWindow.width * 0.75
+            height: mainWindow.height
+            color:  "white"
+
+            property var _activeVehicle:    QGroundControl.multiVehicleManager.activeVehicle
+            property var _customSettings:   QGroundControl.corePlugin.customSettings
 
             QGCFlickable {
-                anchors.fill:   parent
-                contentHeight:  flowLayout.height
+                anchors.margins:    ScreenTools.defaultFontPixelHeight
+                anchors.fill:       parent
+                contentHeight:      column.height
+                clip:               false
                 
-                Flow {
-                    id:             flowLayout
-                    anchors.fill:   parent
-                    
-                    Repeater {
-                        model: QGroundControl.corePlugin.pulseLog
+                Column {
+                    id:         column
+                    spacing:    ScreenTools.defaultFontPixelHeight
 
-                        Row {
-                            spacing: ScreenTools.defaultFontPixelWidth * 2
+                    FactCheckBox {
+                        text:   qsTr("Show pulse strength on map")
+                        fact:   _customSettings.showPulseOnMap
+                    }
 
-                            Column {
-                                height: popupRect.height
-                                clip:   true
+                    FactTextFieldGrid {
+                        id: grid
 
-                                QGCLabel { font.pointSize: ScreenTools.largeFontPointSize; text: modelData.tagName + " - " + modelData.tagId }
-                                QGCLabel { font.pointSize: ScreenTools.largeFontPointSize; text: modelData.tagFreqHz }
+                        factList: [
+                            _customSettings.altitude,
+                            _customSettings.divisions,
+                            _customSettings.k,
+                            _customSettings.falseAlarmProbability,
+                            _customSettings.maxPulse,
+                            _customSettings.antennaOffset,
+                        ]
+                    }
 
-                                Repeater {
-                                    model: modelData
-
-                                    QGCLabel { font.pointSize: ScreenTools.largeFontPointSize; text: object.rateChar + ": " + object.snr.toFixed(1) }
-                                }
-                            }
-
-                            Item {
-                                width:  1
-                                height: 1
-                            }
-                        }
+                    FactComboBox {
+                        fact:           QGroundControl.corePlugin.customSettings.sdrType
+                        indexModel:     false
+                        sizeToContents: true
                     }
                 }
             }
