@@ -67,11 +67,11 @@ public:
     Q_INVOKABLE void downloadLogs       (void);
 
     // Overrides from QGCCorePlugin
-    QVariantList&       settingsPages           (void) final;
     bool                mavlinkMessage          (Vehicle* vehicle, LinkInterface* link, mavlink_message_t message) final;
     QGCOptions*         options                 (void) final { return qobject_cast<QGCOptions*>(_customOptions); }
     bool                adjustSettingMetaData   (const QString& settingsGroup, FactMetaData& metaData) final;
     QmlObjectListModel* customMapItems          (void) final;
+    const QVariantList& toolBarIndicators       (void) final;
 
     // Overrides from QGCTool
     void setToolbox(QGCToolbox* toolbox) final;
