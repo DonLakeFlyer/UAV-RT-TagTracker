@@ -51,6 +51,10 @@ DEFINES += \
     NO_SERIAL_LINK
     QGC_DISABLE_BLUETOOTH
 
+# Enable Herelink AirUnit video config
+DEFINES += \
+    QGC_HERELINK_AIRUNIT_VIDEO
+
 # Our own, custom resources
 # Not yet used
 #RESOURCES += \
