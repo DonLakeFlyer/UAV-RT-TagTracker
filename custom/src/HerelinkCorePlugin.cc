@@ -64,6 +64,8 @@ bool HerelinkCorePlugin::adjustSettingMetaData(const QString& settingsGroup, Fac
     } else if (settingsGroup == VideoSettings::settingsGroup) {
         if (metaData.name() == VideoSettings::rtspTimeoutName) {
             metaData.setRawDefaultValue(60);
+        } else if (metaData.name() == VideoSettings::videoSourceName) {
+            metaData.setRawDefaultValue(VideoSettings::videoSourceHerelinkAirUnit);
         }
     } else if (settingsGroup == AppSettings::settingsGroup) {
         if (metaData.name() == AppSettings::androidSaveToSDCardName) {
