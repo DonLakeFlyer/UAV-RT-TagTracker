@@ -2,8 +2,8 @@
 
 Use WIP version on Herelink - based on QGC master
 * Support still not working
-    * Video
     * Save video to SD card
+    * Video HDMI 1 vs HDMI 3 selection
 * Download the latest APK from GitHub Actions Artifacts
 * Put it on an sd card
 * Put the sd card into your Herelink
