@@ -117,6 +117,15 @@ HEADERS += \
 INCLUDEPATH += \
     $$PWD/src \
 
+# Bearing calc matlab code
+    INCLUDEPATH += \
+        $$PWD/matlab-coder-utils/coder-headers \
+        $$PWD/uavrt_bearing/codegen/exe/bearing \
+
+    SOURCES += \
+        $$files($$PWD/uavrt_bearing/codegen/exe/bearing/*.cpp) \
+        $$files($$PWD/uavrt_bearing/codegen/exe/bearing/*.c)
+
 # Shared header files for Tunnel Protocol
 INCLUDEPATH += \
     $$PWD/uavrt_interfaces/include/uavrt_interfaces \
