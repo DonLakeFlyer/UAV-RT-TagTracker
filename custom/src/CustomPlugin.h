@@ -48,6 +48,7 @@ public:
 
     Q_PROPERTY(CustomSettings*      customSettings          READ    customSettings              CONSTANT)
     Q_PROPERTY(QList<QList<double>> angleRatios             MEMBER  _rgAngleRatios              NOTIFY angleRatiosChanged)
+    Q_PROPERTY(QList<double>        calcedBearings          MEMBER  _rgCalcedBearings           NOTIFY calcedBearingsChanged)
     Q_PROPERTY(bool                 flightMachineActive     MEMBER  _flightStateMachineActive   NOTIFY flightMachineActiveChanged)
     Q_PROPERTY(bool                 controllerLostHeartbeat MEMBER  _controllerLostHeartbeat    NOTIFY controllerLostHeartbeatChanged)
     Q_PROPERTY(int                  controllerStatus        MEMBER  _controllerStatus           NOTIFY controllerStatusChanged)
@@ -76,6 +77,7 @@ public:
 
 signals:
     void angleRatiosChanged             (void);
+    void calcedBearingsChanged          (void);
     void flightMachineActiveChanged     (bool flightMachineActive);
     void pulseInfoListsChanged          (void);
     void controllerLostHeartbeatChanged ();
@@ -139,7 +141,7 @@ private:
     void    _csvStopFullPulseLog        (void);
     void    _csvClearPrevRotationLogs   (void);
     void    _csvStartRotationPulseLog   (int rotationCount);
-    void    _csvStopRotationPulseLog    (void);
+    void    _csvStopRotationPulseLog    (bool calcBearing);
     void    _csvLogPulse                (QFile& csvFile, const TunnelProtocol::PulseInfo_t& pulseInfo);
     void    _csvLogRotationStartStop    (QFile& csvFile, bool startRotation);
 
@@ -149,6 +151,7 @@ private:
     QList<VehicleState_t>   _vehicleStates;
     QList<QList<double>>    _rgAngleStrengths;
     QList<QList<double>>    _rgAngleRatios;
+    QList<double>           _rgCalcedBearings;
     bool                    _flightStateMachineActive;
     int                     _currentSlice;
     int                     _cSlice;

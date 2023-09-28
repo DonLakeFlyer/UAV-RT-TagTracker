@@ -11,6 +11,9 @@
 #include "FTPManager.h"
 #include "DetectorInfoListModel.h"
 
+#include "coder_array.h"
+#include "bearing.h"
+
 #include <QDebug>
 #include <QPointF>
 #include <QLineF>
@@ -52,7 +55,7 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
 CustomPlugin::~CustomPlugin()
 {
     _csvStopFullPulseLog();
-    _csvStopRotationPulseLog();
+    _csvStopRotationPulseLog(false /* calcBearing*/);
 }
 
 void CustomPlugin::setToolbox(QGCToolbox* toolbox)
@@ -277,11 +280,29 @@ void CustomPlugin::_csvStartRotationPulseLog(int rotationCount)
     }
 }
 
-void CustomPlugin::_csvStopRotationPulseLog(void)
+void CustomPlugin::_csvStopRotationPulseLog(bool calcBearing)
 {
     if (_csvRotationPulseLogFile.isOpen()) {
         _csvLogRotationStartStop(_csvRotationPulseLogFile, false /* startRotation */);
         _csvRotationPulseLogFile.close();
+
+        if (calcBearing) {
+            coder::array<char, 2U> rotationFileNameAsArray;
+            std::string rotationFileName = _csvRotationPulseLogFile.fileName().toStdString();
+            rotationFileNameAsArray.set_size(1, rotationFileName.length());
+            int index = 0;
+            for (auto chr : rotationFileName) {
+                rotationFileNameAsArray[index++] = chr;
+            }
+
+            double calcedBearing = bearing(rotationFileNameAsArray);
+            if (calcedBearing < 0) {
+                calcedBearing += 360;
+            }
+            _rgCalcedBearings.last() = calcedBearing;
+            qCDebug(CustomPluginLog) << "Calculated bearing:" << _rgCalcedBearings.last();
+            emit calcedBearingsChanged();
+        }
     }
 }
 
@@ -368,6 +389,7 @@ void CustomPlugin::startRotation(void)
     // Setup new rotation data
     _rgAngleStrengths.append(QList<double>());
     _rgAngleRatios.append(QList<double>());
+    _rgCalcedBearings.append(qQNaN());
 
     QList<double>&  angleStrengths =    _rgAngleStrengths.last();
     QList<double>&  angleRatios =       _rgAngleRatios.last();
@@ -379,6 +401,7 @@ void CustomPlugin::startRotation(void)
         angleRatios.append(qQNaN());
     }
     emit angleRatiosChanged();
+    emit calcedBearingsChanged();
 
     // Create compass rose ui on map
     QUrl url = QUrl::fromUserInput("qrc:/qml/CustomPulseRoseMapItem.qml");
@@ -526,7 +549,7 @@ void CustomPlugin::_mavCommandResult(int vehicleId, int component, int command, 
 
     Vehicle* vehicle = dynamic_cast<Vehicle*>(sender());
     if (!vehicle) {
-        qWarning() << "Dynamic cast failed!";
+        qWarning() << "Vehicle dynamic cast failed!";
         return;
     }
 
@@ -640,7 +663,7 @@ void CustomPlugin::_advanceStateMachine(void)
         // State machine complete
         _say(QStringLiteral("Collection complete."));
         _updateFlightMachineActive(false);
-        _csvStopRotationPulseLog();
+        _csvStopRotationPulseLog(true /* calcBearing*/);
         return;
     }
 
@@ -651,7 +674,7 @@ void CustomPlugin::_advanceStateMachine(void)
         // User cancel
         _say(QStringLiteral("Collection cancelled."));
         _updateFlightMachineActive(false);
-        _csvStopRotationPulseLog();
+        _csvStopRotationPulseLog(false /* calcBearing*/);
         return;
     }
 
@@ -677,7 +700,7 @@ void CustomPlugin::_advanceStateMachine(void)
         _vehicleStateTimeoutTimer.start();
         if (currentState.fact) {
             connect(currentState.fact, &Fact::rawValueChanged, this, &CustomPlugin::_vehicleStateRawValueChanged);
-            _vehicleStateRawValueChanged(currentState.fact->rawValue());
+            currentState.fact->rawValueChanged(currentState.fact->rawValue());
         }
     }
 }
@@ -687,7 +710,7 @@ void CustomPlugin::_vehicleStateRawValueChanged(QVariant rawValue)
 {
     Fact* fact = dynamic_cast<Fact*>(sender());
     if (!fact) {
-        qCritical() << "Dynamic cast failed!";
+        qCritical() << "Fact dynamic cast failed!";
         return;
     }
 
@@ -849,7 +872,7 @@ void CustomPlugin::_resetStateAndRTL(void)
     _updateFlightMachineActive(false);
 
     _csvStopFullPulseLog();
-    _csvStopRotationPulseLog();
+    _csvStopRotationPulseLog(false /* calcBearing*/);
 }
 
 bool CustomPlugin::adjustSettingMetaData(const QString& settingsGroup, FactMetaData& metaData)

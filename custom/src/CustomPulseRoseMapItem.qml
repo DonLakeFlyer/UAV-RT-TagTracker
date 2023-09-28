@@ -13,9 +13,10 @@ import QtQuick.Controls 2.15
 import QtPositioning    5.15
 import QtLocation       5.15
 
-import QGroundControl                   1.0
-import QGroundControl.Palette           1.0
-import QGroundControl.ScreenTools       1.0
+import QGroundControl               1.0
+import QGroundControl.Palette       1.0
+import QGroundControl.ScreenTools   1.0
+import QGroundControl.Controls      1.0
 
 MapQuickItem {
     coordinate:     customMapObject.rotationCenter
@@ -82,6 +83,42 @@ MapQuickItem {
                 Connections {
                     target:                 _corePlugin
                     onAngleRatiosChanged:   arcCanvas.requestPaint()
+                }
+            }
+        }
+
+        Rectangle {
+            id:             calcedBearingIndicator
+            width:          radius * 2
+            height:         width
+            radius:         _radius
+            x:              (parent.width / 2) - radius
+            y:              -radius
+            color:          "white"
+            visible:        !isNaN(_calcedBearing)
+
+            transform: Rotation {
+                id:         calcedBearingIndicatorRotation
+                origin.x:   calcedBearingIndicator.radius
+                origin.y:   (mapRect.height / 2) + calcedBearingIndicator.radius
+                angle:      isNaN(calcedBearingIndicator._calcedBearing) ? 0 : calcedBearingIndicator._calcedBearing
+            }
+
+            property real _calcedBearing: _corePlugin.calcedBearings[_rotationIndex]
+            property real _radius:        ScreenTools.defaultFontPixelWidth * 4
+
+            QGCLabel {
+                id:                         calcedBearingLabel
+                anchors.horizontalCenter:   parent.horizontalCenter
+                anchors.verticalCenter:     parent.verticalCenter
+                text:                       calcedBearingIndicator._calcedBearing.toFixed(0)
+                font.pointSize:             ScreenTools.largeFontPointSize
+                color:                      "black"
+
+                transform: Rotation {
+                    origin.x:   calcedBearingLabel.width / 2
+                    origin.y:   calcedBearingLabel.height / 2
+                    angle:      -calcedBearingIndicatorRotation.angle
                 }
             }
         }
