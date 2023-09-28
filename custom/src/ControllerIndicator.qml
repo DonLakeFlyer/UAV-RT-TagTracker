@@ -77,8 +77,6 @@ Item {
                         text:                   object.tagId + object.tagLabel
                         fontSizeMode:           Text.VerticalFit
                         verticalAlignment:      Text.AlignVCenter
-
-                        Component.onCompleted: console.log("Label", object.tagId, object.tagLabel)
                     }
                 }
             }
