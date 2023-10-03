@@ -11,6 +11,10 @@ linux {
     QMAKE_CXXFLAGS_WARN_ON += -Wno-strict-aliasing
 }
 
+!WindowsBuild {
+    QMAKE_CXXFLAGS_WARN_ON += -Wno-sometimes-uninitialized
+}
+
 # Build number is automatic
 # Uses the current branch. This way it works on any branch including build-server's PR branches
 CUSTOM_QGC_VER_BUILD = $$system(git --git-dir ../.git rev-list $$GIT_BRANCH --first-parent --count)
