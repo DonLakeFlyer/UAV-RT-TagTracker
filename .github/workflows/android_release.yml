@@ -100,7 +100,7 @@ jobs:
           ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
         run:  |
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang ANDROID_ABIS=armeabi-v7a
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro CONFIG-=debug CONFIG-=debug_and_release CONFIG+=release -spec android-clang ANDROID_ABIS=armeabi-v7a
             make -j2 apk
 
       - name: ccache post-run
