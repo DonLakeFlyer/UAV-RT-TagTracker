@@ -1,8 +1,9 @@
 #pragma once
 
 #include "QmlObjectListModel.h"
-#include "TagInfoList.h"
 #include "QGCMAVLink.h"
+
+class TagDatabase;
 
 class DetectorInfoListModel : public QmlObjectListModel
 {
@@ -12,7 +13,7 @@ public:
     DetectorInfoListModel(QObject* parent = nullptr);
     ~DetectorInfoListModel();
 
-    void    setupFromTags               (const TagInfoList& tagInfoList);
+    void    setupFromTags               (TagDatabase* tagDB);
     void    handleTunnelPulse           (const mavlink_tunnel_t& tunnel);
     void    resetMaxSNR                 ();
     void    resetPulseGroupCount        ();
