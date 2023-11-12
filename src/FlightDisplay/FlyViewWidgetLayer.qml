@@ -50,18 +50,18 @@ Item {
 
     QGCToolInsets {
         id:                     _totalToolInsets
-        leftEdgeTopInset:       toolStrip.leftInset
-        leftEdgeCenterInset:    toolStrip.leftInset
-        leftEdgeBottomInset:    parentToolInsets.leftEdgeBottomInset
-        rightEdgeTopInset:      _root.width - instrumentPanel.x
-        rightEdgeCenterInset:   parentToolInsets.rightEdgeCenterInset
-        rightEdgeBottomInset:   parentToolInsets.rightEdgeBottomInset
-        topEdgeLeftInset:       parentToolInsets.topEdgeLeftInset
-        topEdgeCenterInset:     parentToolInsets.topEdgeCenterInset
-        topEdgeRightInset:      instrumentPanel.y + instrumentPanel.height
-        bottomEdgeLeftInset:    parentToolInsets.bottomEdgeLeftInset
-        bottomEdgeCenterInset:  mapScale.centerInset
-        bottomEdgeRightInset:   0
+        leftEdgeTopInset:       toolStrip.leftEdgeTopInset
+        leftEdgeCenterInset:    parentToolInsets.leftEdgeCenterInset
+        leftEdgeBottomInset:    virtualJoystickMultiTouch.visible ? virtualJoystickMultiTouch.leftEdgeBottomInset : parentToolInsets.leftEdgeBottomInset
+        rightEdgeTopInset:      instrumentPanel.rightEdgeTopInset
+        rightEdgeCenterInset:   (telemetryPanel.rightEdgeCenterInset > photoVideoControl.rightEdgeCenterInset) ? telemetryPanel.rightEdgeCenterInset : photoVideoControl.rightEdgeCenterInset
+        rightEdgeBottomInset:   virtualJoystickMultiTouch.visible ? virtualJoystickMultiTouch.rightEdgeBottomInset : parentToolInsets.rightEdgeBottomInset
+        topEdgeLeftInset:       toolStrip.topEdgeLeftInset
+        topEdgeCenterInset:     mapScale.topEdgeCenterInset
+        topEdgeRightInset:      instrumentPanel.topEdgeRightInset
+        bottomEdgeLeftInset:    virtualJoystickMultiTouch.visible ? virtualJoystickMultiTouch.bottomEdgeLeftInset : parentToolInsets.bottomEdgeLeftInset
+        bottomEdgeCenterInset:  telemetryPanel.bottomEdgeCenterInset
+        bottomEdgeRightInset:   virtualJoystickMultiTouch.visible ? virtualJoystickMultiTouch.bottomEdgeRightInset : parentToolInsets.bottomEdgeRightInset
     }
 
     FlyViewMissionCompleteDialog {
