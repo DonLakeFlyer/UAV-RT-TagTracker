@@ -9,7 +9,6 @@
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionStartRotation.qml">src/CustomGuidedActionStartRotation.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionDownloadLogs.qml">src/CustomGuidedActionDownloadLogs.qml</file>
         <file alias="QGroundControl/FlightDisplay/CustomGuidedActionRawCapture.qml">src/CustomGuidedActionRawCapture.qml</file>
-        <file alias="QGroundControl/FlightDisplay/FlyViewCustomLayer.qml">src/FlyViewCustomLayer.qml</file>
     </qresource>
     <qresource prefix="/res">
         <file alias="TagInfo.txt">TagInfo.txt</file>
