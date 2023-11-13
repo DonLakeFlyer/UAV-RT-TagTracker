@@ -1,0 +1,34 @@
+{
+    "version":  1,
+    "fileType": "FactMetaData",
+    "QGC.MetaData.Facts":
+[
+{
+    "name":         "selected",
+    "shortDesc":    "Selected",
+    "type":         "UInt32"
+},
+{
+    "name":         "id",
+    "shortDesc":    "Id",
+    "type":         "UInt32"
+},
+{
+    "name":         "manufacturerId",
+    "shortDesc":    "Manufacturer Id",
+    "type":         "UInt32"
+},
+{
+    "name":         "name",
+    "shortDesc":    "Name",
+    "type":         "string"
+},
+{
+    "name":         "freq_hz",
+    "shortDesc":    "Frequency",
+    "type":         "UInt32",
+    "units":        "hz",
+    "default":      146000000
+}
+]
+}
