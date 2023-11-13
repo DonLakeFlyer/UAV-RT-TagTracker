@@ -100,7 +100,7 @@ SOURCES += \
     $$PWD/src/CustomSettings.cc \
     $$PWD/src/DetectorInfo.cc \
     $$PWD/src/DetectorInfoListModel.cc \
-    $$PWD/src/TagInfoList.cc \
+    $$PWD/src/TagDatabase.cc \
     $$PWD/src/PulseInfo.cc \
     $$PWD/src/PulseInfoList.cc \
 
@@ -113,7 +113,7 @@ HEADERS += \
     $$PWD/src/CustomSettings.h \
     $$PWD/src/DetectorInfo.h \
     $$PWD/src/DetectorInfoListModel.h \
-    $$PWD/src/TagInfoList.h \
+    $$PWD/src/TagDatabase.h \
     $$PWD/src/PulseInfo.h \
     $$PWD/src/PulseInfoList.h \
 

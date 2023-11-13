@@ -9,9 +9,9 @@
 #include "CustomOptions.h"
 #include "FactSystem.h"
 #include "TunnelProtocol.h"
-#include "TagInfoList.h"
 #include "PulseInfo.h"
 #include "DetectorInfoListModel.h"
+#include "TagDatabase.h"
 
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
@@ -55,6 +55,7 @@ public:
     Q_PROPERTY(bool                 controllerLostHeartbeat MEMBER  _controllerLostHeartbeat    NOTIFY controllerLostHeartbeatChanged)
     Q_PROPERTY(int                  controllerStatus        MEMBER  _controllerStatus           NOTIFY controllerStatusChanged)
     Q_PROPERTY(QmlObjectListModel*  detectorInfoList        READ    detectorInfoList            CONSTANT)
+    Q_PROPERTY(TagDatabase*         tagDatabase             MEMBER  _tagDatabase                CONSTANT)
 
     CustomSettings*     customSettings  () { return _customSettings; }
     QmlObjectListModel* detectorInfoList() { return dynamic_cast<QmlObjectListModel*>(&_detectorInfoListModel); }
@@ -160,6 +161,7 @@ private:
     int                     _detectionStatus    = -1;
     bool                    _retryRotation      = false;
     int                     _controllerStatus   = ControllerStatusIdle;
+    int                     _nextTagIndexToSend = 0;
 
     QTimer                  _vehicleStateTimeoutTimer;
     QTimer                  _tunnelCommandAckTimer;
@@ -177,8 +179,7 @@ private:
 
     DetectorInfoListModel   _detectorInfoListModel;
 
-    TagInfoList             _tagInfoList;
-    TagInfoList::const_iterator _nextTagToSend;
+    TagDatabase*             _tagDatabase = nullptr;
 
     bool                    _controllerLostHeartbeat { false };
     QTimer                  _controllerHeartbeatTimer;
