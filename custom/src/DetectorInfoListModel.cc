@@ -1,5 +1,9 @@
 #include "DetectorInfoListModel.h"
 #include "DetectorInfo.h"
+#include "TagDatabase.h"
+#include "QGCApplication.h"
+#include "CustomPlugin.h"
+#include "CustomSettings.h"
 
 #include <QDebug>
 #include <QPointF>
@@ -17,16 +21,36 @@ DetectorInfoListModel::~DetectorInfoListModel()
 
 }
 
-void DetectorInfoListModel::setupFromTags(const TagInfoList& tagInfoList)
+void DetectorInfoListModel::setupFromTags(TagDatabase* tagDB)
 {
     clearAndDeleteContents();
-    
-    for (auto& extTagInfo: tagInfoList) {
-        DetectorInfo* detectorInfo = new DetectorInfo(extTagInfo.tagInfo.id, extTagInfo.ip_msecs_1_id, extTagInfo.tagInfo.intra_pulse1_msecs, extTagInfo.tagInfo.k, this);
+
+    QmlObjectListModel* tagInfoList         = tagDB->tagInfoListModel();
+    CustomSettings*     customSettings      = qobject_cast<CustomPlugin*>(qgcApp()->toolbox()->corePlugin())->customSettings();
+
+    for (int i=0; i<tagInfoList->count(); i++) {
+        TagInfo* tagInfo = tagInfoList->value<TagInfo*>(i);
+        if (!tagInfo->selected()->rawValue().toBool()) {
+            continue;
+        }
+
+        TagManufacturer* tagManufacturer = tagDB->findTagManufacturer(tagInfo->manufacturerId()->rawValue().toUInt());
+
+        DetectorInfo* detectorInfo = new DetectorInfo(
+                                            tagInfo->id()->rawValue().toUInt(),
+                                            tagManufacturer->ip_msecs_1_id()->rawValue().toString(),
+                                            tagManufacturer->ip_msecs_1()->rawValue().toUInt(),
+                                            customSettings->k()->rawValue().toUInt(),
+                                            this);
         append(detectorInfo);
 
-        if (extTagInfo.tagInfo.intra_pulse2_msecs != 0) {
-            DetectorInfo* detectorInfo = new DetectorInfo(extTagInfo.tagInfo.id + 1, extTagInfo.ip_msecs_2_id, extTagInfo.tagInfo.intra_pulse2_msecs, extTagInfo.tagInfo.k, this);
+        if (tagManufacturer->ip_msecs_2()->rawValue().toUInt() != 0) {
+            DetectorInfo* detectorInfo = new DetectorInfo(
+                                                tagInfo->id()->rawValue().toUInt() + 1,
+                                                tagManufacturer->ip_msecs_2_id()->rawValue().toString(),
+                                                tagManufacturer->ip_msecs_2()->rawValue().toUInt(),
+                                                customSettings->k()->rawValue().toUInt(),
+                                                this);
             append(detectorInfo);
         }
     }

@@ -1,0 +1,64 @@
+{
+    "version":  1,
+    "fileType": "FactMetaData",
+    "QGC.MetaData.Facts":
+[
+{
+    "name":         "id",
+    "shortDesc":    "id",
+    "type":         "Uint32"
+},
+{
+    "name":         "name",
+    "shortDesc":    "Manufacturer",
+    "type":         "string"
+},
+{
+    "name":         "ip_msecs_1",
+    "shortDesc":    "Intra-pulse rate 1",
+    "type":         "UInt32",
+    "units":        "msecs",
+    "default":      1333
+},
+{
+    "name":         "ip_msecs_2",
+    "shortDesc":    "Intra-pulse rate 2",
+    "type":         "UInt32",
+    "units":        "msecs",
+    "default":      2000
+},
+{
+    "name":         "ip_msecs_1_id",
+    "shortDesc":    "Rate 1 name",
+    "type":         "string",
+    "default":      "Moving"
+},
+{
+    "name":         "ip_msecs_2_id",
+    "shortDesc":    "Rate 2 name",
+    "type":         "string",
+    "default":      "Resting"
+},
+{
+    "name":         "pulse_width_msecs",
+    "shortDesc":    "Pulse width",
+    "type":         "UInt32",
+    "units":        "msecs",
+    "default":      15
+},
+{
+    "name":         "ip_uncertainty_msecs",
+    "shortDesc":    "Uncertainty",
+    "type":         "UInt32",
+    "units":        "msecs",
+    "default":      60
+},
+{
+    "name":         "ip_jitter_msecs",
+    "shortDesc":    "Jitter",
+    "type":         "UInt32",
+    "units":        "msecs",
+    "default":      20
+}
+]
+}

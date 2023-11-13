@@ -15,5 +15,7 @@
     </qresource>
     <qresource prefix="/json">
         <file alias="Custom.SettingsGroup.json">src/Custom.SettingsGroup.json</file>
+        <file alias="TagInfo.json">src/TagInfo.json</file>
+        <file alias="TagManufacturer.json">src/TagManufacturer.json</file>
     </qresource>
 </RCC>
