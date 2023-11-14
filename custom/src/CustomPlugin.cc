@@ -35,7 +35,7 @@ CustomPlugin::CustomPlugin(QGCApplication *app, QGCToolbox* toolbox)
     , _flightStateMachineActive  (false)
     , _vehicleFrequency     (0)
     , _lastPulseSendIndex   (-1)
-    , _missedPulseCount     (0)    
+    , _missedPulseCount     (0)
 {
     static_assert(TunnelProtocolValidateSizes, "TunnelProtocolValidateSizes failed");
 
@@ -69,7 +69,7 @@ void CustomPlugin::setToolbox(QGCToolbox* toolbox)
     _customSettings             = new CustomSettings            (nullptr);
     _customOptions              = new CustomOptions             (this, nullptr);
 
-    _tagInfoList.checkForTagFile();
+    _tagDatabase = new TagDatabase(this);
 
     _csvClearPrevRotationLogs();
 }
@@ -158,7 +158,7 @@ void CustomPlugin::_handleTunnelCommandAck(const mavlink_tunnel_t& tunnel)
                 _sendNextTag();
                 break;
             case COMMAND_ID_END_TAGS:
-                _detectorInfoListModel.setupFromTags(_tagInfoList);
+                _detectorInfoListModel.setupFromTags(_tagDatabase);
                 break;
             case COMMAND_ID_START_DETECTION:
                 _csvStartFullPulseLog();
@@ -188,13 +188,6 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         qWarning() << "_handleTunnelPulse Received incorrectly sized PulseInfo payload expected:actual" <<  sizeof(PulseInfo_t) << tunnel.payload_length;
     }
 
-    if (_tagInfoList.empty()) {
-        // Vehicle still sending pulses but QGC has not yet loaded any.
-        // This can happen if you restart QGC while the vehicle is still running.
-        qCDebug(CustomPluginLog) << "No tags loaded, ignoring pulse";
-        return;
-    }
-
     _detectorInfoListModel.handleTunnelPulse(tunnel);
 
     PulseInfo_t pulseInfo;
@@ -202,11 +195,10 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
 
     bool isDetectorHeartbeat = pulseInfo.frequency_hz == 0;
     if (pulseInfo.confirmed_status || isDetectorHeartbeat) {
-        bool extTagInfoExists   = false;
-        auto evenTagId          = pulseInfo.tag_id - (pulseInfo.tag_id % 2);
-        auto extTagInfo         = _tagInfoList.getTagInfo(evenTagId, extTagInfoExists);
+        auto evenTagId  = pulseInfo.tag_id - (pulseInfo.tag_id % 2);
+        auto tagInfo    = _tagDatabase->findTagInfo(evenTagId);
 
-        if (!extTagInfoExists) {
+        if (!tagInfo) {
             qWarning() << "_handleTunnelPulse: Received pulse for unknown tag_id" << pulseInfo.tag_id;
             return;
         }
@@ -414,9 +406,9 @@ void CustomPlugin::startRotation(void)
     double nextHeading = -antennaOffset;
 
     // We wait at each rotation for enough time to go by to capture a user specified set of k groups
-    uint32_t maxK;
+    uint32_t    maxK                        = _customSettings->k()->rawValue().toUInt();
     auto        kGroups                     = _customSettings->rotationKWaitCount()->rawValue().toInt();
-    auto        maxIntraPulseMsecs          = _tagInfoList.maxIntraPulseMsecs(maxK);
+    auto        maxIntraPulseMsecs          = _tagDatabase->maxIntraPulseMsecs();
     uint32_t    rotationCaptureWaitMsecs    = maxIntraPulseMsecs * ((kGroups * maxK) + 1);
 
     _currentSlice = 0;
@@ -460,7 +452,7 @@ void CustomPlugin::startDetection(void)
     memset(&startDetectionInfo, 0, sizeof(startDetectionInfo));
 
     startDetectionInfo.header.command               = COMMAND_ID_START_DETECTION;
-    startDetectionInfo.radio_center_frequency_hz    = _tagInfoList.radioCenterHz();
+    startDetectionInfo.radio_center_frequency_hz    = _tagDatabase->radioCenterHz();
     startDetectionInfo.sdr_type                     = _customSettings->sdrType()->rawValue().toUInt();
 
     _sendTunnelCommand((uint8_t*)&startDetectionInfo, sizeof(startDetectionInfo));
@@ -485,14 +477,18 @@ void CustomPlugin::rawCapture(void)
 }
 
 void CustomPlugin::sendTags(void)
-{    
-    _tagInfoList.loadTags(_customSettings->sdrType()->rawValue().toUInt());
-
-    if (_tagInfoList.size() == 0) {
+{
+    if (_tagDatabase->tagInfoListModel()->count() == 0) {
         qgcApp()->showAppMessage(("No tags are available to send."));
         return;
     }
-    _nextTagToSend = _tagInfoList.begin();
+
+    if (!_tagDatabase->channelizerTuner()) {
+        qgcApp()->showAppMessage("Channelizer tuner failed. Detectors not started");
+        return;
+    }
+
+    _nextTagIndexToSend = 0;
 
     StartTagsInfo_t startTagsInfo;
 
@@ -507,15 +503,40 @@ void CustomPlugin::_sendNextTag(void)
     // Don't send tags too fast
     QGC::SLEEP::msleep(100);
 
-    if (_nextTagToSend == _tagInfoList.end()) {
+    auto tagInfoListModel = _tagDatabase->tagInfoListModel();
+
+    if (_nextTagIndexToSend >= tagInfoListModel->count()) {
         _sendEndTags();
     } else {
-        auto refExtTagInfo = *_nextTagToSend;
-        ExtendedTagInfo_t extTagInfo = refExtTagInfo;   // make a copy
+        auto tagInfo = tagInfoListModel->value<TagInfo*>(_nextTagIndexToSend++);
 
-        _sendTunnelCommand((uint8_t*)&extTagInfo.tagInfo, sizeof(extTagInfo.tagInfo));
+        if (tagInfo->selected()->rawValue().toUInt()) {
+            TunnelProtocol::TagInfo_t tunnelTagInfo;
+            auto tagManufacturer = _tagDatabase->findTagManufacturer(tagInfo->manufacturerId()->rawValue().toUInt());
 
-        _nextTagToSend++;
+            memset(&tunnelTagInfo, 0, sizeof(tunnelTagInfo));
+
+            tunnelTagInfo.header.command = COMMAND_ID_TAG;
+            tunnelTagInfo.id                                        = tagInfo->id()->rawValue().toUInt();
+            tunnelTagInfo.frequency_hz                              = tagInfo->frequencyHz()->rawValue().toUInt();
+            tunnelTagInfo.pulse_width_msecs                         = tagManufacturer->pulse_width_msecs()->rawValue().toUInt();
+            tunnelTagInfo.intra_pulse1_msecs                        = tagManufacturer->ip_msecs_1()->rawValue().toUInt();
+            tunnelTagInfo.intra_pulse2_msecs                        = tagManufacturer->ip_msecs_2()->rawValue().toUInt();
+            tunnelTagInfo.intra_pulse_uncertainty_msecs             = tagManufacturer->ip_uncertainty_msecs()->rawValue().toUInt();
+            tunnelTagInfo.intra_pulse_jitter_msecs                  = tagManufacturer->ip_jitter_msecs()->rawValue().toUInt();
+            tunnelTagInfo.k                                         = _customSettings->k()->rawValue().toUInt();
+            tunnelTagInfo.false_alarm_probability                   = _customSettings->falseAlarmProbability()->rawValue().toDouble() / 100.0;
+            tunnelTagInfo.channelizer_channel_number                = tagInfo->channelizer_channel_number;
+            tunnelTagInfo.channelizer_channel_center_frequency_hz   = tagInfo->channelizer_channel_center_frequency_hz;
+            tunnelTagInfo.ip1_mu                                    = qQNaN();
+            tunnelTagInfo.ip1_sigma                                 = qQNaN();
+            tunnelTagInfo.ip2_mu                                    = qQNaN();
+            tunnelTagInfo.ip2_sigma                                 = qQNaN();
+
+            _sendTunnelCommand((uint8_t*)&tunnelTagInfo, sizeof(tunnelTagInfo));
+        } else {
+            _sendNextTag();
+        }
     }
 }
 
