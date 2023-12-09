@@ -207,6 +207,12 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
             _csvLogPulse(_csvFullPulseLogFile, pulseInfo);
             _csvLogPulse(_csvRotationPulseLogFile, pulseInfo);
 
+            qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
+                                        "CONFIRMED tag_id" <<
+                                        pulseInfo.tag_id <<
+                                        "snr" <<
+                                        pulseInfo.snr;
+
             // Add pulse to map
             if (_customSettings->showPulseOnMap()->rawValue().toBool() && pulseInfo.snr != 0) {
                 QUrl url = QUrl::fromUserInput("qrc:/qml/PulseMapItem.qml");
@@ -216,8 +222,10 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
         }
     } else {
         qCDebug(CustomPluginLog) << Qt::fixed << qSetRealNumberPrecision(2) <<
-                                    "UNCONFIRMED tag_id" <<
-                                    pulseInfo.tag_id;
+                                    "Uncconfirmed tag_id" <<
+                                    pulseInfo.tag_id <<
+                                    "snr" <<
+                                    pulseInfo.snr;
     }
 
 }
