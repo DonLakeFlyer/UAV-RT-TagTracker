@@ -71,6 +71,13 @@ Item {
 
                             property real filteredSNR: Math.max(0, Math.min(object.lastPulseSNR, maxSNR))
                         }
+
+                        QGCLabel {
+                            anchors.fill:           parent
+                            text:                   filteredSNR
+                            horizontalAlignment:    Text.AlignHCenter
+                            verticalAlignment:      Text.AlignVCenter
+                        }
                     }
 
                     QGCLabel {
