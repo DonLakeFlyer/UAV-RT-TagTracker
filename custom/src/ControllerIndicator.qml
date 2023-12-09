@@ -52,6 +52,8 @@ Item {
                 model: QGroundControl.corePlugin.detectorInfoList
 
                 RowLayout {
+                    property real filteredSNR: Math.max(0, Math.min(object.lastPulseSNR, maxSNR))
+
                     Rectangle {
                         id:                     pulseRect
                         Layout.fillHeight:      true
@@ -65,11 +67,9 @@ Item {
                             anchors.leftMargin:     2
                             anchors.rightMargin:    ((maxSNR - filteredSNR) / maxSNR) *  (parent.width - 4)
                             anchors.fill:           parent
-                            color:                  object.lastPulseStale ? "transparent" : "green"
-                            border.color:           "green"
+                            color:                  object.lastPulseStale ? "yellow" : "green"
                             visible:                !object.heartbeatLost
 
-                            property real filteredSNR: Math.max(0, Math.min(object.lastPulseSNR, maxSNR))
                         }
 
                         QGCLabel {
