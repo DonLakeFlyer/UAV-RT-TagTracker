@@ -486,8 +486,16 @@ void CustomPlugin::rawCapture(void)
 
 void CustomPlugin::sendTags(void)
 {
-    if (_tagDatabase->tagInfoListModel()->count() == 0) {
-        qgcApp()->showAppMessage(("No tags are available to send."));
+    bool foundSelectedTag = false;
+    for (int i=0; i<_tagDatabase->tagInfoListModel()->count(); i++) {
+        TagInfo* tagInfo = _tagDatabase->tagInfoListModel()->value<TagInfo*>(i);
+        if (tagInfo->selected()->rawValue().toUInt()) {
+            foundSelectedTag = true;
+            break;
+        }
+    }
+    if (!foundSelectedTag) {
+        qgcApp()->showAppMessage(("No tags are available/selected to send."));
         return;
     }
 
