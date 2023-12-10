@@ -52,12 +52,15 @@ Item {
                 model: QGroundControl.corePlugin.detectorInfoList
 
                 RowLayout {
+                    property real filteredSNR: Math.max(0, Math.min(object.lastPulseSNR, maxSNR))
+
                     Rectangle {
                         id:                     pulseRect
                         Layout.fillHeight:      true
                         Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 20
-                        color:                  object.heartbeatLost ? "red" : "transparent" 
-                        border.color:           object.heartbeatLost ? "red" : "green" 
+                        color:                  object.heartbeatLost ? 
+                                                    "red" :
+                                                    object.lastPulseStale ? "yellow" : "transparent" 
 
                         Rectangle {
                             anchors.topMargin:      2
@@ -65,11 +68,18 @@ Item {
                             anchors.leftMargin:     2
                             anchors.rightMargin:    ((maxSNR - filteredSNR) / maxSNR) *  (parent.width - 4)
                             anchors.fill:           parent
-                            color:                  object.lastPulseStale ? "transparent" : "green"
-                            border.color:           "green"
+                            color:                  object.lastPulseStale ? "yellow" : "green"
                             visible:                !object.heartbeatLost
 
-                            property real filteredSNR: Math.max(0, Math.min(object.lastPulseSNR, maxSNR))
+                        }
+
+                        QGCLabel {
+                            anchors.fill:           parent
+                            text:                   filteredSNR.toFixed(1)
+                            font.bold:              true
+                            color:                  object.lastPulseStale ? "black" : "white"   
+                            horizontalAlignment:    Text.AlignHCenter
+                            verticalAlignment:      Text.AlignVCenter
                         }
                     }
 

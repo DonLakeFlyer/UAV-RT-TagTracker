@@ -179,7 +179,7 @@ private:
 
     TagDatabase*             _tagDatabase = nullptr;
 
-    bool                    _controllerLostHeartbeat { false };
+    bool                    _controllerLostHeartbeat { true };
     QTimer                  _controllerHeartbeatTimer;
 };
 
