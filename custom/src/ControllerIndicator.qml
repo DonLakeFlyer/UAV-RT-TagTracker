@@ -58,8 +58,9 @@ Item {
                         id:                     pulseRect
                         Layout.fillHeight:      true
                         Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 20
-                        color:                  object.heartbeatLost ? "red" : "transparent" 
-                        border.color:           object.heartbeatLost ? "red" : "green" 
+                        color:                  object.heartbeatLost ? 
+                                                    "red" :
+                                                    object.lastPulseStale ? "yellow" : "transparent" 
 
                         Rectangle {
                             anchors.topMargin:      2
@@ -74,7 +75,9 @@ Item {
 
                         QGCLabel {
                             anchors.fill:           parent
-                            text:                   filteredSNR
+                            text:                   filteredSNR.toFixed(1)
+                            font.bold:              true
+                            color:                  object.lastPulseStale ? "black" : "white"   
                             horizontalAlignment:    Text.AlignHCenter
                             verticalAlignment:      Text.AlignVCenter
                         }
