@@ -77,7 +77,7 @@ Item {
                             anchors.fill:           parent
                             text:                   filteredSNR.toFixed(1)
                             font.bold:              true
-                            color:                  object.lastPulseStale ? "black" : "white"   
+                            color:                  "black"
                             horizontalAlignment:    Text.AlignHCenter
                             verticalAlignment:      Text.AlignVCenter
                         }
