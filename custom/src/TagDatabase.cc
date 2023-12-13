@@ -367,6 +367,23 @@ TagManufacturer* TagDatabase::findTagManufacturer(uint32_t id)
     return nullptr;
 }
 
+void TagDatabase::_updateNextIds(void)
+{
+    uint32_t maxId = 0;
+    for (int i=0; i<_tagInfoListModel->count(); i++) {
+        TagInfo* tagInfo = _tagInfoListModel->value<TagInfo*>(i);
+        maxId = std::max(tagInfo->id()->rawValue().toUInt(), maxId);
+    }
+    _nextTagId = maxId + 2;
+
+    maxId = 0;
+    for (int i=0; i<_tagInfoListModel->count(); i++) {
+        TagManufacturer* tagManufacturer = _tagManufacturerListModel->value<TagManufacturer*>(i);
+        maxId = std::max(tagManufacturer->id()->rawValue().toUInt(), maxId);
+    }
+    _nextManufacturerId = maxId + 1;
+}
+
 bool TagDatabase::_loadTagInfo(void)
 {
     QString filename = _tagInfoFilePath();
@@ -457,6 +474,8 @@ bool TagDatabase::_loadTagInfo(void)
 
         _tagInfoListModel->append(new TagInfo(selected, id, name, manufacturerId, frequencyHz, this));
     }
+
+    _updateNextIds();
 
     return true;
 }

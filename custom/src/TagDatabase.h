@@ -160,6 +160,7 @@ private:
     void    _setupTunerVars     ();
     void    _printChannelMap    (const uint32_t centerFreqHz, const QVector<uint32_t>& wrappedRequestedFreqsHz);
     int     _firstChannelFreqHz (const int centerFreq);
+    void    _updateNextIds      ();
     
 private:
     QmlObjectListModel* _tagInfoListModel           = nullptr;
