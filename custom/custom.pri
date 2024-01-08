@@ -30,13 +30,13 @@ DEFINES += APP_VERSION_STR=\"\\\"$$CUSTOM_QGC_VERSION\\\"\"
 
 message(Custom QGC Version: $${CUSTOM_QGC_VERSION})
 
-# Build a single flight stack by disabling APM support
-CONFIG  += QGC_DISABLE_APM_MAVLINK
-CONFIG  += QGC_DISABLE_APM_PLUGIN QGC_DISABLE_APM_PLUGIN_FACTORY
+# We implement our own plugin factories
+CONFIG  +=  \
+    QGC_DISABLE_PX4_PLUGIN_FACTORY \
+    QGC_DISABLE_APM_PLUGIN_FACTORY
 
 # Remove code which the Herelink doesn't need
 DEFINES += \
-    QGC_GST_TAISYNC_DISABLED
     NO_SERIAL_LINK
     QGC_DISABLE_BLUETOOTH
 

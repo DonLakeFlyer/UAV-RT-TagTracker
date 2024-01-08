@@ -585,38 +585,6 @@ Item {
             confirmDialog.message = setHomeMessage
             confirmDialog.hideTrigger = Qt.binding(function() { return !showSetHome })
             break
-        // Start UAV-RT mods
-        case actionSendTags:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = sendTagsTitle
-            confirmDialog.message = sendTagsMessage
-            break
-        case actionStartDetection:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = startDetectionTitle
-            confirmDialog.message = startDetectionMessage
-            break
-        case actionStopDetection:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = stopDetectionTitle
-            confirmDialog.message = stopDetectionMessage
-            break
-        case actionStartRotation:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = startRotationTitle
-            confirmDialog.message = startRotationMessage
-            break
-        case actionRawCapture:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = rawCaptureTitle
-            confirmDialog.message = rawCaptureMessage
-            break
-        case actionDownloadLogs:
-            confirmDialog.hideTrigger = true
-            confirmDialog.title = downloadLogsTitle
-            confirmDialog.message = downloadLogsMessage
-            break
-// End UAV-RT modes
         default:
             if (!customConfirmAction(actionCode)) {
                 console.warn("Unknown actionCode", actionCode)
@@ -745,26 +713,6 @@ Item {
         case actionSetHome:
             _activeVehicle.doSetHome(actionData)
             break
-        // Start UAV-RT mods
-        case actionSendTags:
-            QGroundControl.corePlugin.sendTags()
-            break
-        case actionStartDetection:
-            QGroundControl.corePlugin.startDetection()
-            break
-        case actionStopDetection:
-            QGroundControl.corePlugin.stopDetection()
-            break
-        case actionStartRotation:
-            QGroundControl.corePlugin.startRotation()
-            break
-        case actionRawCapture:
-            QGroundControl.corePlugin.rawCapture()
-            break
-        case actionDownloadLogs:
-            QGroundControl.corePlugin.downloadLogs()
-            break
-// End UAV-RT modes
         default:
             if (!customExecuteAction(actionCode)) {
                 console.warn(qsTr("Internal error: unknown actionCode"), actionCode)
