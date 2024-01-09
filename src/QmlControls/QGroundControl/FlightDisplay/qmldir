@@ -31,11 +31,6 @@ GuidedValueSlider               1.0 GuidedValueSlider.qml
 GuidedActionTakeoff             1.0 GuidedActionTakeoff.qml
 GuidedActionGripper             1.0 GuidedActionGripper.qml
 CustomGuidedActionSendTags      1.0 CustomGuidedActionSendTags.qml
-CustomGuidedActionStartDetection      1.0 CustomGuidedActionStartDetection.qml
-CustomGuidedActionStopDetection       1.0 CustomGuidedActionStopDetection.qml
-CustomGuidedActionStartRotation       1.0 CustomGuidedActionStartRotation.qml
-CustomGuidedActionDownloadLogs       1.0 CustomGuidedActionDownloadLogs.qml
-CustomGuidedActionRawCapture    1.0 CustomGuidedActionRawCapture.qml
 GuidedToolStripAction           1.0 GuidedToolStripAction.qml
 MultiVehicleList                1.0 MultiVehicleList.qml
 PreFlightBatteryCheck           1.0 PreFlightBatteryCheck.qml

@@ -7,9 +7,7 @@
 #endif
 #include "QmlObjectListModel.h"
 #include "CustomOptions.h"
-#include "FactSystem.h"
 #include "TunnelProtocol.h"
-#include "PulseInfo.h"
 #include "DetectorInfoListModel.h"
 #include "TagDatabase.h"
 

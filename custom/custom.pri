@@ -35,11 +35,6 @@ CONFIG  +=  \
     QGC_DISABLE_PX4_PLUGIN_FACTORY \
     QGC_DISABLE_APM_PLUGIN_FACTORY
 
-# Remove code which the Herelink doesn't need
-DEFINES += \
-    NO_SERIAL_LINK
-    QGC_DISABLE_BLUETOOTH
-
 # Tag Tracker is set as an android Home App
 CONFIG += AndroidHomeApp
 

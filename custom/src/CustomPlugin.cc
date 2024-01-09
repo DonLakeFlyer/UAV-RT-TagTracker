@@ -243,7 +243,7 @@ void CustomPlugin::_csvStartFullPulseLog(void)
     }
 
     _csvFullPulseLogFile.setFileName(QString("%1/Pulse-%2.csv").arg(_csvLogFilePath(), QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data()));
-    qCDebug(CustomPluginLog) << "Full CSV Pulse logging to:" << _csvFullPulseLogFile;
+    qCDebug(CustomPluginLog) << "Full CSV Pulse logging to:" << _csvFullPulseLogFile.fileName();
     if (!_csvFullPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Unbuffered)) {
         qgcApp()->showAppMessage(QString("Open of full pulse csv log file failed: %1").arg(_csvFullPulseLogFile.errorString()));
         return;
@@ -273,7 +273,7 @@ void CustomPlugin::_csvStartRotationPulseLog(int rotationCount)
     }
 
     _csvRotationPulseLogFile.setFileName(QString("%1/Rotation-%2.csv").arg(_csvLogFilePath()).arg(rotationCount));
-    qCDebug(CustomPluginLog) << "Rotation CSV Pulse logging to:" << _csvRotationPulseLogFile;
+    qCDebug(CustomPluginLog) << "Rotation CSV Pulse logging to:" << _csvRotationPulseLogFile.fileName();
     if (!_csvRotationPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Unbuffered)) {
         qgcApp()->showAppMessage(QString("Open of rotation pulse csv log file failed: %1").arg(_csvRotationPulseLogFile.errorString()));
         return;

@@ -3,11 +3,14 @@
 #include <QObject>
 #include <QMap>
 
+#include "QmlObjectListModel.h"
+
 class FactMetaData;
 class Fact;
 class TagDatabase;
-class QmlObjectListModel;
 class TagDatabase;
+
+Q_MOC_INCLUDE("Fact.h")
 
 class TagInfo : public QObject
 {

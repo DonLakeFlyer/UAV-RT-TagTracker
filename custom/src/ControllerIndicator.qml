@@ -7,18 +7,18 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.11
-import QtQuick.Layouts  1.11
-import QtQuick.Controls 2.15
-import QtQuick.Dialogs  1.2
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import QtQuick.Dialogs
 
-import QGroundControl                       1.0
-import QGroundControl.Controls              1.0
-import QGroundControl.FactControls          1.0
-import QGroundControl.MultiVehicleManager   1.0
-import QGroundControl.ScreenTools           1.0
-import QGroundControl.Palette               1.0
-import MAVLink                              1.0
+import QGroundControl
+import QGroundControl.Controls
+import QGroundControl.FactControls
+import QGroundControl.MultiVehicleManager
+import QGroundControl.ScreenTools
+import QGroundControl.Palette
+import MAVLink
 
 Item {
     id:                 _root
