@@ -134,5 +134,5 @@ jobs:
       - name: Save artifact
         uses: actions/upload-artifact@master
         with:
-          name: Herelink-QGroundControl.apk
-          path: ${{ runner.temp }}/shadow_build_dir/android-build/Herelink-QGroundControl.apk
+          name: Herelink-QGroundControl64.apk
+          path: ${{ runner.temp }}/shadow_build_dir/android-build/Herelink-QGroundControl64.apk
