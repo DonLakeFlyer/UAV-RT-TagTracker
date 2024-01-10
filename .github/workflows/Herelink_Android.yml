@@ -8,22 +8,35 @@ on:
       - 'Stable*'
     tags:
       - 'v*'
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/**'
   pull_request:
     branches:
     - '*'
-
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/**'
+      
 defaults:
   run:
     shell: bash
 
 env:
   SOURCE_DIR:   ${{ github.workspace }}
-  QT_VERSION:   5.15.2
+  QT_VERSION:   6.6.1
   BUILD_TYPE:   ${{ fromJSON('["DailyBuild", "StableBuild"]')[ github.ref_type == 'tag' || contains(github.ref, 'Stable_' ) ] }}
 
 jobs:
   build:
     runs-on:  ubuntu-20.04
+
+    strategy:
+      matrix:
+       include:
+         - architecture: 64bits
+           eabi: arm64-v8a
+           aqt-arch: android_arm64_v8a
 
     steps:
       - name: Checkout repo
@@ -34,29 +47,34 @@ jobs:
       - name: Get all tags for correct version determination
         working-directory:  ${{ github.workspace }}
         run: |
-          git fetch --all --tags -f
+          git fetch --all --tags -f --depth 1
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
           version:      ${{ env.QT_VERSION }}
+          aqtversion:   ==3.1.*
           host:         linux
           target:       android
+          arch:         ${{ matrix.aqt-arch }}
+          extra:        --autodesktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts
+          modules:      qtcharts qtlocation qtpositioning qtspeech qt5compat qtmultimedia qtserialport qtimageformats qtshadertools qtimageformats qtshadertools qtconnectivity
           setup-python: true
 
       - name: Install Android NDK
         uses: nttld/setup-ndk@v1
         id: setup-ndk
         with:
-          ndk-version: r21e
+          ndk-version: r25b
           add-to-path: false
 
-      - name: Remove Android SDK android-33-ext
+      - name: Remove Android SDKs to force usage of android-33 only
         run: |
             ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext5"
             ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-33-ext4"
+            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-34"
+            ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --uninstall "platforms;android-34-ext8"
 
       - name: Install ccache
         run:  sudo apt-get install ccache
@@ -105,8 +123,9 @@ jobs:
           ANDROID_NDK_LATEST_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
         run:  |
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang ANDROID_ABIS=arm64-v8a
-            make -j2 apk
+            ls /home/runner/work/_temp/Qt/6.6.1
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="${{ matrix.eabi }}"
+            make -j2
 
       - name: ccache post-run
         run:  ccache -s

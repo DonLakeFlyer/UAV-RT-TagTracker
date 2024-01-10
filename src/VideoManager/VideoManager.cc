@@ -16,7 +16,8 @@
 #include <QQuickWindow>
 
 #ifndef QGC_DISABLE_UVC
-#include <QCameraInfo>
+#include <QMediaDevices>
+#include <QCameraDevice>
 #endif
 
 #include "ScreenToolsController.h"
@@ -34,10 +35,6 @@
 #include "VideoSettings.h"
 #else
 #include "GLVideoItemStub.h"
-#endif
-
-#ifdef QGC_GST_TAISYNC_ENABLED
-#include "TaisyncHandler.h"
 #endif
 
 QGC_LOGGING_CATEGORY(VideoManagerLog, "VideoManagerLog")
@@ -475,10 +472,10 @@ VideoManager::_updateUVC()
         _uvcVideoSourceID = "";
     } else {
         QString videoSource = _videoSettings->videoSource()->rawValue().toString();
-        QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
-        for (const QCameraInfo &cameraInfo : cameras) {
-            if (cameraInfo.description() == videoSource) {
-                _uvcVideoSourceID = cameraInfo.deviceName();
+        auto videoInputs = QMediaDevices::videoInputs();
+        for (const auto& cameraDevice: videoInputs) {
+            if (cameraDevice.description() == videoSource) {
+                _uvcVideoSourceID = cameraDevice.description();
                 qCDebug(VideoManagerLog)
                     << "Found USB source:" << _uvcVideoSourceID << " Name:" << videoSource;
                 break;
@@ -590,7 +587,7 @@ VideoManager::isUvc()
 bool
 VideoManager::uvcEnabled()
 {
-    return QCameraInfo::availableCameras().count() > 0;
+    return QMediaDevices::videoInputs().count() > 0;
 }
 #endif
 
@@ -764,22 +761,6 @@ VideoManager::_updateSettings(unsigned id)
 bool
 VideoManager::_updateVideoUri(unsigned id, const QString& uri)
 {
-#if defined(QGC_GST_TAISYNC_ENABLED) && (defined(__android__) || defined(__ios__))
-    //-- Taisync on iOS or Android sends a raw h.264 stream
-    if (isTaisync()) {
-        if (id == 0) {
-            return _updateVideoUri(0, QString("tsusb://0.0.0.0:%1").arg(TAISYNC_VIDEO_UDP_PORT));
-        } if (id == 1) {
-            // FIXME: AV: TAISYNC_VIDEO_UDP_PORT is used by video stream, thermal stream should go via its own proxy
-            if (!_videoUri[1].isEmpty()) {
-                _videoUri[1].clear();
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-#endif
     if (uri == _videoUri[id]) {
         return false;
     }

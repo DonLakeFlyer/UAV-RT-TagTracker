@@ -48,6 +48,9 @@
 #include "ImageProtocolManager.h"
 #include "HealthAndArmingCheckReport.h"
 #include "TerrainQuery.h"
+#include "StandardModes.h"
+#include "VehicleGeneratorFactGroup.h"
+#include "VehicleEFIFactGroup.h"
 
 class Actuators;
 class EventHandler;
@@ -75,6 +78,19 @@ class LinkManager;
 class InitialConnectStateMachine;
 class Autotune;
 class RemoteIDManager;
+
+Q_MOC_INCLUDE("AutoPilotPlugin.h")
+Q_MOC_INCLUDE("TrajectoryPoints.h")
+Q_MOC_INCLUDE("ParameterManager.h")
+Q_MOC_INCLUDE("VehicleObjectAvoidance.h")
+Q_MOC_INCLUDE("Autotune.h")
+Q_MOC_INCLUDE("RemoteIDManager.h")
+Q_MOC_INCLUDE("QGCCameraManager.h")
+
+#ifndef OPAQUE_PTR_VEHICLE
+    #define OPAQUE_PTR_VEHICLE
+    Q_DECLARE_OPAQUE_POINTER(Actuators*)
+#endif
 
 namespace events {
 namespace parser {
@@ -164,7 +180,6 @@ public:
     Q_PROPERTY(bool                 autoDisarm                  READ autoDisarm                                                     NOTIFY autoDisarmChanged)
     Q_PROPERTY(bool                 flightModeSetAvailable      READ flightModeSetAvailable                                         CONSTANT)
     Q_PROPERTY(QStringList          flightModes                 READ flightModes                                                    NOTIFY flightModesChanged)
-    Q_PROPERTY(QStringList          extraJoystickFlightModes    READ extraJoystickFlightModes                                       NOTIFY flightModesChanged)
     Q_PROPERTY(QString              flightMode                  READ flightMode                 WRITE setFlightMode                 NOTIFY flightModeChanged)
     Q_PROPERTY(TrajectoryPoints*    trajectoryPoints            MEMBER _trajectoryPoints                                            CONSTANT)
     Q_PROPERTY(QmlObjectListModel*  cameraTriggerPoints         READ cameraTriggerPoints                                            CONSTANT)
@@ -177,7 +192,6 @@ public:
     Q_PROPERTY(int                  newMessageCount             READ newMessageCount                                                NOTIFY newMessageCountChanged)
     Q_PROPERTY(int                  messageCount                READ messageCount                                                   NOTIFY messageCountChanged)
     Q_PROPERTY(QString              formattedMessages           READ formattedMessages                                              NOTIFY formattedMessagesChanged)
-    Q_PROPERTY(QString              latestError                 READ latestError                                                    NOTIFY latestErrorChanged)
     Q_PROPERTY(bool                 joystickEnabled             READ joystickEnabled            WRITE setJoystickEnabled            NOTIFY joystickEnabledChanged)
     Q_PROPERTY(int                  flowImageIndex              READ flowImageIndex                                                 NOTIFY flowImageIndexChanged)
     Q_PROPERTY(int                  rcRSSI                      READ rcRSSI                                                         NOTIFY rcRSSIChanged)
@@ -230,6 +244,7 @@ public:
     Q_PROPERTY(unsigned int         telemetryTXBuffer           READ telemetryTXBuffer                                              NOTIFY telemetryTXBufferChanged)
     Q_PROPERTY(int                  telemetryLNoise             READ telemetryLNoise                                                NOTIFY telemetryLNoiseChanged)
     Q_PROPERTY(int                  telemetryRNoise             READ telemetryRNoise                                                NOTIFY telemetryRNoiseChanged)
+    Q_PROPERTY(QVariant         mainStatusIndicatorExpandedItem READ mainStatusIndicatorExpandedItem                                CONSTANT)
     Q_PROPERTY(QVariantList         toolIndicators              READ toolIndicators                                                 NOTIFY toolIndicatorsChanged)
     Q_PROPERTY(QVariantList         modeIndicators              READ modeIndicators                                                 NOTIFY modeIndicatorsChanged)
     Q_PROPERTY(bool              initialPlanRequestComplete     READ initialPlanRequestComplete                                     NOTIFY initialPlanRequestCompleteChanged)
@@ -294,6 +309,7 @@ public:
     Q_PROPERTY(Fact* climbRate          READ climbRate          CONSTANT)
     Q_PROPERTY(Fact* altitudeRelative   READ altitudeRelative   CONSTANT)
     Q_PROPERTY(Fact* altitudeAMSL       READ altitudeAMSL       CONSTANT)
+    Q_PROPERTY(Fact* altitudeAboveTerr  READ altitudeAboveTerr  CONSTANT)
     Q_PROPERTY(Fact* altitudeTuning     READ altitudeTuning     CONSTANT)
     Q_PROPERTY(Fact* altitudeTuningSetpoint READ altitudeTuningSetpoint CONSTANT)
     Q_PROPERTY(Fact* xTrackError        READ xTrackError        CONSTANT)
@@ -303,6 +319,7 @@ public:
     Q_PROPERTY(Fact* timeToHome         READ timeToHome         CONSTANT)
     Q_PROPERTY(Fact* missionItemIndex   READ missionItemIndex   CONSTANT)
     Q_PROPERTY(Fact* headingToNextWP    READ headingToNextWP    CONSTANT)
+    Q_PROPERTY(Fact* distanceToNextWP   READ distanceToNextWP   CONSTANT)
     Q_PROPERTY(Fact* headingToHome      READ headingToHome      CONSTANT)
     Q_PROPERTY(Fact* distanceToGCS      READ distanceToGCS      CONSTANT)
     Q_PROPERTY(Fact* hobbs              READ hobbs              CONSTANT)
@@ -323,6 +340,8 @@ public:
     Q_PROPERTY(FactGroup*           localPosition   READ localPositionFactGroup     CONSTANT)
     Q_PROPERTY(FactGroup*           localPositionSetpoint READ localPositionSetpointFactGroup CONSTANT)
     Q_PROPERTY(FactGroup*           hygrometer      READ hygrometerFactGroup        CONSTANT)
+    Q_PROPERTY(FactGroup*           generator       READ generatorFactGroup         CONSTANT)
+    Q_PROPERTY(FactGroup*           efi             READ efiFactGroup               CONSTANT)
     Q_PROPERTY(QmlObjectListModel*  batteries       READ batteries                  CONSTANT)
     Q_PROPERTY(Actuators*           actuators       READ actuators                  CONSTANT)
     Q_PROPERTY(HealthAndArmingCheckReport* healthAndArmingCheckReport READ healthAndArmingCheckReport CONSTANT)
@@ -379,10 +398,10 @@ public:
 
     /// Command vehicle to change groundspeed
     ///     @param groundspeed Target horizontal groundspeed
-    Q_INVOKABLE void guidedModeChangeGroundSpeed   (double groundspeed);
+    Q_INVOKABLE void guidedModeChangeGroundSpeedMetersSecond(double groundspeed);
     /// Command vehicle to change equivalent airspeed
     ///     @param airspeed Target equivalent airspeed
-    Q_INVOKABLE void guidedModeChangeEquivalentAirspeed   (double airspeed);
+    Q_INVOKABLE void guidedModeChangeEquivalentAirspeedMetersSecond(double airspeed);
 
     /// Command vehicle to orbit given center point
     ///     @param centerCoord Orit around this point
@@ -522,7 +541,6 @@ public:
 
     bool flightModeSetAvailable             ();
     QStringList flightModes                 ();
-    QStringList extraJoystickFlightModes    ();
     QString flightMode                      () const;
     void setFlightMode                      (const QString& flightMode);
 
@@ -595,7 +613,6 @@ public:
     int             newMessageCount             () const{ return _currentMessageCount; }
     int             messageCount                () const{ return _messageCount; }
     QString         formattedMessages           ();
-    QString         latestError                 () { return _latestError; }
     float           latitude                    () { return static_cast<float>(_coordinate.latitude()); }
     float           longitude                   () { return static_cast<float>(_coordinate.longitude()); }
     bool            mavPresent                  () { return _mav != nullptr; }
@@ -687,6 +704,7 @@ public:
     Fact* climbRate                         () { return &_climbRateFact; }
     Fact* altitudeRelative                  () { return &_altitudeRelativeFact; }
     Fact* altitudeAMSL                      () { return &_altitudeAMSLFact; }
+    Fact* altitudeAboveTerr                 () { return &_altitudeAboveTerrFact; }
     Fact* altitudeTuning                    () { return &_altitudeTuningFact; }
     Fact* altitudeTuningSetpoint            () { return &_altitudeTuningSetpointFact; }
     Fact* xTrackError                       () { return &_xTrackErrorFact; }
@@ -696,6 +714,7 @@ public:
     Fact* timeToHome                        () { return &_timeToHomeFact; }
     Fact* missionItemIndex                  () { return &_missionItemIndexFact; }
     Fact* headingToNextWP                   () { return &_headingToNextWPFact; }
+    Fact* distanceToNextWP                  () { return &_distanceToNextWPFact; }
     Fact* headingToHome                     () { return &_headingToHomeFact; }
     Fact* distanceToGCS                     () { return &_distanceToGCSFact; }
     Fact* hobbs                             () { return &_hobbsFact; }
@@ -716,6 +735,8 @@ public:
     FactGroup* estimatorStatusFactGroup     () { return &_estimatorStatusFactGroup; }
     FactGroup* terrainFactGroup             () { return &_terrainFactGroup; }
     FactGroup* hygrometerFactGroup          () { return &_hygrometerFactGroup; }
+    FactGroup* generatorFactGroup           () { return &_generatorFactGroup; }
+    FactGroup* efiFactGroup                 () { return &_efiFactGroup; }
     QmlObjectListModel* batteries           () { return &_batteryFactGroupListModel; }
 
     MissionManager*                 missionManager      () { return _missionManager; }
@@ -766,16 +787,38 @@ public:
         MavCmdResultFailureDuplicateCommand,    ///< Unable to send command since duplicate is already being waited on for response
     } MavCmdResultFailureCode_t;
 
-    /// Callback for sendMavCommandWithHandler
-    ///     @param resultHandleData     Opaque data passed in to sendMavCommand call
-    ///     @param commandResult        Ack result for command send
-    ///     @param failureCode          Failure reason
-    typedef void (*MavCmdResultHandler)(void* resultHandlerData, int compId, MAV_RESULT commandResult, uint8_t progress, MavCmdResultFailureCode_t failureCode);
+    /// Callback for sendMavCommandWithHandler which handles MAV_RESULT_IN_PROGRESS acks
+    ///     @param progressHandlerData  Opaque data passed in to sendMavCommand call
+    ///     @param ack                  Received COMMAND_ACK
+    typedef void (*MavCmdProgressHandler)(void* progressHandlerData, int compId, const mavlink_command_ack_t& ack);
+
+    /// Callback for sendMavCommandWithHandler which handles all acks which are not MAV_RESULT_IN_PROGRESS
+    ///     @param resultHandlerData    Opaque data passed in to sendMavCommand call
+    ///     @param ack                  Received COMMAND_ACK
+    ///     @param failureCode          Failure reason. If not MavCmdResultCommandResultOnly only ack.result == MAV_RESULT_FAILED is valid.
+    typedef void (*MavCmdResultHandler)(void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, MavCmdResultFailureCode_t failureCode);
+
+    // Callback info for sendMavCommandWithHandler
+    typedef struct MavCmdAckHandlerInfo_s {
+        MavCmdResultHandler     resultHandler;          ///> nullptr for no handler
+        void*                   resultHandlerData; 
+        MavCmdProgressHandler   progressHandler;
+        void*                   progressHandlerData;    ///> nullptr for no handler
+    } MavCmdAckHandlerInfo_t;
+
+    /// Sends the command and calls the callback with the result
+    void sendMavCommandWithHandler(
+        const MavCmdAckHandlerInfo_t* ackHandlerInfo,   ///> nullptr to signale no handlers
+        int compId, MAV_CMD command, 
+        float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
 
     /// Sends the command and calls the callback with the result
     ///     @param resultHandler    Callback for result, nullptr for no callback
     ///     @param resultHandleData Opaque data passed through callback
-    void sendMavCommandWithHandler(MavCmdResultHandler resultHandler, void* resultHandlerData, int compId, MAV_CMD command, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
+    void sendMavCommandIntWithHandler(
+        const MavCmdAckHandlerInfo_t* ackHandlerInfo,   ///> nullptr to signale no handlers
+        int compId, MAV_CMD command, MAV_FRAME frame, 
+        float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, double param5 = 0.0f, double param6 = 0.0f, float param7 = 0.0f);
 
     typedef enum {
         RequestMessageNoFailure,
@@ -843,9 +886,10 @@ public:
     QString vehicleImageOutline () const;
     QString vehicleImageCompass () const;
 
-    const QVariantList&         toolIndicators      ();
-    const QVariantList&         modeIndicators      ();
-    const QVariantList&         staticCameraList    () const;
+    QVariant                    mainStatusIndicatorExpandedItem ();
+    const QVariantList&         toolIndicators                  ();
+    const QVariantList&         modeIndicators                  ();
+    const QVariantList&         staticCameraList                () const;
 
     bool capabilitiesKnown      () const { return _capabilityBitsKnown; }
     uint64_t capabilityBits     () const { return _capabilityBits; }    // Change signalled by capabilityBitsChanged
@@ -919,7 +963,7 @@ signals:
     void capabilityBitsChanged          (uint64_t capabilityBits);
     void toolIndicatorsChanged          ();
     void modeIndicatorsChanged          ();
-    void textMessageReceived            (int uasid, int componentid, int severity, QString text);
+    void textMessageReceived            (int uasid, int componentid, int severity, QString text, QString description);
     void calibrationEventReceived       (int uasid, int componentid, int severity, QSharedPointer<events::parser::ParsedEvent> event);
     void checkListStateChanged          ();
     void messagesReceivedChanged        ();
@@ -930,7 +974,6 @@ signals:
     void messageCountChanged            ();
     void formattedMessagesChanged       ();
     void newFormattedMessage            (QString formattedMessage);
-    void latestErrorChanged             ();
     void longitudeChanged               ();
     void currentConfigChanged           ();
     void flowImageIndexChanged          ();
@@ -1032,6 +1075,9 @@ private slots:
     void _orbitTelemetryTimeout             ();
     void _updateFlightTime                  ();
     void _gotProgressUpdate                 (float progressValue);
+    void _doSetHomeTerrainReceived          (bool success, QList<double> heights);
+    void _updateAltAboveTerrain             ();
+    void _altitudeAboveTerrainReceived      (bool sucess, QList<double> heights);
 
 private:
     void _loadJoystickSettings          ();
@@ -1040,6 +1086,7 @@ private:
     void _handlePing                    (LinkInterface* link, mavlink_message_t& message);
     void _handleHomePosition            (mavlink_message_t& message);
     void _handleHeartbeat               (mavlink_message_t& message);
+    void _handleCurrentMode             (mavlink_message_t& message);
     void _handleRadioStatus             (mavlink_message_t& message);
     void _handleRCChannels              (mavlink_message_t& message);
     void _handleBatteryStatus           (mavlink_message_t& message);
@@ -1091,11 +1138,9 @@ private:
     void _chunkedStatusTextCompleted    (uint8_t compId);
     void _setMessageInterval            (int messageId, int rate);
     EventHandler& _eventHandler         (uint8_t compid);
+    bool setFlightModeCustom            (const QString& flightMode, uint8_t* base_mode, uint32_t* custom_mode);
 
-    static void _rebootCommandResultHandler(void* resultHandlerData, int compId, MAV_RESULT commandResult, uint8_t progress, MavCmdResultFailureCode_t failureCode);
-
-    // This is called after we get terrain data triggered from a doSetHome()
-    void _doSetHomeTerrainReceived      (bool success, QList<double> heights);
+    static void _rebootCommandResultHandler(void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, MavCmdResultFailureCode_t failureCode);
 
     int     _id;                    ///< Mavlink system id
     int     _defaultComponentId;
@@ -1129,7 +1174,6 @@ private:
     int             _currentWarningCount = 0;
     int             _currentNormalCount = 0;
     MessageType_t   _currentMessageType = MessageNone;
-    QString         _latestError;
     int             _updateCount = 0;
     int             _rcRSSI = 255;
     double          _rcRSSIstore = 255;
@@ -1185,6 +1229,8 @@ private:
     bool    _armed = false;         ///< true: vehicle is armed
     uint8_t _base_mode = 0;     ///< base_mode from HEARTBEAT
     uint32_t _custom_mode = 0;  ///< custom_mode from HEARTBEAT
+    uint32_t _custom_mode_user_intention = 0;  ///< custom_mode_user_intention from CURRENT_MODE
+    bool _has_custom_mode_user_intention = false;
 
     /// Used to store a message being sent by sendMessageMultiple
     typedef struct {
@@ -1305,28 +1351,27 @@ private:
         mavlink_message_t           message;
     } RequestMessageInfo_t;
 
-    static void _requestMessageCmdResultHandler             (void* resultHandlerData, int compId, MAV_RESULT result, uint8_t progress, MavCmdResultFailureCode_t failureCode);
+    static void _requestMessageCmdResultHandler             (void* resultHandlerData, int compId, const mavlink_command_ack_t& ack, MavCmdResultFailureCode_t failureCode);
     static void _requestMessageWaitForMessageResultHandler  (void* resultHandlerData, bool noResponsefromVehicle, const mavlink_message_t& message);
 
     typedef struct MavCommandListEntry {
-        int                 targetCompId        = MAV_COMP_ID_AUTOPILOT1;
-        bool                useCommandInt       = false;
-        MAV_CMD             command;
-        MAV_FRAME           frame;
-        float               rgParam1            = 0;
-        float               rgParam2            = 0;
-        float               rgParam3            = 0;
-        float               rgParam4            = 0;
-        double              rgParam5            = 0;
-        double              rgParam6            = 0;
-        float               rgParam7            = 0;
-        bool                showError           = true;
-        MavCmdResultHandler resultHandler;
-        void*               resultHandlerData   = nullptr;
-        int                 maxTries            = _mavCommandMaxRetryCount;
-        int                 tryCount            = 0;
-        QElapsedTimer       elapsedTimer;
-        int                 ackTimeoutMSecs     = _mavCommandAckTimeoutMSecs;
+        int                     targetCompId        = MAV_COMP_ID_AUTOPILOT1;
+        bool                    useCommandInt       = false;
+        MAV_CMD                 command;
+        MAV_FRAME               frame;
+        float                   rgParam1            = 0;
+        float                   rgParam2            = 0;
+        float                   rgParam3            = 0;
+        float                   rgParam4            = 0;
+        double                  rgParam5            = 0;
+        double                  rgParam6            = 0;
+        float                   rgParam7            = 0;
+        bool                    showError           = true;
+        MavCmdAckHandlerInfo_t  ackHandlerInfo;
+        int                     maxTries            = _mavCommandMaxRetryCount;
+        int                     tryCount            = 0;
+        QElapsedTimer           elapsedTimer;
+        int                     ackTimeoutMSecs     = _mavCommandAckTimeoutMSecs;
     } MavCommandListEntry_t;
 
     QList<MavCommandListEntry_t>    _mavCommandList;
@@ -1336,7 +1381,11 @@ private:
     static const int                _mavCommandAckTimeoutMSecs              = 3000;
     static const int                _mavCommandAckTimeoutMSecsHighLatency   = 120000;
 
-    void _sendMavCommandWorker  (bool commandInt, bool showError, MavCmdResultHandler resultHandler, void* resultHandlerData, int compId, MAV_CMD command, MAV_FRAME frame, float param1, float param2, float param3, float param4, double param5, double param6, float param7);
+    void _sendMavCommandWorker  (
+            bool commandInt, bool showError, 
+            const MavCmdAckHandlerInfo_t* ackHandlerInfo,   ///> nullptr to signale no handlers
+            int compId, MAV_CMD command, MAV_FRAME frame, 
+            float param1, float param2, float param3, float param4, double param5, double param6, float param7);
     void _sendMavCommandFromList(int index);
     int  _findMavCommandListEntryIndex(int targetCompId, MAV_CMD command);
     bool _sendMavCommandShouldRetry(MAV_CMD command);
@@ -1364,6 +1413,7 @@ private:
     Fact _climbRateFact;
     Fact _altitudeRelativeFact;
     Fact _altitudeAMSLFact;
+    Fact _altitudeAboveTerrFact;
     Fact _altitudeTuningFact;
     Fact _altitudeTuningSetpointFact;
     Fact _xTrackErrorFact;
@@ -1374,6 +1424,7 @@ private:
     Fact _timeToHomeFact;
     Fact _missionItemIndexFact;
     Fact _headingToNextWPFact;
+    Fact _distanceToNextWPFact;
     Fact _headingToHomeFact;
     Fact _distanceToGCSFact;
     Fact _hobbsFact;
@@ -1393,6 +1444,8 @@ private:
     VehicleEscStatusFactGroup       _escStatusFactGroup;
     VehicleEstimatorStatusFactGroup _estimatorStatusFactGroup;
     VehicleHygrometerFactGroup      _hygrometerFactGroup;
+    VehicleGeneratorFactGroup       _generatorFactGroup;
+    VehicleEFIFactGroup             _efiFactGroup;
     TerrainFactGroup                _terrainFactGroup;
     QmlObjectListModel              _batteryFactGroupListModel;
 
@@ -1407,6 +1460,7 @@ private:
     InitialConnectStateMachine*     _initialConnectStateMachine = nullptr;
     Actuators*                      _actuators                  = nullptr;
     RemoteIDManager*                _remoteIDManager            = nullptr;
+    StandardModes*                  _standardModes              = nullptr;
 
     static const char* _rollFactName;
     static const char* _pitchFactName;
@@ -1420,6 +1474,7 @@ private:
     static const char* _climbRateFactName;
     static const char* _altitudeRelativeFactName;
     static const char* _altitudeAMSLFactName;
+    static const char* _altitudeAboveTerrFactName;
     static const char* _altitudeTuningFactName;
     static const char* _altitudeTuningSetpointFactName;
     static const char* _xTrackErrorFactName;
@@ -1430,6 +1485,7 @@ private:
     static const char* _timeToHomeFactName;
     static const char* _missionItemIndexFactName;
     static const char* _headingToNextWPFactName;
+    static const char* _distanceToNextWPFactName;
     static const char* _headingToHomeFactName;
     static const char* _distanceToGCSFactName;
     static const char* _hobbsFactName;
@@ -1449,6 +1505,8 @@ private:
     static const char* _escStatusFactGroupName;
     static const char* _estimatorStatusFactGroupName;
     static const char* _hygrometerFactGroupName;
+    static const char* _generatorFactGroupName;
+    static const char* _efiFactGroupName;
     static const char* _terrainFactGroupName;
 
     static const int _vehicleUIUpdateRateMSecs      = 100;
@@ -1458,9 +1516,15 @@ private:
     static const char* _joystickEnabledSettingsKey;
 
     // Terrain query members, used to get terrain altitude for doSetHome()
-    QTimer                      _updateDoSetHomeTerrainTimer;
     TerrainAtCoordinateQuery*   _currentDoSetHomeTerrainAtCoordinateQuery = nullptr;
     QGeoCoordinate              _doSetHomeCoordinate;
+
+    // Terrain query members, used to get altitude above terrain Fact
+    QElapsedTimer               _altitudeAboveTerrQueryTimer;
+    TerrainAtCoordinateQuery*   _altitudeAboveTerrTerrainAtCoordinateQuery = nullptr;
+    // We use this to limit above terrain altitude queries based on distance and altitude change
+    QGeoCoordinate              _altitudeAboveTerrLastCoord;
+    float                       _altitudeAboveTerrLastRelAlt = qQNaN();
 };
 
 Q_DECLARE_METATYPE(Vehicle::MavCmdResultFailureCode_t)

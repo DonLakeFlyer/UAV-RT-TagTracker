@@ -7,23 +7,23 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.3
-import QtQuick.Controls 1.2
-import QtQuick.Dialogs  1.2
-import QtLocation       5.3
-import QtPositioning    5.3
-import QtQuick.Layouts  1.2
-import QtQuick.Window   2.2
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Dialogs
+import QtLocation
+import QtPositioning
+import QtQuick.Layouts
+import QtQuick.Window
 
-import QGroundControl                   1.0
-import QGroundControl.FlightMap         1.0
-import QGroundControl.ScreenTools       1.0
-import QGroundControl.Controls          1.0
-import QGroundControl.FactSystem        1.0
-import QGroundControl.FactControls      1.0
-import QGroundControl.Palette           1.0
-import QGroundControl.Controllers       1.0
-import QGroundControl.ShapeFileHelper   1.0
+import QGroundControl
+import QGroundControl.FlightMap
+import QGroundControl.ScreenTools
+import QGroundControl.Controls
+import QGroundControl.FactSystem
+import QGroundControl.FactControls
+import QGroundControl.Palette
+import QGroundControl.Controllers
+import QGroundControl.ShapeFileHelper
 
 Item {
     id: _root
@@ -34,7 +34,7 @@ Item {
     readonly property real  _margin:                    ScreenTools.defaultFontPixelHeight * 0.5
     readonly property real  _toolsMargin:               ScreenTools.defaultFontPixelWidth * 0.75
     readonly property real  _radius:                    ScreenTools.defaultFontPixelWidth  * 0.5
-    readonly property real  _rightPanelWidth:           Math.min(parent.width / 3, ScreenTools.defaultFontPixelWidth * 30)
+    readonly property real  _rightPanelWidth:           Math.min(width / 3, ScreenTools.defaultFontPixelWidth * 30)
     readonly property var   _defaultVehicleCoordinate:  QtPositioning.coordinate(37.803784, -122.462276)
     readonly property bool  _waypointsOnlyMode:         QGroundControl.corePlugin.options.missionWaypointsOnly
 
@@ -95,7 +95,7 @@ Item {
             if (_visualItems.count > 1) {
                 mainWindow.showMessageDialog(qsTr("Apply new altitude"),
                                              qsTr("You have changed the default altitude for mission items. Would you like to apply that altitude to all the items in the current mission?"),
-                                             StandardButton.Yes | StandardButton.No,
+                                             Dialog.Yes | Dialog.No,
                                              function() { _missionController.applyDefaultMissionAltitude() })
             }
         }
@@ -105,7 +105,7 @@ Item {
         id: promptForPlanUsageOnVehicleChangePopupComponent
         QGCPopupDialog {
             title:      _planMasterController.managerVehicle.isOfflineEditingVehicle ? qsTr("Plan View - Vehicle Disconnected") : qsTr("Plan View - Vehicle Changed")
-            buttons:    StandardButton.NoButton
+            buttons:    Dialog.NoButton
 
             ColumnLayout {
                 QGCLabel {
@@ -202,7 +202,7 @@ Item {
                                                       "This can lead to errors or incorrect behavior. " +
                                                       "It is recommended to recreate the Plan for the correct firmware/vehicle type.\n\n" +
                                                       "Click 'Ok' to upload the Plan anyway."),
-                                                 StandardButton.Ok | StandardButton.Cancel,
+                                                 Dialog.Ok | Dialog.Cancel,
                                                  function() { _planMasterController.sendToVehicle() })
                     break
             }
@@ -211,7 +211,6 @@ Item {
         function loadFromSelectedFile() {
             fileDialog.title =          qsTr("Select Plan File")
             fileDialog.planFiles =      true
-            fileDialog.selectExisting = true
             fileDialog.nameFilters =    _planMasterController.loadNameFilters
             fileDialog.openForLoad()
         }
@@ -222,7 +221,6 @@ Item {
             }
             fileDialog.title =          qsTr("Save Plan")
             fileDialog.planFiles =      true
-            fileDialog.selectExisting = false
             fileDialog.nameFilters =    _planMasterController.saveNameFilters
             fileDialog.openForSave()
         }
@@ -237,7 +235,6 @@ Item {
             }
             fileDialog.title =          qsTr("Save KML")
             fileDialog.planFiles =      false
-            fileDialog.selectExisting = false
             fileDialog.nameFilters =    ShapeFileHelper.fileDialogKMLFilters
             fileDialog.openForSave()
         }
@@ -302,7 +299,7 @@ Item {
 
         property bool planFiles: true    ///< true: working with plan files, false: working with kml file
 
-        onAcceptedForSave: {
+        onAcceptedForSave: (file) => {
             if (planFiles) {
                 _planMasterController.saveToFile(file)
             } else {
@@ -311,7 +308,7 @@ Item {
             close()
         }
 
-        onAcceptedForLoad: {
+        onAcceptedForLoad: (file) => {
             _planMasterController.loadFromFile(file)
             _planMasterController.fitViewportToItems()
             _missionController.setCurrentPlanViewSeqNum(0, true)
@@ -319,9 +316,16 @@ Item {
         }
     }
 
+    PlanViewToolBar {
+        id: planToolBar
+    }
+
     Item {
         id:             panel
-        anchors.fill:   parent
+        anchors.left:   parent.left
+        anchors.right:  parent.right
+        anchors.top:    planToolBar.bottom
+        anchors.bottom: parent.bottom
 
         FlightMap {
             id:                         editorMap
@@ -347,38 +351,35 @@ Item {
             QGCMapPalette { id: mapPal; lightColors: editorMap.isSatelliteMap }
 
             onZoomLevelChanged: {
-                QGroundControl.flightMapZoom = zoomLevel
+                QGroundControl.flightMapZoom = editorMap.zoomLevel
             }
             onCenterChanged: {
-                QGroundControl.flightMapPosition = center
+                QGroundControl.flightMapPosition = editorMap.center
             }
 
-            MouseArea {
-                anchors.fill: parent
-                onClicked: {
-                    // Take focus to close any previous editing
-                    editorMap.focus = true
-                    var coordinate = editorMap.toCoordinate(Qt.point(mouse.x, mouse.y), false /* clipToViewPort */)
-                    coordinate.latitude = coordinate.latitude.toFixed(_decimalPlaces)
-                    coordinate.longitude = coordinate.longitude.toFixed(_decimalPlaces)
-                    coordinate.altitude = coordinate.altitude.toFixed(_decimalPlaces)
+            onMapClicked: (mouse) => {
+                // Take focus to close any previous editing
+                editorMap.focus = true
+                var coordinate = editorMap.toCoordinate(Qt.point(mouse.x, mouse.y), false /* clipToViewPort */)
+                coordinate.latitude = coordinate.latitude.toFixed(_decimalPlaces)
+                coordinate.longitude = coordinate.longitude.toFixed(_decimalPlaces)
+                coordinate.altitude = coordinate.altitude.toFixed(_decimalPlaces)
 
-                    switch (_editingLayer) {
-                    case _layerMission:
-                        if (addWaypointRallyPointAction.checked) {
-                            insertSimpleItemAfterCurrent(coordinate)
-                        } else if (_addROIOnClick) {
-                            insertROIAfterCurrent(coordinate)
-                            _addROIOnClick = false
-                        }
-
-                        break
-                    case _layerRallyPoints:
-                        if (_rallyPointController.supported && addWaypointRallyPointAction.checked) {
-                            _rallyPointController.addPoint(coordinate)
-                        }
-                        break
+                switch (_editingLayer) {
+                case _layerMission:
+                    if (addWaypointRallyPointAction.checked) {
+                        insertSimpleItemAfterCurrent(coordinate)
+                    } else if (_addROIOnClick) {
+                        insertROIAfterCurrent(coordinate)
+                        _addROIOnClick = false
                     }
+
+                    break
+                case _layerRallyPoints:
+                    if (_rallyPointController.supported && addWaypointRallyPointAction.checked) {
+                        _rallyPointController.addPoint(coordinate)
+                    }
+                    break
                 }
             }
 
@@ -387,10 +388,11 @@ Item {
                 model: _missionController.visualItems
                 delegate: MissionItemMapVisual {
                     map:         editorMap
-                    onClicked:   _missionController.setCurrentPlanViewSeqNum(sequenceNumber, false)
                     opacity:     _editingLayer == _layerMission ? 1 : editorMap._nonInteractiveOpacity
                     interactive: _editingLayer == _layerMission
                     vehicle:     _planMasterController.controllerVehicle
+
+                    onClicked:(sequenceNumber) => { _missionController.setCurrentPlanViewSeqNum(sequenceNumber, false) }
                 }
             }
 
@@ -521,7 +523,7 @@ Item {
                     ToolStripAction {
                         text:           qsTr("Fly")
                         iconSource:     "/qmlimages/PaperPlane.svg"
-                        onTriggered:    mainWindow.showFlyView()
+                        onTriggered:    mainWindow.popView()
                     },
                     ToolStripAction {
                         text:                   qsTr("File")
@@ -684,7 +686,7 @@ Item {
                         missionItem:    object
                         width:          missionItemEditorListView.width
                         readOnly:       false
-                        onClicked:      _missionController.setCurrentPlanViewSeqNum(object.sequenceNumber, false)
+                        onClicked: (sequenceNumber) => { _missionController.setCurrentPlanViewSeqNum(object.sequenceNumber, false) }
                         onRemove: {
                             var removeVIIndex = index
                             _missionController.removeVisualItem(removeVIIndex)
@@ -780,7 +782,7 @@ Item {
     function showLoadFromFileOverwritePrompt(title) {
         mainWindow.showMessageDialog(title,
                                      qsTr("You have unsaved/unsent changes. Loading from a file will lose these changes. Are you sure you want to load from a file?"),
-                                     StandardButton.Yes | StandardButton.Cancel,
+                                     Dialog.Yes | Dialog.Cancel,
                                      function() { _planMasterController.loadFromSelectedFile() } )
     }
 
@@ -790,7 +792,7 @@ Item {
         QGCSimpleMessageDialog {
             title:      qsTr("Create Plan")
             text:       qsTr("Are you sure you want to remove current plan and create a new plan? ")
-            buttons:    StandardButton.Yes | StandardButton.No
+            buttons:    Dialog.Yes | Dialog.No
 
             property var mapCenter
             property var planCreator
@@ -802,7 +804,7 @@ Item {
     function clearButtonClicked() {
         mainWindow.showMessageDialog(qsTr("Clear"),
                                      qsTr("Are you sure you want to remove all mission items and clear the mission from the vehicle?"),
-                                     StandardButton.Yes | StandardButton.Cancel,
+                                     Dialog.Yes | Dialog.Cancel,
                                      function() { _planMasterController.removeAllFromVehicle(); _missionController.setCurrentPlanViewSeqNum(0, true) })
     }
 
@@ -845,7 +847,7 @@ Item {
         if (_planMasterController.dirty) {
             mainWindow.showMessageDialog(title,
                                          qsTr("You have unsaved/unsent changes. Loading from the Vehicle will lose these changes. Are you sure you want to load from the Vehicle?"),
-                                         StandardButton.Yes | StandardButton.Cancel,
+                                         Dialog.Yes | Dialog.Cancel,
                                          function() { _planMasterController.loadFromVehicle() })
         } else {
             _planMasterController.loadFromVehicle()

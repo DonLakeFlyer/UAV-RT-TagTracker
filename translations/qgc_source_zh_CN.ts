@@ -4851,7 +4851,7 @@ Click Ok to start the auto-tuning process.
     <message>
       <location filename="../src/PlanView/CameraSection.qml" line="108"/>
       <source>Yaw</source>
-      <translation>水平</translation>
+      <translation>偏航</translation>
     </message>
     <message>
       <location filename="../src/PlanView/CameraSection.qml" line="106"/>
@@ -8472,7 +8472,7 @@ Click Ok to start the auto-tuning process.
     <name>JoystickConfigButtons</name>
     <message>
       <location filename="../src/VehicleSetup/JoystickConfigButtons.qml" line="45"/>
-      <source>Assigning the same action to multiple buttons requires the press of all those buttons for the action to be taken. This is useful to prevent accidental button presses for critical actions like Arm or Emergency Stop.</source>
+      <source> Multiple buttons that have the same action must be pressed simultaneously to invoke the action.</source>
       <translation>将相同动作分配给多个按钮需要按下所有这些按钮才能进行操作。 这有助于防止对诸如解锁或紧急站等关键行动的意外按键按下。</translation>
     </message>
     <message>
@@ -10170,7 +10170,7 @@ Click Ok to start the auto-tuning process.
     <message>
       <location filename="../src/PlanView/MissionItemEditor.qml" line="251"/>
       <source>Item #%1</source>
-      <translation>项目 #%1</translation>
+      <translation>项目 1</translation>
     </message>
     <message>
       <location filename="../src/PlanView/MissionItemEditor.qml" line="155"/>
@@ -10559,7 +10559,7 @@ Click Ok to start the auto-tuning process.
     <message>
       <location filename="../src/Vehicle/MultiVehicleManager.cc" line="139"/>
       <source>Connected to Vehicle %1</source>
-      <translation>已连接到飞机 %1</translation>
+      <translation>已连接到载具 %1</translation>
     </message>
   </context>
   <context>

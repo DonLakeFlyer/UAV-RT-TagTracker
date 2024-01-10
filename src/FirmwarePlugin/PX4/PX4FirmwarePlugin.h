@@ -53,8 +53,8 @@ public:
     bool                fixedWingAirSpeedLimitsAvailable(Vehicle* vehicle) override;
     void                guidedModeGotoLocation          (Vehicle* vehicle, const QGeoCoordinate& gotoCoord) override;
     void                guidedModeChangeAltitude        (Vehicle* vehicle, double altitudeRel, bool pauseVehicle) override;
-    void                guidedModeChangeGroundSpeed      (Vehicle* vehicle, double groundspeed) override;
-    void                guidedModeChangeEquivalentAirspeed(Vehicle* vehicle, double airspeed_equiv) override;
+    void                guidedModeChangeGroundSpeedMetersSecond(Vehicle* vehicle, double groundspeed) override;
+    void                guidedModeChangeEquivalentAirspeedMetersSecond(Vehicle* vehicle, double airspeed_equiv) override;
     void                startMission                    (Vehicle* vehicle) override;
     bool                isGuidedMode                    (const Vehicle* vehicle) const override;
     void                initializeVehicle               (Vehicle* vehicle) override;
@@ -73,6 +73,8 @@ public:
     bool                supportsNegativeThrust          (Vehicle* vehicle) override;
     QString             getHobbsMeter                   (Vehicle* vehicle) override;
     bool                hasGripper                      (const Vehicle* vehicle) const override;
+    QVariant            mainStatusIndicatorExpandedItem(const Vehicle* vehicle) const override;
+    const QVariantList& toolIndicators                  (const Vehicle* vehicle) override;
 
 protected:
     typedef struct {
