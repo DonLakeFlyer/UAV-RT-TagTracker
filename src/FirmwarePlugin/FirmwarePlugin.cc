@@ -276,14 +276,14 @@ void FirmwarePlugin::guidedModeChangeAltitude(Vehicle*, double, bool pauseVehicl
 }
 
 void
-FirmwarePlugin::guidedModeChangeGroundSpeed(Vehicle*, double)
+FirmwarePlugin::guidedModeChangeGroundSpeedMetersSecond(Vehicle*, double)
 {
     // Not supported by generic vehicle
     qgcApp()->showAppMessage(guided_mode_not_supported_by_vehicle);
 }
 
 void
-FirmwarePlugin::guidedModeChangeEquivalentAirspeed(Vehicle*, double)
+FirmwarePlugin::guidedModeChangeEquivalentAirspeedMetersSecond(Vehicle*, double)
 {
     // Not supported by generic vehicle
     qgcApp()->showAppMessage(guided_mode_not_supported_by_vehicle);
@@ -322,16 +322,22 @@ QString FirmwarePlugin::vehicleImageCompass(const Vehicle*) const
     return QStringLiteral("/qmlimages/compassInstrumentArrow.svg");
 }
 
+QVariant FirmwarePlugin::mainStatusIndicatorExpandedItem(const Vehicle*) const
+{
+    return QVariant();
+}
+
 const QVariantList& FirmwarePlugin::toolIndicators(const Vehicle*)
 {
     //-- Default list of indicators for all vehicles.
     if(_toolIndicatorList.size() == 0) {
         _toolIndicatorList = QVariantList({
+            QVariant::fromValue(QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/FlightModeIndicator.qml")),
             QVariant::fromValue(QUrl::fromUserInput("qrc:/toolbar/MessageIndicator.qml")),
             QVariant::fromValue(QUrl::fromUserInput("qrc:/toolbar/GPSIndicator.qml")),
             QVariant::fromValue(QUrl::fromUserInput("qrc:/toolbar/TelemetryRSSIIndicator.qml")),
             QVariant::fromValue(QUrl::fromUserInput("qrc:/toolbar/RCRSSIIndicator.qml")),
-            QVariant::fromValue(QUrl::fromUserInput("qrc:/toolbar/BatteryIndicator.qml")),
+            QVariant::fromValue(QUrl::fromUserInput("qrc:/qml/QGroundControl/Controls/BatteryIndicator.qml")),
             QVariant::fromValue(QUrl::fromUserInput("qrc:/toolbar/RemoteIDIndicator.qml")),
         });
     }
@@ -949,8 +955,8 @@ bool FirmwarePlugin::_armVehicleAndValidate(Vehicle* vehicle)
     // Only try arming the vehicle a single time. Doing retries on arming with a delay can lead to safety issues.
     vehicle->setArmed(true, false /* showError */);
 
-    // Wait 1000 msecs for vehicle to arm
-    for (int i=0; i<10; i++) {
+    // Wait 1500 msecs for vehicle to arm (waiting for the next heartbeat)
+    for (int i = 0; i < 15; i++) {
         if (vehicle->armed()) {
             vehicleArmed = true;
             break;
