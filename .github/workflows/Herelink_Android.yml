@@ -47,17 +47,28 @@ jobs:
         run: |
           git fetch --all --tags -f --depth 1
 
-      - name: Install Qt
+      - name: Install Qt6 for Linux (required for Android)
+        uses: jurplel/install-qt-action@v3
+        with:
+          version:      ${{ env.QT_VERSION }}
+          aqtversion:   ==3.1.*
+          host:         linux
+          target:       desktop
+          dir:          ${{ runner.temp }}
+          modules:      qtcharts qtlocation qtpositioning qtspeech qt5compat qtmultimedia qtserialport qtimageformats qtshadertools qtconnectivity
+          setup-python: true
+
+      - name: Install Qt6 for Android
         uses: jurplel/install-qt-action@v3
         with:
           version:      ${{ env.QT_VERSION }}
           aqtversion:   ==3.1.*
           host:         linux
           target:       android
-          arch:         ${{ matrix.aqt-arch }}
+          arch:         ${{ matrix.arch }}
           extra:        --autodesktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts qtlocation qtpositioning qtspeech qt5compat qtmultimedia qtserialport qtimageformats qtshadertools qtimageformats qtshadertools qtconnectivity
+          modules:      qtcharts qtlocation qtpositioning qtspeech qt5compat qtmultimedia qtserialport qtimageformats qtshadertools qtconnectivity
           setup-python: true
 
       - name: Remove Android SDKs to force usage of android-33 only

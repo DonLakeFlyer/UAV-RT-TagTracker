@@ -106,10 +106,12 @@ Item {
         visible:    false
         onClosing: {
             var item = contentItem.children[0]
-            item.pipState.windowAboutToClose()
-            item.pipState.state = item.pipState.windowClosingState
-            item.pipState.state = item.pipState.pipState
-            item.visible = _root.show
+            if (item) {
+                item.pipState.windowAboutToClose()
+                item.pipState.state = item.pipState.windowClosingState
+                item.pipState.state = item.pipState.pipState
+                item.visible = _root.show
+            }
         }
     }
 
@@ -117,6 +119,7 @@ Item {
         id:             pipMouseArea
         anchors.fill:   parent
         enabled:        _isExpanded
+        preventStealing: true
         hoverEnabled:   true
         onClicked:      _swapPip()
     }
@@ -128,6 +131,8 @@ Item {
         anchors.right:  parent.right
         height:         ScreenTools.minTouchPixels
         width:          height
+        preventStealing: true
+        cursorShape: Qt.PointingHandCursor
 
         property real initialX:     0
         property real initialWidth: 0
@@ -147,7 +152,7 @@ Item {
         }
 
         // Drag
-        onPositionChanged: {
+        onPositionChanged: (mouse) => {
             if (pipResize.pressed) {
                 var parentWidth = _root.parent.width
                 var newWidth = pipResize.initialWidth + mouse.x - pipResize.initialX

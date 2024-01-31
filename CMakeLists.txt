@@ -49,12 +49,26 @@ else ()
 endif ()
 
 #######################################################
+#               OS Configuration
+#######################################################
+if (LINUX)
+    # if USE_WAYLAND == 0, use X11 instead of Wayland
+    set(USE_WAYLAND 1)
+endif ()
+
+#######################################################
 #               Qt6 Configuration
 #######################################################
 
+option(QT6_DISABLE_DNSENGINE "Disable DNS Engine" OFF)
+
 # Compilation error for deprecated functions
 add_compile_definitions(QT_DISABLE_DEPRECATED_BEFORE=0x050F00)
-
+add_compile_definitions(QT_DEBUG_FIND_PACKAGE=ON)
+if (QT6_DISABLE_DNSENGINE)
+    message(STATUS "DNS Engine disabled")
+    add_compile_definitions(QT6_DISABLE_DNSENGINE=ON)
+endif ()
 # Configure Qt6 to get necessary variables
 include(Qt6QGCConfiguration)
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
@@ -98,6 +112,13 @@ if(NOT QT_MKSPEC MATCHES "winrt")
             ${QT_LIBRARY_HINTS}
     )
 endif()
+
+# this is required since user can have Qt5 and Qt6 installed at the same time, and then Qt_DIR
+# might point to Qt5, but we want to use Qt6
+# especially qmdnsengine uses Qt_DIR to choose Qt version
+if (Qt6_DIR)
+    set(QT_DIR ${Qt6_DIR})
+endif ()
 
 #######################################################
 #                QML Configuration
@@ -153,7 +174,8 @@ message(STATUS "QGroundControl version: ${APP_VERSION_STR}")
 #######################################################
 # Configuring ccache if it's available and not disabled
 
-option(CCACHE "Use ccache if available" ON)
+# bzd tymczasowo
+option(CCACHE "Use ccache if available" OFF)
 find_program(CCACHE_PROGRAM ccache)
 if (CCACHE AND CCACHE_PROGRAM AND NOT DEFINED ENV{CCACHE_DISABLE})
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
@@ -163,34 +185,48 @@ endif()
 #                GStreamer Configuration
 #######################################################
 
-# TODO(Sergii Lisovenko): Remove this option when video streaming will be enabled for Qt6 builds.
-option(ENABLE_VIDEOSTREAMING "Enable video streaming" OFF)
+option(ENABLE_VIDEOSTREAMING "Enable video streaming" ON)
 if (ENABLE_VIDEOSTREAMING)
+    message(STATUS "Enabling video streaming support")
     find_package(PkgConfig)
 
     set(GST_DEPENDENCIES
-            gstreamer-1.0>=1.14
-            gstreamer-video-1.0>=1.14
-            gstreamer-gl-1.0>=1.14
+            gstreamer-1.0>=1.20
+            gstreamer-video-1.0>=1.20
+            gstreamer-gl-1.0>=1.20
     )
 
-    if (MSVC)
-        pkg_check_modules(GST
-                ${GST_DEPENDENCIES}
-        )
-    else ()
-        pkg_check_modules(GST
-                ${GST_DEPENDENCIES}
-                egl
-        )
+    if (LINUX OR ANDROID)
+        set(GST_DEPENDENCIES ${GST_DEPENDENCIES} egl)
     endif ()
+
+    pkg_check_modules(GST
+            ${GST_DEPENDENCIES}
+    )
+
+    message(STATUS "GStreamer libs: ${GST_LIBRARIES}")
+    message(STATUS "GStreamer include dirs: ${GST_INCLUDE_DIRS}")
+    message(STATUS "GStreamer link dirs: ${GST_LIBRARY_DIRS}")
+    message(STATUS "GStreamer cflags: ${GST_CFLAGS}")
+    message(STATUS "GStreamer ldflags: ${GST_LDFLAGS}")
+    message(STATUS "GStreamer libs: ${GST_LIBS}")
+
+    if (LINUX OR ANDROID)
+        message(STATUS "GStreamer egl libs: ${GST_EGL_LIBRARIES}")
+        message(STATUS "GStreamer egl include dirs: ${GST_EGL_INCLUDE_DIRS}")
+        message(STATUS "GStreamer egl link dirs: ${GST_EGL_LIBRARY_DIRS}")
+        message(STATUS "GStreamer egl cflags: ${GST_EGL_CFLAGS}")
+        message(STATUS "GStreamer egl ldflags: ${GST_EGL_LDFLAGS}")
+        message(STATUS "GStreamer egl libs: ${GST_EGL_LIBS}")
+    endif ()
+
+    message(STATUS "gst found ${GST_FOUND}")
     if (GST_FOUND)
-        add_definitions(
-                -DQGC_GST_STREAMING
-        )
+        add_definitions(-DQGC_GST_STREAMING)
         option(QGC_GST_MICROHARD_ENABLED "Enable microhard" OFF)
         option(QGC_GST_TAISYNC_ENABLED "Enable taisyng" OFF)
     else ()
+        message(STATUS "Tried to enable video streaming support, but GStreamer libs not found")
         if (QGC_GST_MICROHARD_ENABLED OR QGC_GST_TAISYNC_ENABLED)
             message(FATAL_ERROR "You tried to enable Microhard or Taisync but gstreamer is not found. Make sure to set PKG_CONFIG_EXECUTABLE and/or PKG_CONFIG_PATH properly.")
         endif ()
@@ -225,7 +261,6 @@ set(QGC_RESOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/resources/InstrumentValueIcons/InstrumentValueIcons.qrc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/FirmwarePlugin/APM/APMResources.qrc
         ${CMAKE_CURRENT_SOURCE_DIR}/src/FirmwarePlugin/PX4/PX4Resources.qrc
-        ${CMAKE_CURRENT_SOURCE_DIR}/VideoReceiverApp/qml.qrc
 )
 
 if (WIN32)
@@ -233,6 +268,16 @@ if (WIN32)
     set(QGC_RESOURCES
             ${QGC_RESOURCES}
             ${CMAKE_CURRENT_SOURCE_DIR}/windows/QGroundControl.rc)
+endif()
+
+if(CONFIG_UTM_ADAPTER)
+    list(APPEND QGC_RESOURCES
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/UTMSP/utmsp.qrc
+    )
+else()
+    list(APPEND QGC_RESOURCES
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/UTMSP/dummy/utmsp_dummy.qrc
+    )
 endif()
 
 if(BUILD_TESTING)

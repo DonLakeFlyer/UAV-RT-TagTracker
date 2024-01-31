@@ -66,6 +66,9 @@ add_custom_target(QmlControlsQml
 		InstrumentValueValue.qml
 		JoystickThumbPad.qml
 		KMLOrSHPFileDialog.qml
+        LabelledButton.qml
+        LabelledComboBox.qml
+        LabelledLabel.qml
 		LogReplayStatusBar.qml
 		MainWindowSavedState.qml
 		MAVLinkChart.qml
@@ -125,6 +128,7 @@ add_custom_target(QmlControlsQml
 		QGCRoundButton.qml
 		ScreenTools.qml
 		SectionHeader.qml
+        SettingsGroupLayout.qml
 		SliderSwitch.qml
 		SubMenuButton.qml
 		ToolStrip.qml

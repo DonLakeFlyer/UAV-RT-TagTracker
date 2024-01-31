@@ -305,22 +305,6 @@ DebugBuild {
 
 include(src/QtLocationPlugin/QGCLocationPlugin.pri)
 
-# Until pairing can be made to work cleanly on all OS it is turned off
-DEFINES+=QGC_DISABLE_PAIRING
-
-# Pairing
-contains (DEFINES, QGC_DISABLE_PAIRING) {
-    message("Skipping support for Pairing")
-} else:exists(user_config.pri):infile(user_config.pri, DEFINES, QGC_DISABLE_PAIRING) {
-    message("Skipping support for Pairing (manual override from user_config.pri)")
-} else:AndroidBuild:contains(QT_ARCH, arm64) {
-    # Haven't figured out how to get 64 bit arm OpenSLL yet which pairing requires
-    message("Skipping support for Pairing (Missing Android OpenSSL 64 bit support)")
-} else {
-    message("Enabling support for Pairing")
-    DEFINES += QGC_ENABLE_PAIRING
-}
-
 #
 # External library configuration
 #
@@ -421,11 +405,6 @@ INCLUDEPATH += \
     src/ui/toolbar \
     src/ui/uas \
 
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    INCLUDEPATH += \
-        src/PairingManager \
-}
-
 #
 # Plugin API
 #
@@ -441,11 +420,6 @@ HEADERS += \
     src/api/QmlComponentInfo.h \
     src/GPS/Drivers/src/base_station.h \
 
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    HEADERS += \
-        src/PairingManager/aes.h
-}
-
 SOURCES += \
     src/QmlControls/CustomActionManager.cc \
     src/Vehicle/VehicleEscStatusFactGroup.cc \
@@ -453,11 +427,6 @@ SOURCES += \
     src/api/QGCOptions.cc \
     src/api/QGCSettings.cc \
     src/api/QmlComponentInfo.cc \
-
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    SOURCES += \
-        src/PairingManager/aes.cpp
-}
 
 #
 # Unit Test specific configuration goes here (requires full debug build with all plugins)
@@ -766,11 +735,6 @@ HEADERS += \
     src/AnalyzeView/GeoTagController.h \
     src/AnalyzeView/ExifParser.h \
 
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    HEADERS += \
-        src/PairingManager/PairingManager.h \
-}
-
 # FIXME-QT6: NYI
 AndroidBuild {
     DEFINES += FIXME_QT6_DISABLE_ANDROID_JOYSTICK
@@ -795,13 +759,6 @@ WindowsBuild {
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
     HEADERS += \
     src/comm/BluetoothLink.h \
-}
-
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    contains(DEFINES, QGC_ENABLE_QTNFC) {
-        HEADERS += \
-            src/PairingManager/QtNFC.h
-    }
 }
 
 !contains(DEFINES, NO_SERIAL_LINK) {
@@ -1029,11 +986,6 @@ SOURCES += \
     src/AnalyzeView/GeoTagController.cc \
     src/AnalyzeView/ExifParser.cc \
 
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    SOURCES += \
-        src/PairingManager/PairingManager.cc \
-}
-
 DebugBuild {
 SOURCES += \
     src/comm/MockLink.cc \
@@ -1050,13 +1002,6 @@ SOURCES += \
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
     SOURCES += \
     src/comm/BluetoothLink.cc \
-}
-
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    contains(DEFINES, QGC_ENABLE_QTNFC) {
-        SOURCES += \
-        src/PairingManager/QtNFC.cc
-    }
 }
 
 !MobileBuild {
@@ -1318,15 +1263,15 @@ SOURCES += \
     src/VideoManager/SubtitleWriter.cc \
     src/VideoManager/VideoManager.cc
 
-# FIXME_QT6 - Video is disable until conversion is complete
-CONFIG += DISABLE_VIDEOSTREAMING
-
 contains (CONFIG, DISABLE_VIDEOSTREAMING) {
     message("Skipping support for video streaming (manual override from command line)")
 # Otherwise the user can still disable this feature in the user_config.pri file.
 } else:exists(user_config.pri):infile(user_config.pri, DEFINES, DISABLE_VIDEOSTREAMING) {
     message("Skipping support for video streaming (manual override from user_config.pri)")
 } else {
+    QT += \
+        opengl \
+        gui-private
     include(src/VideoReceiver/VideoReceiver.pri)
 }
 
@@ -1349,6 +1294,7 @@ AndroidBuild {
     contains (CONFIG, DISABLE_BUILTIN_ANDROID) {
         message("Skipping builtin support for Android")
     } else {
+        QT -= core-private
         include(android.pri)
     }
 }
@@ -1402,4 +1348,50 @@ LinuxBuild {
     share_applications.files = $${IN_PWD}/deploy/qgroundcontrol.desktop
 
     INSTALLS += target share_qgroundcontrol share_icons share_metainfo share_applications
+}
+
+# UTM Adapter Enabled
+contains (DEFINES, CONFIG_UTM_ADAPTER) {
+    message("UTM enabled")
+
+    #-- To test with UTM Adapter Enabled Flag
+    INCLUDEPATH += \
+        src/UTMSP \
+
+    RESOURCES += \
+        src/UTMSP/utmsp.qrc
+
+    HEADERS += \
+        src/UTMSP/UTMSPLogger.h \
+        src/UTMSP/UTMSPRestInterface.h \
+        src/UTMSP/UTMSPBlenderRestInterface.h \
+        src/UTMSP/UTMSPAuthorization.h \
+        src/UTMSP/UTMSPNetworkRemoteIDManager.h \
+        src/UTMSP/UTMSPAircraft.h \
+        src/UTMSP/UTMSPFlightDetails.h \
+        src/UTMSP/UTMSPOperator.h \
+        src/UTMSP/UTMSPFlightPlanManager.h \
+        src/UTMSP/UTMSPServiceController.h \
+        src/UTMSP/UTMSPVehicle.h \
+        src/UTMSP/UTMSPManager.h
+
+    SOURCES += \
+        src/UTMSP/UTMSPRestInterface.cpp \
+        src/UTMSP/UTMSPBlenderRestInterface.cpp \
+        src/UTMSP/UTMSPAuthorization.cpp \
+        src/UTMSP/UTMSPNetworkRemoteIDManager.cpp \
+        src/UTMSP/UTMSPAircraft.cpp \
+        src/UTMSP/UTMSPFlightDetails.cpp \
+        src/UTMSP/UTMSPOperator.cpp \
+        src/UTMSP/UTMSPFlightPlanManager.cpp \
+        src/UTMSP/UTMSPServiceController.cpp \
+        src/UTMSP/UTMSPVehicle.cpp \
+        src/UTMSP/UTMSPManager.cpp
+}
+else {
+   #-- Dummy UTM Adapter resource file created to override UTM adapter qml files
+   INCLUDEPATH += \
+       src/UTMSP/dummy
+   RESOURCES += \
+       src/UTMSP/dummy/utmsp_dummy.qrc
 }
