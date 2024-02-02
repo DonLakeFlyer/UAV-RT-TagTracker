@@ -19,16 +19,13 @@ import QGroundControl.ScreenTools
 import QGroundControl.Vehicle
 
 ColumnLayout {
-    width: availableWidth
-    anchors.fill: parent
-    property alias autotuningEnabled: pidTuning.autotuningEnabled
+    property real _availableHeight: availableHeight
+    property real _availableWidth:  availableWidth
 
-    GridLayout {
-        columns: 2
-    }
     PIDTuning {
-        width: availableWidth
-        id:    pidTuning
+        id:                 pidTuning
+        availableWidth:     _availableWidth
+        availableHeight:    _availableHeight - pidTuning.y
 
         property var roll: QtObject {
             property string name: qsTr("Roll")

@@ -18,8 +18,8 @@
 #include "ADSBVehicleManager.h"
 #include "QGCPalette.h"
 #include "QmlUnitsConversion.h"
-#if defined(QGC_ENABLE_PAIRING)
-#include "PairingManager.h"
+#ifdef CONFIG_UTM_ADAPTER
+#include "UTMSPManager.h"
 #endif
 
 #ifdef QT_DEBUG
@@ -68,7 +68,6 @@ public:
     Q_PROPERTY(QGCCorePlugin*       corePlugin              READ    corePlugin              CONSTANT)
     Q_PROPERTY(MissionCommandTree*  missionCommandTree      READ    missionCommandTree      CONSTANT)
     Q_PROPERTY(FactGroup*           gpsRtk                  READ    gpsRtkFactGroup         CONSTANT)
-    Q_PROPERTY(bool                 supportsPairing         READ    supportsPairing         CONSTANT)
     Q_PROPERTY(QGCPalette*          globalPalette           MEMBER  _globalPalette          CONSTANT)   ///< This palette will always return enabled colors
     Q_PROPERTY(QmlUnitsConversion*  unitsConversion         READ    unitsConversion         CONSTANT)
     Q_PROPERTY(bool                 singleFirmwareSupport   READ    singleFirmwareSupport   CONSTANT)
@@ -106,9 +105,10 @@ public:
     Q_PROPERTY(QString  elevationProviderName           READ elevationProviderName              CONSTANT)
     Q_PROPERTY(QString  elevationProviderNotice         READ elevationProviderNotice            CONSTANT)
 
+    Q_PROPERTY(bool              utmspSupported           READ    utmspSupported              CONSTANT)
 
-#if defined(QGC_ENABLE_PAIRING)
-    Q_PROPERTY(PairingManager*      pairingManager          READ pairingManager         CONSTANT)
+#ifdef CONFIG_UTM_ADAPTER
+    Q_PROPERTY(UTMSPManager*     utmspManager             READ    utmspManager                CONSTANT)
 #endif
 
     Q_INVOKABLE void    saveGlobalSetting       (const QString& key, const QString& value);
@@ -159,14 +159,13 @@ public:
     FactGroup*              gpsRtkFactGroup     ()  { return _gpsRtkFactGroup; }
     ADSBVehicleManager*     adsbVehicleManager  ()  { return _adsbVehicleManager; }
     QmlUnitsConversion*     unitsConversion     ()  { return &_unitsConversion; }
-#if defined(QGC_ENABLE_PAIRING)
-    bool                    supportsPairing     ()  { return true; }
-    PairingManager*         pairingManager      ()  { return _pairingManager; }
-#else
-    bool                    supportsPairing     ()  { return false; }
-#endif
     static QGeoCoordinate   flightMapPosition   ()  { return _coord; }
     static double           flightMapZoom       ()  { return _zoom; }
+
+
+#ifdef CONFIG_UTM_ADAPTER
+    UTMSPManager*            utmspManager         ()  {return _utmspManager;}
+#endif
 
     qreal zOrderTopMost             () { return 1000; }
     qreal zOrderWidgets             () { return 100; }
@@ -211,6 +210,12 @@ public:
 
     QString qgcVersion              (void) const;
 
+#ifdef CONFIG_UTM_ADAPTER
+    bool    utmspSupported() { return true; }
+#else
+    bool    utmspSupported() { return false; }
+#endif
+
     // Overrides from QGCTool
     virtual void setToolbox(QGCToolbox* toolbox);
 
@@ -238,8 +243,8 @@ private:
     ADSBVehicleManager*     _adsbVehicleManager     = nullptr;
     QGCPalette*             _globalPalette          = nullptr;
     QmlUnitsConversion      _unitsConversion;
-#if defined(QGC_ENABLE_PAIRING)
-    PairingManager*         _pairingManager         = nullptr;
+#ifdef CONFIG_UTM_ADAPTER
+    UTMSPManager*            _utmspManager;
 #endif
 
     bool                    _skipSetupPage          = false;

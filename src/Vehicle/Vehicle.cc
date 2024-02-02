@@ -216,6 +216,13 @@ Vehicle::Vehicle(LinkInterface*             link,
         _settingsManager->videoSettings()->lowLatencyMode()->setRawValue(true);
     }
 
+#ifdef CONFIG_UTM_ADAPTER
+    UTMSPManager* utmspManager = _toolbox->utmspManager();
+    if (utmspManager) {
+        _utmspVehicle = utmspManager->instantiateVehicle(*this);
+    }
+#endif
+
     _autopilotPlugin = _firmwarePlugin->autopilotPlugin(this);
     _autopilotPlugin->setParent(this);
 
@@ -515,6 +522,10 @@ Vehicle::~Vehicle()
 
     delete _mav;
     _mav = nullptr;
+
+#ifdef CONFIG_UTM_ADAPTER
+    delete _utmspVehicle;
+#endif
 }
 
 void Vehicle::prepareDelete()
@@ -2954,6 +2965,26 @@ void Vehicle::emergencyStop()
                 21196.0f);  // Magic number for emergency stop
 }
 
+void Vehicle::landingGearDeploy()
+{
+    sendMavCommand(
+                defaultComponentId(),
+                MAV_CMD_AIRFRAME_CONFIGURATION,
+                true,       // show error if fails
+                -1.0f,      // all gears
+                0.0f);      // down
+}
+
+void Vehicle::landingGearRetract()
+{
+    sendMavCommand(
+                defaultComponentId(),
+                MAV_CMD_AIRFRAME_CONFIGURATION,
+                true,       // show error if fails
+                -1.0f,      // all gears
+                1.0f);      // up
+}
+
 void Vehicle::setCurrentMissionSequence(int seq)
 {
     SharedLinkInterfacePtr sharedLink = vehicleLinkManager()->primaryLink().lock();
@@ -2987,6 +3018,11 @@ void Vehicle::sendMavCommand(int compId, MAV_CMD command, bool showError, float 
                           command,
                           MAV_FRAME_GLOBAL,
                           param1, param2, param3, param4, param5, param6, param7);
+}
+
+void Vehicle::sendMavCommandDelayed(int compId, MAV_CMD command, bool showError, int milliseconds, float param1, float param2, float param3, float param4, float param5, float param6, float param7)
+{
+    QTimer::singleShot(milliseconds, this, [=] { sendMavCommand(compId, command, showError, param1, param2, param3, param4, param5, param6, param7); });
 }
 
 void Vehicle::sendCommand(int compId, int command, bool showError, double param1, double param2, double param3, double param4, double param5, double param6, double param7)
@@ -4521,6 +4557,29 @@ void Vehicle::sendGripperAction(GRIPPER_OPTIONS gripperOption)
             qDebug("unknown function");
             break;
         default: 
-        break;
+            break;
     }
+}
+
+void Vehicle::setEstimatorOrigin(const QGeoCoordinate& centerCoord)
+{
+    SharedLinkInterfacePtr sharedLink = vehicleLinkManager()->primaryLink().lock();
+    if (!sharedLink) {
+        qCDebug(VehicleLog) << "setEstimatorOrigin: primary link gone!";
+        return;
+    }
+
+    mavlink_message_t msg;
+    mavlink_msg_set_gps_global_origin_pack_chan(
+        _mavlink->getSystemId(),
+        _mavlink->getComponentId(),
+        sharedLink->mavlinkChannel(),
+        &msg,
+        id(),
+        centerCoord.latitude() * 1e7,
+        centerCoord.longitude() * 1e7,
+        centerCoord.altitude() * 1e3,
+        static_cast<float>(qQNaN())
+    );
+    sendMessageOnLinkThreadSafe(sharedLink.get(), msg);
 }

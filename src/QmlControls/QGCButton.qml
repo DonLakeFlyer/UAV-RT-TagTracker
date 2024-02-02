@@ -7,7 +7,7 @@ import QGroundControl.ScreenTools
 
 Button {
     id:             control
-    hoverEnabled:   true
+    hoverEnabled:   !ScreenTools.isMobile
     topPadding:     _verticalPadding
     bottomPadding:  _verticalPadding
     leftPadding:    _horizontalPadding
@@ -25,7 +25,7 @@ Button {
     property alias wrapMode:            text.wrapMode
     property alias horizontalAlignment: text.horizontalAlignment
 
-    property bool   _showHighlight:     pressed | hovered | checked
+    property bool   _showHighlight:     enabled && (pressed | hovered | checked)
 
     property int _horizontalPadding:    ScreenTools.defaultFontPixelWidth
     property int _verticalPadding:      Math.round(ScreenTools.defaultFontPixelHeight * heightFactor)

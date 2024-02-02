@@ -1,5 +1,4 @@
-# The 32 and 64 bit version of these actions should be kept in sync
-name: Android 32/64-bit Release
+name: Herelink - Android 64-bit Release 
 
 on:
   push:
@@ -29,13 +28,6 @@ jobs:
   build:
     runs-on:  ubuntu-20.04
 
-    strategy:
-      matrix:
-       include:
-         - architecture: 64bits
-           eabi: arm64-v8a
-           aqt-arch: android_arm64_v8a
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -47,17 +39,28 @@ jobs:
         run: |
           git fetch --all --tags -f --depth 1
 
-      - name: Install Qt
+      - name: Install Qt6 for Linux (required for Android)
+        uses: jurplel/install-qt-action@v3
+        with:
+          version:      ${{ env.QT_VERSION }}
+          aqtversion:   ==3.1.*
+          host:         linux
+          target:       desktop
+          dir:          ${{ runner.temp }}
+          modules:      qtcharts qtlocation qtpositioning qtspeech qt5compat qtmultimedia qtserialport qtimageformats qtshadertools qtconnectivity
+          setup-python: true
+
+      - name: Install Qt6 for Android
         uses: jurplel/install-qt-action@v3
         with:
           version:      ${{ env.QT_VERSION }}
           aqtversion:   ==3.1.*
           host:         linux
           target:       android
-          arch:         ${{ matrix.aqt-arch }}
+          arch:         android_arm64_v8a
           extra:        --autodesktop
           dir:          ${{ runner.temp }}
-          modules:      qtcharts qtlocation qtpositioning qtspeech qt5compat qtmultimedia qtserialport qtimageformats qtshadertools qtimageformats qtshadertools qtconnectivity
+          modules:      qtcharts qtlocation qtpositioning qtspeech qt5compat qtmultimedia qtserialport qtimageformats qtshadertools qtconnectivity
           setup-python: true
 
       - name: Remove Android SDKs to force usage of android-33 only
@@ -112,7 +115,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run:  |
             ls /home/runner/work/_temp/Qt/6.6.1
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="${{ matrix.eabi }}"
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="arm64-v8a"
             make -j2
 
       - name: ccache post-run
