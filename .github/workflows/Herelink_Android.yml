@@ -1,4 +1,4 @@
-name: Herelink Android
+name: Herelink - Android 64-bit Release 
 
 on:
   push:
@@ -45,6 +45,8 @@ jobs:
           version:      ${{ env.QT_VERSION }}
           host:         linux
           target:       android
+          arch:         android_arm64_v8a
+          extra:        --autodesktop
           dir:          ${{ runner.temp }}
           modules:      qtcharts
           setup-python: true
@@ -95,8 +97,9 @@ jobs:
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run:  |
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro CONFIG-=debug CONFIG-=debug_and_release CONFIG+=release -spec android-clang ANDROID_ABIS=arm64-v8a CONFIG+=Herelink
-            make -j2 apk
+            ls /home/runner/work/_temp/Qt/6.6.1
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="arm64-v8a"
+            make -j2
 
       - name: ccache post-run
         run:  ccache -s

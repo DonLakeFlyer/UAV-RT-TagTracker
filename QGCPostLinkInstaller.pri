@@ -65,5 +65,6 @@ installer {
         QMAKE_POST_LINK += && make apk_install_target INSTALL_ROOT=android-build
         QMAKE_POST_LINK += && $$[QT_HOST_BINS]/androiddeployqt --verbose --input android-$${TARGET}-deployment-settings.json --output $$OUT_PWD/android-build $${SIGN_OPTIONS}
         QMAKE_POST_LINK += && cp $${APK_LOCATION} package/$${TARGET}$${ANDROID_TRUE_BITNESS}.apk
+        QMAKE_POST_LINK += && ls package
     }
 }
