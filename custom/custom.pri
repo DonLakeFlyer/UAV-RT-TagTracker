@@ -55,6 +55,8 @@ DEFINES += \
 DEFINES += \
     QGC_HERELINK_AIRUNIT_VIDEO
 
+CONFIG += AndroidHomeApp
+
 # Our own, custom resources
 # Not yet used
 #RESOURCES += \
