@@ -1,10 +1,12 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21.1 FATAL_ERROR)
 
 project(VideoReceiverApp LANGUAGES C CXX)
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug;Release;RelWithDebInfo;MinSizeRel;Coverage")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
@@ -28,8 +30,8 @@ set(QGC_ROOT ${CMAKE_SOURCE_DIR}/..)
 # Add folder where are supportive functions
 list(APPEND CMAKE_MODULE_PATH ${QGC_ROOT}/cmake)
 
-# Configure Qt5 to get necessary variables
-include(Qt5QGCConfiguration)
+# Configure Qt6 to get necessary variables
+include(Qt6QGCConfiguration)
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Qt version: ${QT_VERSION}")
 message(STATUS "Qt spec: ${QT_MKSPEC}")
@@ -56,9 +58,9 @@ endif()
 option(COMPILE_QML "Pre-compile QML files using the Qt Quick compiler." FALSE)
 add_feature_info(COMPILE_QML COMPILE_QML "Pre-compile QML files using the Qt Quick compiler.")
 if(COMPILE_QML)
-    find_package(Qt5QuickCompiler)
+    find_package(Qt6QuickCompiler)
 
-    set_package_properties(Qt5QuickCompiler PROPERTIES
+    set_package_properties(Qt6QuickCompiler PROPERTIES
         DESCRIPTION "Pre-compile QML files using the Qt Quick compiler."
         TYPE OPTIONAL
         )
@@ -67,7 +69,7 @@ endif()
 #=============================================================================
 # Debug QML
 #
-option(DEBUG_QML "Build VideoReceiverApp with QML debugging/profiling support." FALSE)
+option(DEBUG_QML "Build VideoReceiverApp with QML debugging/profiling support." OFF)
 add_feature_info(DEBUG_QML DEBUG_QML "Build VideoReceiverApp with QML debugging/profiling support.")
 if(DEBUG_QML)
     message(STATUS "To enable the QML debugger/profiler, run with: '-qmljsdebugger=port:1234'")
@@ -76,14 +78,19 @@ if(DEBUG_QML)
     add_definitions(-DQT_QML_DEBUG)
 endif()
 
+if (LINUX)
+    # set to 0 to use X11 instead of Wayland
+    set(USE_WAYLAND 0)
+endif()
+
 #=============================================================================
 # GStreamer
 #
 find_package(PkgConfig)
 pkg_check_modules(GST
-    gstreamer-1.0>=1.14
-    gstreamer-video-1.0>=1.14
-    gstreamer-gl-1.0>=1.14
+    gstreamer-1.0>=1.18
+    gstreamer-video-1.0>=1.18
+    gstreamer-gl-1.0>=1.18
     egl
     )
 
@@ -91,12 +98,14 @@ if (GST_FOUND)
     include_directories(
         ${GST_INCLUDE_DIRS}
         )
-endif()
+else ()
+    message(STATUS "No GStreamer!")
+endif ()
 
 #=============================================================================
-# Qt5
+# Qt6
 #
-find_package(Qt5 ${QT_VERSION}
+find_package(Qt6 ${QT_VERSION}
     COMPONENTS
     Bluetooth
     Charts
@@ -125,8 +134,9 @@ include(CompileOptions)
 
 include_directories(
     ${QGC_ROOT}/src
+    ${QGC_ROOT}/src/Settings
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${Qt5Location_PRIVATE_INCLUDE_DIRS}
+    ${Qt6Location_PRIVATE_INCLUDE_DIRS}
     VideoReceiver
     )
 
@@ -145,9 +155,9 @@ endif()
 target_link_libraries(VideoReceiverApp
     PRIVATE
         VideoReceiver
-        Qt5::Core
-        Qt5::Multimedia
-        Qt5::OpenGL
-        Qt5::Quick
-        Qt5::QuickWidgets
+        Qt6::Core
+        Qt6::Multimedia
+        Qt6::OpenGL
+        Qt6::Quick
+        Qt6::QuickWidgets
 )

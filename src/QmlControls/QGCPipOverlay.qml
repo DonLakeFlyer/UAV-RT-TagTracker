@@ -7,13 +7,13 @@
  *
  ****************************************************************************/
 
-import QtQuick                      2.12
-import QtQuick.Window               2.12
+import QtQuick
+import QtQuick.Window
 
-import QGroundControl               1.0
-import QGroundControl.ScreenTools   1.0
-import QGroundControl.Controls      1.0
-import QGroundControl.Palette       1.0
+import QGroundControl
+import QGroundControl.ScreenTools
+import QGroundControl.Controls
+import QGroundControl.Palette
 
 Item {
     id:         _root
@@ -106,10 +106,12 @@ Item {
         visible:    false
         onClosing: {
             var item = contentItem.children[0]
-            item.pipState.windowAboutToClose()
-            item.pipState.state = item.pipState.windowClosingState
-            item.pipState.state = item.pipState.pipState
-            item.visible = _root.show
+            if (item) {
+                item.pipState.windowAboutToClose()
+                item.pipState.state = item.pipState.windowClosingState
+                item.pipState.state = item.pipState.pipState
+                item.visible = _root.show
+            }
         }
     }
 
@@ -117,6 +119,7 @@ Item {
         id:             pipMouseArea
         anchors.fill:   parent
         enabled:        _isExpanded
+        preventStealing: true
         hoverEnabled:   true
         onClicked:      _swapPip()
     }
@@ -128,12 +131,14 @@ Item {
         anchors.right:  parent.right
         height:         ScreenTools.minTouchPixels
         width:          height
+        preventStealing: true
+        cursorShape: Qt.PointingHandCursor
 
         property real initialX:     0
         property real initialWidth: 0
 
         // When we push the mouse button down, we un-anchor the mouse area to prevent a resizing loop
-        onPressed: {
+        onPressed: (mouse) => {
             pipResize.anchors.top = undefined // Top doesn't seem to 'detach'
             pipResize.anchors.right = undefined // This one works right, which is what we really need
             pipResize.initialX = mouse.x
@@ -147,7 +152,7 @@ Item {
         }
 
         // Drag
-        onPositionChanged: {
+        onPositionChanged: (mouse) => {
             if (pipResize.pressed) {
                 var parentWidth = _root.parent.width
                 var newWidth = pipResize.initialWidth + mouse.x - pipResize.initialX

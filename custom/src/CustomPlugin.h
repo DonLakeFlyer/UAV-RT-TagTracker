@@ -12,14 +12,13 @@
 #include "PulseInfo.h"
 #include "DetectorInfoListModel.h"
 #include "TagDatabase.h"
+#include "CustomSettings.h"
 
 #include <QElapsedTimer>
 #include <QGeoCoordinate>
 #include <QTimer>
 #include <QLoggingCategory>
 #include <QFile>
-
-class CustomSettings;
 
 Q_DECLARE_LOGGING_CATEGORY(CustomPluginLog)
 

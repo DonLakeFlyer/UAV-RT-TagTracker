@@ -57,6 +57,7 @@ void QGCPalette::_buildMap()
     DECLARE_QGC_COLOR(text,                 "#9d9d9d", "#000000", "#707070", "#ffffff")
     DECLARE_QGC_COLOR(warningText,          "#cc0808", "#cc0808", "#f85761", "#f85761")
     DECLARE_QGC_COLOR(button,               "#ffffff", "#ffffff", "#707070", "#626270")
+    DECLARE_QGC_COLOR(buttonBorder,         "#ffffff", "#d9d9d9", "#707070", "#adadb8")
     DECLARE_QGC_COLOR(buttonText,           "#9d9d9d", "#000000", "#A6A6A6", "#ffffff")
     DECLARE_QGC_COLOR(buttonHighlight,      "#e4e4e4", "#946120", "#3a3a3a", "#fff291")
     DECLARE_QGC_COLOR(buttonHighlightText,  "#2c2c2c", "#ffffff", "#2c2c2c", "#000000")
@@ -95,6 +96,13 @@ void QGCPalette::_buildMap()
     DECLARE_QGC_SINGLE_COLOR(mapMissionTrajectory,          "#be781c")
     DECLARE_QGC_SINGLE_COLOR(surveyPolygonInterior,         "green")
     DECLARE_QGC_SINGLE_COLOR(surveyPolygonTerrainCollision, "red")
+
+// Colors for UTM Adapter
+#ifdef CONFIG_UTM_ADAPTER
+    DECLARE_QGC_COLOR(switchUTMSP,        "#b0e0e6", "#b0e0e6", "#b0e0e6", "#b0e0e6");
+    DECLARE_QGC_COLOR(sliderUTMSP,        "#9370db", "#9370db", "#9370db", "#9370db");
+    DECLARE_QGC_COLOR(successNotifyUTMSP, "#3cb371", "#3cb371", "#3cb371", "#3cb371");
+#endif
 }
 
 void QGCPalette::setColorGroupEnabled(bool enabled)

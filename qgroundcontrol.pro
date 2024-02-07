@@ -13,6 +13,8 @@ QMAKE_PROJECT_DEPTH = 0 # undocumented qmake flag to force absolute paths in mak
 DEFINES += QGC_GST_TAISYNC_DISABLED
 DEFINES += QGC_GST_MICROHARD_DISABLED
 
+message ("ANDROID_TARGET_ARCH $${ANDROID_TARGET_ARCH} $${QT_ARCH}")
+
 exists($${OUT_PWD}/qgroundcontrol.pro) {
     error("You must use shadow build (e.g. mkdir build; cd build; qmake ../qgroundcontrol.pro).")
 }
@@ -20,8 +22,8 @@ exists($${OUT_PWD}/qgroundcontrol.pro) {
 message(Qt version $$[QT_VERSION])
 
 !contains(CONFIG, DISABLE_QT_VERSION_CHECK) {
-    !equals(QT_MAJOR_VERSION, 5) | !equals(QT_MINOR_VERSION, 15) {
-        error("Unsupported Qt version, 5.15 is required")
+    !equals(QT_MAJOR_VERSION, 6) | !equals(QT_MINOR_VERSION, 6) {
+        error("Unsupported Qt version, 6.6 is required. Found $$QT_MAJOR_VERSION.$$QT_MINOR_VERSION")
     }
 }
 
@@ -256,7 +258,8 @@ QT += \
     widgets \
     xml \
     texttospeech \
-    core-private
+    core-private \
+    core5compat
 
 # Multimedia only used if QVC is enabled
 !contains (DEFINES, QGC_DISABLE_UVC) {
@@ -264,9 +267,7 @@ QT += \
         multimedia
 }
 
-AndroidBuild || iOSBuild {
-    # Android and iOS don't unclude these
-} else {
+!iOSBuild {
     QT += \
         serialport \
 }
@@ -303,22 +304,6 @@ DebugBuild {
 #
 
 include(src/QtLocationPlugin/QGCLocationPlugin.pri)
-
-# Until pairing can be made to work cleanly on all OS it is turned off
-DEFINES+=QGC_DISABLE_PAIRING
-
-# Pairing
-contains (DEFINES, QGC_DISABLE_PAIRING) {
-    message("Skipping support for Pairing")
-} else:exists(user_config.pri):infile(user_config.pri, DEFINES, QGC_DISABLE_PAIRING) {
-    message("Skipping support for Pairing (manual override from user_config.pri)")
-} else:AndroidBuild:contains(QT_ARCH, arm64) {
-    # Haven't figured out how to get 64 bit arm OpenSLL yet which pairing requires
-    message("Skipping support for Pairing (Missing Android OpenSSL 64 bit support)")
-} else {
-    message("Enabling support for Pairing")
-    DEFINES += QGC_ENABLE_PAIRING
-}
 
 #
 # External library configuration
@@ -420,11 +405,6 @@ INCLUDEPATH += \
     src/ui/toolbar \
     src/ui/uas \
 
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    INCLUDEPATH += \
-        src/PairingManager \
-}
-
 #
 # Plugin API
 #
@@ -440,11 +420,6 @@ HEADERS += \
     src/api/QmlComponentInfo.h \
     src/GPS/Drivers/src/base_station.h \
 
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    HEADERS += \
-        src/PairingManager/aes.h
-}
-
 SOURCES += \
     src/QmlControls/CustomActionManager.cc \
     src/Vehicle/VehicleEscStatusFactGroup.cc \
@@ -452,11 +427,6 @@ SOURCES += \
     src/api/QGCOptions.cc \
     src/api/QGCSettings.cc \
     src/api/QmlComponentInfo.cc \
-
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    SOURCES += \
-        src/PairingManager/aes.cpp
-}
 
 #
 # Unit Test specific configuration goes here (requires full debug build with all plugins)
@@ -681,10 +651,12 @@ HEADERS += \
     src/Settings/ADSBVehicleManagerSettings.h \
     src/Settings/AppSettings.h \
     src/Settings/AutoConnectSettings.h \
+    src/Settings/BatteryIndicatorSettings.h \
     src/Settings/BrandImageSettings.h \
     src/Settings/RemoteIDSettings.h \
     src/Settings/FirmwareUpgradeSettings.h \
     src/Settings/FlightMapSettings.h \
+    src/Settings/FlightModeSettings.h \
     src/Settings/FlyViewSettings.h \
     src/Settings/OfflineMapsSettings.h \
     src/Settings/PlanViewSettings.h \
@@ -745,6 +717,8 @@ HEADERS += \
     src/Vehicle/VehicleVibrationFactGroup.h \
     src/Vehicle/VehicleWindFactGroup.h \
     src/Vehicle/VehicleHygrometerFactGroup.h \
+    src/Vehicle/VehicleGeneratorFactGroup.h \
+    src/Vehicle/VehicleEFIFactGroup.h \
     src/VehicleSetup/JoystickConfigController.h \
     src/comm/LinkConfiguration.h \
     src/comm/LinkInterface.h \
@@ -761,14 +735,9 @@ HEADERS += \
     src/AnalyzeView/GeoTagController.h \
     src/AnalyzeView/ExifParser.h \
 
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    HEADERS += \
-        src/PairingManager/PairingManager.h \
-}
-
 AndroidBuild {
-HEADERS += \
-    src/Joystick/JoystickAndroid.h \
+    HEADERS += \
+        src/Joystick/JoystickAndroid.h \
 }
 
 DebugBuild {
@@ -788,13 +757,6 @@ WindowsBuild {
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
     HEADERS += \
     src/comm/BluetoothLink.h \
-}
-
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    contains(DEFINES, QGC_ENABLE_QTNFC) {
-        HEADERS += \
-            src/PairingManager/QtNFC.h
-    }
 }
 
 !contains(DEFINES, NO_SERIAL_LINK) {
@@ -827,8 +789,9 @@ iOSBuild {
 }
 
 AndroidBuild {
-    SOURCES += src/MobileScreenMgr.cc \
-    src/Joystick/JoystickAndroid.cc \
+    SOURCES += \
+        src/MobileScreenMgr.cc \
+        src/Joystick/JoystickAndroid.cc \
 }
 
 SOURCES += \
@@ -937,10 +900,12 @@ SOURCES += \
     src/Settings/ADSBVehicleManagerSettings.cc \
     src/Settings/AppSettings.cc \
     src/Settings/AutoConnectSettings.cc \
+    src/Settings/BatteryIndicatorSettings.cc \
     src/Settings/BrandImageSettings.cc \
     src/Settings/RemoteIDSettings.cc \
     src/Settings/FirmwareUpgradeSettings.cc \
     src/Settings/FlightMapSettings.cc \
+    src/Settings/FlightModeSettings.cc \
     src/Settings/FlyViewSettings.cc \
     src/Settings/OfflineMapsSettings.cc \
     src/Settings/PlanViewSettings.cc \
@@ -1000,6 +965,8 @@ SOURCES += \
     src/Vehicle/VehicleTemperatureFactGroup.cc \
     src/Vehicle/VehicleVibrationFactGroup.cc \
     src/Vehicle/VehicleHygrometerFactGroup.cc \
+    src/Vehicle/VehicleGeneratorFactGroup.cc \
+    src/Vehicle/VehicleEFIFactGroup.cc \
     src/Vehicle/VehicleWindFactGroup.cc \
     src/VehicleSetup/JoystickConfigController.cc \
     src/comm/LinkConfiguration.cc \
@@ -1017,11 +984,6 @@ SOURCES += \
     src/AnalyzeView/GeoTagController.cc \
     src/AnalyzeView/ExifParser.cc \
 
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    SOURCES += \
-        src/PairingManager/PairingManager.cc \
-}
-
 DebugBuild {
 SOURCES += \
     src/comm/MockLink.cc \
@@ -1038,13 +1000,6 @@ SOURCES += \
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
     SOURCES += \
     src/comm/BluetoothLink.cc \
-}
-
-contains (DEFINES, QGC_ENABLE_PAIRING) {
-    contains(DEFINES, QGC_ENABLE_QTNFC) {
-        SOURCES += \
-        src/PairingManager/QtNFC.cc
-    }
 }
 
 !MobileBuild {
@@ -1293,61 +1248,6 @@ contains (DEFINES, QGC_DISABLE_MAVLINK_INSPECTOR) {
 }
 
 #-------------------------------------------------------------------------------------
-# Taisync
-contains (DEFINES, QGC_GST_TAISYNC_DISABLED) {
-    DEFINES -= QGC_GST_TAISYNC_ENABLED
-    message("Taisync disabled")
-} else {
-    contains (DEFINES, QGC_GST_TAISYNC_ENABLED) {
-        INCLUDEPATH += \
-            src/Taisync
-
-        HEADERS += \
-            src/Taisync/TaisyncManager.h \
-            src/Taisync/TaisyncHandler.h \
-            src/Taisync/TaisyncSettings.h \
-
-        SOURCES += \
-            src/Taisync/TaisyncManager.cc \
-            src/Taisync/TaisyncHandler.cc \
-            src/Taisync/TaisyncSettings.cc \
-
-        iOSBuild | AndroidBuild {
-            HEADERS += \
-                src/Taisync/TaisyncTelemetry.h \
-                src/Taisync/TaisyncVideoReceiver.h \
-
-            SOURCES += \
-                src/Taisync/TaisyncTelemetry.cc \
-                src/Taisync/TaisyncVideoReceiver.cc \
-        }
-    }
-}
-
-#-------------------------------------------------------------------------------------
-# Microhard
-QGC_GST_MICROHARD_DISABLED
-contains (DEFINES, QGC_GST_MICROHARD_DISABLED) {
-    DEFINES -= QGC_GST_MICROHARD_ENABLED
-    message("Microhard disabled")
-} else {
-    contains (DEFINES, QGC_GST_MICROHARD_ENABLED) {
-        INCLUDEPATH += \
-            src/Microhard
-
-        HEADERS += \
-            src/Microhard/MicrohardManager.h \
-            src/Microhard/MicrohardHandler.h \
-            src/Microhard/MicrohardSettings.h \
-
-        SOURCES += \
-            src/Microhard/MicrohardManager.cc \
-            src/Microhard/MicrohardHandler.cc \
-            src/Microhard/MicrohardSettings.cc \
-    }
-}
-
-#-------------------------------------------------------------------------------------
 # Video Streaming
 
 INCLUDEPATH += \
@@ -1367,6 +1267,9 @@ contains (CONFIG, DISABLE_VIDEOSTREAMING) {
 } else:exists(user_config.pri):infile(user_config.pri, DEFINES, DISABLE_VIDEOSTREAMING) {
     message("Skipping support for video streaming (manual override from user_config.pri)")
 } else {
+    QT += \
+        opengl \
+        gui-private
     include(src/VideoReceiver/VideoReceiver.pri)
 }
 
@@ -1389,6 +1292,7 @@ AndroidBuild {
     contains (CONFIG, DISABLE_BUILTIN_ANDROID) {
         message("Skipping builtin support for Android")
     } else {
+        QT -= core-private
         include(android.pri)
     }
 }
@@ -1442,4 +1346,50 @@ LinuxBuild {
     share_applications.files = $${IN_PWD}/deploy/qgroundcontrol.desktop
 
     INSTALLS += target share_qgroundcontrol share_icons share_metainfo share_applications
+}
+
+# UTM Adapter Enabled
+contains (DEFINES, CONFIG_UTM_ADAPTER) {
+    message("UTM enabled")
+
+    #-- To test with UTM Adapter Enabled Flag
+    INCLUDEPATH += \
+        src/UTMSP \
+
+    RESOURCES += \
+        src/UTMSP/utmsp.qrc
+
+    HEADERS += \
+        src/UTMSP/UTMSPLogger.h \
+        src/UTMSP/UTMSPRestInterface.h \
+        src/UTMSP/UTMSPBlenderRestInterface.h \
+        src/UTMSP/UTMSPAuthorization.h \
+        src/UTMSP/UTMSPNetworkRemoteIDManager.h \
+        src/UTMSP/UTMSPAircraft.h \
+        src/UTMSP/UTMSPFlightDetails.h \
+        src/UTMSP/UTMSPOperator.h \
+        src/UTMSP/UTMSPFlightPlanManager.h \
+        src/UTMSP/UTMSPServiceController.h \
+        src/UTMSP/UTMSPVehicle.h \
+        src/UTMSP/UTMSPManager.h
+
+    SOURCES += \
+        src/UTMSP/UTMSPRestInterface.cpp \
+        src/UTMSP/UTMSPBlenderRestInterface.cpp \
+        src/UTMSP/UTMSPAuthorization.cpp \
+        src/UTMSP/UTMSPNetworkRemoteIDManager.cpp \
+        src/UTMSP/UTMSPAircraft.cpp \
+        src/UTMSP/UTMSPFlightDetails.cpp \
+        src/UTMSP/UTMSPOperator.cpp \
+        src/UTMSP/UTMSPFlightPlanManager.cpp \
+        src/UTMSP/UTMSPServiceController.cpp \
+        src/UTMSP/UTMSPVehicle.cpp \
+        src/UTMSP/UTMSPManager.cpp
+}
+else {
+   #-- Dummy UTM Adapter resource file created to override UTM adapter qml files
+   INCLUDEPATH += \
+       src/UTMSP/dummy
+   RESOURCES += \
+       src/UTMSP/dummy/utmsp_dummy.qrc
 }

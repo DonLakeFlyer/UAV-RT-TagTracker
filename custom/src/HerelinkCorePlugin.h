@@ -24,6 +24,9 @@ public:
     // Overrides from QGCTool
     void setToolbox(QGCToolbox* toolbox) override;
 
+private slots:
+    void _activeVehicleChanged(Vehicle* activeVehicle);
+
 private:
     HerelinkOptions* _herelinkOptions = nullptr;
 };

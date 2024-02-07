@@ -119,6 +119,7 @@ public:
     DEFINE_QGC_COLOR(text,                          setText)
     DEFINE_QGC_COLOR(warningText,                   setWarningText)
     DEFINE_QGC_COLOR(button,                        setButton)
+    DEFINE_QGC_COLOR(buttonBorder,                  setButtonBorder)
     DEFINE_QGC_COLOR(buttonText,                    setButtonText)
     DEFINE_QGC_COLOR(buttonHighlight,               setButtonHighlight)
     DEFINE_QGC_COLOR(buttonHighlightText,           setButtonHighlightText)
@@ -152,6 +153,12 @@ public:
     DEFINE_QGC_COLOR(toolbarBackground,             setToolbarBackground)
     DEFINE_QGC_COLOR(toolStripFGColor,              setToolStripFGColor)
     DEFINE_QGC_COLOR(toolStripHoverColor,           setToolStripHoverColor)
+
+#ifdef CONFIG_UTM_ADAPTER
+    DEFINE_QGC_COLOR(switchUTMSP,                    setSwitchUTMSP)
+    DEFINE_QGC_COLOR(sliderUTMSP,                    setSliderUTMSP)
+    DEFINE_QGC_COLOR(successNotifyUTMSP,             setSuccessNotifyUTMSP)
+#endif
 
      QGCPalette(QObject* parent = nullptr);
     ~QGCPalette();
