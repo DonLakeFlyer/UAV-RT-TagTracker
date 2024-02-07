@@ -1,11 +1,11 @@
-import QtQuick          2.3
-import QtQuick.Controls 1.2
-import QtLocation       5.15
+import QtQuick
+import QtQuick.Controls
+import QtLocation
 
-import QGroundControl               1.0
-import QGroundControl.ScreenTools   1.0
-import QGroundControl.Palette       1.0
-import QGroundControl.Controls      1.0
+import QGroundControl
+import QGroundControl.ScreenTools
+import QGroundControl.Palette
+import QGroundControl.Controls
 
 MapQuickItem {
     coordinate:     customMapObject.coordinate

@@ -7,8 +7,8 @@
  *
  ****************************************************************************/
 
-import QGroundControl               1.0
-import QGroundControl.FlightDisplay 1.0
+import QGroundControl
+import QGroundControl.FlightDisplay
 
 GuidedToolStripAction {
     text:       _guidedController.stopDetectionTitle

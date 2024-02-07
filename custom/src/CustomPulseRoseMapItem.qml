@@ -7,16 +7,16 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.3
-import QtQuick.Layouts  1.15
-import QtQuick.Controls 2.15
-import QtPositioning    5.15
-import QtLocation       5.15
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import QtPositioning
+import QtLocation
 
-import QGroundControl               1.0
-import QGroundControl.Palette       1.0
-import QGroundControl.ScreenTools   1.0
-import QGroundControl.Controls      1.0
+import QGroundControl
+import QGroundControl.Palette
+import QGroundControl.ScreenTools
+import QGroundControl.Controls
 
 MapQuickItem {
     coordinate:     customMapObject.rotationCenter
