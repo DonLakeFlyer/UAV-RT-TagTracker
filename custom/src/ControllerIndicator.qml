@@ -7,18 +7,17 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.11
-import QtQuick.Layouts  1.11
-import QtQuick.Controls 2.15
-import QtQuick.Dialogs  1.2
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
 
-import QGroundControl                       1.0
-import QGroundControl.Controls              1.0
-import QGroundControl.FactControls          1.0
-import QGroundControl.MultiVehicleManager   1.0
-import QGroundControl.ScreenTools           1.0
-import QGroundControl.Palette               1.0
-import MAVLink                              1.0
+import QGroundControl
+import QGroundControl.Controls
+import QGroundControl.FactControls
+import QGroundControl.MultiVehicleManager
+import QGroundControl.ScreenTools
+import QGroundControl.Palette
+import MAVLink
 
 Item {
     id:                 _root
@@ -293,7 +292,7 @@ Item {
         QGCPopupDialog {
             id:         tagInfoDialog
             title:      qsTr("Tag Info")
-            buttons:    StandardButton.Close
+            buttons:    Dialog.Close
 
             property var tagInfo
             property var _manufacturerList: QGroundControl.corePlugin.tagDatabase.tagManufacturerList
@@ -321,7 +320,7 @@ Item {
                             }
                         }
                         manufacturerCombo.model = listModel
-                        manufacturerCombo._adjustSizeToContents()
+                        manufacturerCombo._calcPopupWidth()
 
                         if (selectedIndex == -1) {
                             console.warning("tagInfoDialogComponent: manufacturer id not found in list", manufacturerId)

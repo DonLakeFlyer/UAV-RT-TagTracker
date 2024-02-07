@@ -3,6 +3,10 @@
 #include "AutoConnectSettings.h"
 #include "VideoSettings.h"
 #include "AppSettings.h"
+#include "QGCApplication.h"
+#include "QGCToolbox.h"
+#include "MultiVehicleManager.h"
+#include "JoystickManager.h"
 
 #include <list>
 
@@ -19,6 +23,9 @@ void HerelinkCorePlugin::setToolbox(QGCToolbox* toolbox)
     QGCCorePlugin::setToolbox(toolbox);
 
     _herelinkOptions = new HerelinkOptions(this, nullptr);
+
+    auto multiVehicleManager = qgcApp()->toolbox()->multiVehicleManager();
+    connect(multiVehicleManager, &MultiVehicleManager::activeVehicleChanged, this, &HerelinkCorePlugin::_activeVehicleChanged);
 }
 
 bool HerelinkCorePlugin::overrideSettingsGroupVisibility(QString name)
@@ -57,6 +64,8 @@ bool HerelinkCorePlugin::adjustSettingMetaData(const QString& settingsGroup, Fac
     } else if (settingsGroup == VideoSettings::settingsGroup) {
         if (metaData.name() == VideoSettings::rtspTimeoutName) {
             metaData.setRawDefaultValue(60);
+        } else if (metaData.name() == VideoSettings::videoSourceName) {
+            metaData.setRawDefaultValue(VideoSettings::videoSourceHerelinkAirUnit);
         }
     } else if (settingsGroup == AppSettings::settingsGroup) {
         if (metaData.name() == AppSettings::androidSaveToSDCardName) {
@@ -65,4 +74,20 @@ bool HerelinkCorePlugin::adjustSettingMetaData(const QString& settingsGroup, Fac
     }
 
     return true; // Show all settings in ui
+}
+
+void HerelinkCorePlugin::_activeVehicleChanged(Vehicle* activeVehicle)
+{
+    if (activeVehicle) {
+        QString herelinkButtonsJoystickName("gpio-keys");
+
+        auto joystickManager = qgcApp()->toolbox()->joystickManager();
+        if (joystickManager->activeJoystickName() != herelinkButtonsJoystickName) {
+            if (!joystickManager->setActiveJoystickName(herelinkButtonsJoystickName)) {
+                qgcApp()->showAppMessage("Warning: Herelink buttton setup failed. Buttons will not work.");
+                return;
+            }           
+        }
+        activeVehicle->setJoystickEnabled(true);
+    }
 }

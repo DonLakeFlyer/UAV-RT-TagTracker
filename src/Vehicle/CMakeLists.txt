@@ -73,10 +73,14 @@ add_library(Vehicle
 	VehicleClockFactGroup.h
 	VehicleDistanceSensorFactGroup.cc
 	VehicleDistanceSensorFactGroup.h
+	VehicleEFIFactGroup.cc
+	VehicleEFIFactGroup.h
 	VehicleEscStatusFactGroup.cc
 	VehicleEscStatusFactGroup.h
 	VehicleEstimatorStatusFactGroup.cc
 	VehicleEstimatorStatusFactGroup.h
+	VehicleGeneratorFactGroup.cc
+	VehicleGeneratorFactGroup.h
 	VehicleLocalPositionFactGroup.cc
 	VehicleLocalPositionFactGroup.h
 	VehicleLocalPositionSetpointFactGroup.cc
@@ -109,7 +113,6 @@ add_library(Vehicle
 target_link_libraries(Vehicle
 	PRIVATE
 		Actuators
-		ui
 		compression
 		libevents_generated
 		libevents_parser

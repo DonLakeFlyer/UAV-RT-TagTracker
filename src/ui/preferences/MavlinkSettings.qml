@@ -8,19 +8,18 @@
  ****************************************************************************/
 
 
-import QtQuick                  2.3
-import QtQuick.Controls         1.2
-import QtQuick.Controls.Styles  1.4
-import QtQuick.Dialogs          1.2
-import QtQuick.Layouts          1.2
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Dialogs
+import QtQuick.Layouts
 
-import QGroundControl                       1.0
-import QGroundControl.FactSystem            1.0
-import QGroundControl.FactControls          1.0
-import QGroundControl.Controls              1.0
-import QGroundControl.ScreenTools           1.0
-import QGroundControl.MultiVehicleManager   1.0
-import QGroundControl.Palette               1.0
+import QGroundControl
+import QGroundControl.FactSystem
+import QGroundControl.FactControls
+import QGroundControl.Controls
+import QGroundControl.ScreenTools
+import QGroundControl.MultiVehicleManager
+import QGroundControl.Palette
 
 Rectangle {
     id:             __mavlinkRoot
@@ -35,8 +34,8 @@ Rectangle {
     property bool _showMavlinkLog:      QGroundControl.corePlugin.options.showMavlinkLogOptions
     property bool _showAPMStreamRates:  QGroundControl.apmFirmwareSupported && QGroundControl.settingsManager.apmMavlinkStreamRateSettings.visible && _isAPM
     property var  _activeVehicle:       QGroundControl.multiVehicleManager.activeVehicle
-    property bool _isPX4:               _activeVehicle ? _activeVehicle.px4Firmware : false
-    property bool _isAPM:               _activeVehicle ? _activeVehicle.apmFirmware : false
+    property bool _isPX4:               _activeVehicle ? _activeVehicle.px4Firmware : true
+    property bool _isAPM:               _activeVehicle ? _activeVehicle.apmFirmware : true
     property Fact _disableDataPersistenceFact: QGroundControl.settingsManager.appSettings.disableAllPersistence
     property bool _disableDataPersistence:     _disableDataPersistenceFact ? _disableDataPersistenceFact.rawValue : false
 
@@ -80,8 +79,8 @@ Rectangle {
     MessageDialog {
         id:         emptyEmailDialog
         visible:    false
-        icon:       StandardIcon.Warning
-        standardButtons: StandardButton.Close
+        //icon:       StandardIcon.Warning
+        buttons:    MessageDialog.Close
         title:      qsTr("MAVLink Logging")
         text:       qsTr("Please enter an email address before uploading MAVLink log files.")
     }
@@ -622,14 +621,11 @@ Rectangle {
                             id:                 feedbackTextArea
                             width:              _valueWidth
                             height:             ScreenTools.defaultFontPixelHeight * 4
-                            frameVisible:       false
                             font.pointSize:     ScreenTools.defaultFontPointSize
                             text:               QGroundControl.mavlinkLogManager.feedback
                             enabled:            !_disableDataPersistence
-                            style: TextAreaStyle {
-                                textColor:          qgcPal.textFieldText
-                                backgroundColor:    qgcPal.textField
-                            }
+                            color:              qgcPal.textFieldText
+                            background:         Rectangle { color: qgcPal.textField }
                         }
                     }
                     //-----------------------------------------------------------------
@@ -751,8 +747,8 @@ Rectangle {
                                         width:      ScreenTools.defaultFontPixelWidth * 20;
                                         height:     ScreenTools.defaultFontPixelHeight
                                         anchors.verticalCenter: parent.verticalCenter
-                                        minimumValue:   0
-                                        maximumValue:   100
+                                        from:   0
+                                        to:   100
                                         value:          object.progress * 100.0
                                     }
                                 }
@@ -789,12 +785,16 @@ Rectangle {
                             MessageDialog {
                                 id:         deleteDialog
                                 visible:    false
-                                icon:       StandardIcon.Warning
-                                standardButtons: StandardButton.Yes | StandardButton.No
+                                //icon:       StandardIcon.Warning
+                                buttons:    MessageDialog.Yes | MessageDialog.No
                                 title:      qsTr("Delete Selected Log Files")
                                 text:       qsTr("Confirm deleting selected log files?")
-                                onYes: {
-                                    QGroundControl.mavlinkLogManager.deleteLog()
+                                onButtonClicked: function (button, role) {
+                                    switch (button) {
+                                    case MessageDialog.Yes:
+                                        QGroundControl.mavlinkLogManager.deleteLog()
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -812,12 +812,16 @@ Rectangle {
                             MessageDialog {
                                 id:         uploadDialog
                                 visible:    false
-                                icon:       StandardIcon.Question
-                                standardButtons: StandardButton.Yes | StandardButton.No
+                                //icon:       StandardIcon.Question
+                                buttons:    MessageDialog.Yes | MessageDialog.No
                                 title:      qsTr("Upload Selected Log Files")
                                 text:       qsTr("Confirm uploading selected log files?")
-                                onYes: {
-                                    QGroundControl.mavlinkLogManager.uploadLog()
+                                onButtonClicked: function (button, role) {
+                                    switch (button) {
+                                    case MessageDialog.Yes:
+                                        QGroundControl.mavlinkLogManager.uploadLog()
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -829,12 +833,16 @@ Rectangle {
                             MessageDialog {
                                 id:         cancelDialog
                                 visible:    false
-                                icon:       StandardIcon.Warning
-                                standardButtons: StandardButton.Yes | StandardButton.No
+                                //icon:       StandardIcon.Warning
+                                buttons:    MessageDialog.Yes | MessageDialog.No
                                 title:      qsTr("Cancel Upload")
                                 text:       qsTr("Confirm canceling the upload process?")
-                                onYes: {
-                                    QGroundControl.mavlinkLogManager.cancelUpload()
+                                onButtonClicked: function (button, role) {
+                                    switch (button) {
+                                    case MessageDialog.Yes:
+                                        QGroundControl.mavlinkLogManager.cancelUpload()
+                                        break;
+                                    }
                                 }
                             }
                         }

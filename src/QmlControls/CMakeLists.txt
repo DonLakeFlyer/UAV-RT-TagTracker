@@ -61,12 +61,14 @@ add_custom_target(QmlControlsQml
 		HeightIndicator.qml
 		HorizontalFactValueGrid.qml
 		IndicatorButton.qml
-		InstrumentValueArea.qml
 		InstrumentValueEditDialog.qml
 		InstrumentValueLabel.qml
 		InstrumentValueValue.qml
 		JoystickThumbPad.qml
 		KMLOrSHPFileDialog.qml
+        LabelledButton.qml
+        LabelledComboBox.qml
+        LabelledLabel.qml
 		LogReplayStatusBar.qml
 		MainWindowSavedState.qml
 		MAVLinkChart.qml
@@ -123,9 +125,10 @@ add_custom_target(QmlControlsQml
 		QmlTest.qml
 		RCChannelMonitor.qml
 		RCToParamDialog.qml
-		RoundButton.qml
+		QGCRoundButton.qml
 		ScreenTools.qml
 		SectionHeader.qml
+        SettingsGroupLayout.qml
 		SliderSwitch.qml
 		SubMenuButton.qml
 		ToolStrip.qml
@@ -139,11 +142,11 @@ target_link_libraries(QmlControls
 
 		FactSystem
 	PUBLIC
-		Qt5::Concurrent
-		Qt5::Location
-		Qt5::SerialPort
-		Qt5::TextToSpeech
-		Qt5::Widgets
+		Qt6::Concurrent
+		Qt6::Location
+		Qt6::SerialPort
+		Qt6::TextToSpeech
+		Qt6::Widgets
 )
 
 target_include_directories(QmlControls INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})

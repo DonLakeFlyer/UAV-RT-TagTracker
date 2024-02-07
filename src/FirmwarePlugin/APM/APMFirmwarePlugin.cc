@@ -29,10 +29,11 @@
 #include "LinkManager.h"
 
 #include <QTcpSocket>
+#include <QtCore5Compat/QRegExp>
 
 QGC_LOGGING_CATEGORY(APMFirmwarePluginLog, "APMFirmwarePluginLog")
 
-static const QRegExp APM_FRAME_REXP("^Frame: ");
+static const QRegularExpression APM_FRAME_REXP("^Frame: ");
 
 const char* APMFirmwarePlugin::_artooIP =                   "10.1.1.1"; ///< IP address of ARTOO controller
 const int   APMFirmwarePlugin::_artooVideoHandshakePort =   5502;       ///< Port for video handshake on ARTOO controller
@@ -80,6 +81,7 @@ bool APMFirmwarePlugin::isCapable(const Vehicle* vehicle, FirmwareCapabilities c
     uint32_t available = SetFlightModeCapability | PauseVehicleCapability | GuidedModeCapability | ROIModeCapability;
     if (vehicle->multiRotor()) {
         available |= TakeoffVehicleCapability;
+        available |= ROIModeCapability;
     } else if (vehicle->vtol()) {
         available |= TakeoffVehicleCapability;
     }
@@ -547,6 +549,7 @@ QList<MAV_CMD> APMFirmwarePlugin::supportedMissionCommands(QGCMAVLink::VehicleCl
         MAV_CMD_DO_SET_ROI,
         MAV_CMD_DO_DIGICAM_CONFIGURE, MAV_CMD_DO_DIGICAM_CONTROL,
         MAV_CMD_DO_MOUNT_CONTROL,
+        MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
         MAV_CMD_DO_SET_CAM_TRIGG_DIST,
         MAV_CMD_DO_FENCE_ENABLE,
         MAV_CMD_DO_PARACHUTE,
@@ -777,10 +780,8 @@ typedef struct {
     Vehicle*            vehicle;
 } MAV_CMD_DO_REPOSITION_HandlerData_t;
 
-static void _MAV_CMD_DO_REPOSITION_ResultHandler(void* resultHandlerData, int /*compId*/, MAV_RESULT commandResult, uint8_t progress, Vehicle::MavCmdResultFailureCode_t failureCode)
+static void _MAV_CMD_DO_REPOSITION_ResultHandler(void* resultHandlerData, int /*compId*/, const mavlink_command_ack_t& ack, Vehicle::MavCmdResultFailureCode_t /*failureCode*/)
 {
-    Q_UNUSED(progress);
-
     auto* data = (MAV_CMD_DO_REPOSITION_HandlerData_t*)resultHandlerData;
     auto* vehicle = data->vehicle;
     auto* instanceData = qobject_cast<APMFirmwarePluginInstanceData*>(vehicle->firmwarePluginInstanceData());
@@ -791,8 +792,8 @@ static void _MAV_CMD_DO_REPOSITION_ResultHandler(void* resultHandlerData, int /*
         goto out;
     }
 
-    instanceData->MAV_CMD_DO_REPOSITION_supported = (commandResult == MAV_RESULT_ACCEPTED);
-    instanceData->MAV_CMD_DO_REPOSITION_unsupported = (commandResult == MAV_RESULT_UNSUPPORTED);
+    instanceData->MAV_CMD_DO_REPOSITION_supported = (ack.result == MAV_RESULT_ACCEPTED);
+    instanceData->MAV_CMD_DO_REPOSITION_unsupported = (ack.result == MAV_RESULT_UNSUPPORTED);
 
 out:
     delete data;
@@ -818,9 +819,13 @@ void APMFirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoord
             auto* result_handler_data = new MAV_CMD_DO_REPOSITION_HandlerData_t{
                 vehicle
             };
+
+            Vehicle::MavCmdAckHandlerInfo_t handlerInfo = {};
+            handlerInfo.resultHandler       = _MAV_CMD_DO_REPOSITION_ResultHandler;
+            handlerInfo.resultHandlerData   = result_handler_data;
+
             vehicle->sendMavCommandIntWithHandler(
-                _MAV_CMD_DO_REPOSITION_ResultHandler,
-                result_handler_data,
+                &handlerInfo,
                 vehicle->defaultComponentId(),
                 MAV_CMD_DO_REPOSITION,
                 MAV_FRAME_GLOBAL,
@@ -1130,4 +1135,46 @@ QMutex& APMFirmwarePlugin::_reencodeMavlinkChannelMutex()
 {
     static QMutex _mutex{};
     return _mutex;
+}
+
+double APMFirmwarePlugin::maximumEquivalentAirspeed(Vehicle* vehicle)
+{
+    QString airspeedMax("ARSPD_FBW_MAX");
+
+    if (vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, airspeedMax)) {
+        return vehicle->parameterManager()->getParameter(FactSystem::defaultComponentId, airspeedMax)->rawValue().toDouble();
+    }
+
+    return FirmwarePlugin::maximumEquivalentAirspeed(vehicle);
+}
+
+double APMFirmwarePlugin::minimumEquivalentAirspeed(Vehicle* vehicle)
+{
+    QString airspeedMin("ARSPD_FBW_MIN");
+
+    if (vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, airspeedMin)) {
+        return vehicle->parameterManager()->getParameter(FactSystem::defaultComponentId, airspeedMin)->rawValue().toDouble();
+    }
+
+    return FirmwarePlugin::minimumEquivalentAirspeed(vehicle);
+}
+
+bool APMFirmwarePlugin::fixedWingAirSpeedLimitsAvailable(Vehicle* vehicle)
+{
+    return vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, "ARSPD_FBW_MIN") &&
+           vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, "ARSPD_FBW_MAX");
+}
+
+void APMFirmwarePlugin::guidedModeChangeEquivalentAirspeedMetersSecond(Vehicle* vehicle, double airspeed_equiv)
+{
+
+    vehicle->sendMavCommand(
+        vehicle->defaultComponentId(),
+        MAV_CMD_DO_CHANGE_SPEED,
+        true,                                 // show error is fails
+        0,                                    // 0: airspeed, 1: groundspeed
+        static_cast<float>(airspeed_equiv),   // speed setpoint
+        -1,                                   // throttle, no change
+        0                                     // 0: absolute speed, 1: relative to current
+        );                                    // param 5-7 unused
 }

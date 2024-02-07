@@ -15,6 +15,8 @@
 
 class LinkInterface;
 
+Q_MOC_INCLUDE("LinkInterface.h")
+
 /// Interface holding link specific settings.
 class LinkConfiguration : public QObject
 {

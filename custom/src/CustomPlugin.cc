@@ -11,9 +11,6 @@
 #include "FTPManager.h"
 #include "DetectorInfoListModel.h"
 
-#include "coder_array.h"
-#include "bearing.h"
-
 #include <QDebug>
 #include <QPointF>
 #include <QLineF>
@@ -243,7 +240,7 @@ void CustomPlugin::_csvStartFullPulseLog(void)
     }
 
     _csvFullPulseLogFile.setFileName(QString("%1/Pulse-%2.csv").arg(_csvLogFilePath(), QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data()));
-    qCDebug(CustomPluginLog) << "Full CSV Pulse logging to:" << _csvFullPulseLogFile;
+    qCDebug(CustomPluginLog) << "Full CSV Pulse logging to:" << _csvFullPulseLogFile.fileName();
     if (!_csvFullPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Unbuffered)) {
         qgcApp()->showAppMessage(QString("Open of full pulse csv log file failed: %1").arg(_csvFullPulseLogFile.errorString()));
         return;
@@ -273,7 +270,7 @@ void CustomPlugin::_csvStartRotationPulseLog(int rotationCount)
     }
 
     _csvRotationPulseLogFile.setFileName(QString("%1/Rotation-%2.csv").arg(_csvLogFilePath()).arg(rotationCount));
-    qCDebug(CustomPluginLog) << "Rotation CSV Pulse logging to:" << _csvRotationPulseLogFile;
+    qCDebug(CustomPluginLog) << "Rotation CSV Pulse logging to:" << _csvRotationPulseLogFile.fileName();
     if (!_csvRotationPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Unbuffered)) {
         qgcApp()->showAppMessage(QString("Open of rotation pulse csv log file failed: %1").arg(_csvRotationPulseLogFile.errorString()));
         return;
@@ -286,6 +283,7 @@ void CustomPlugin::_csvStopRotationPulseLog(bool calcBearing)
         _csvLogRotationStartStop(_csvRotationPulseLogFile, false /* startRotation */);
         _csvRotationPulseLogFile.close();
 
+#if 0 // FIXME
         if (calcBearing) {
             coder::array<char, 2U> rotationFileNameAsArray;
             std::string rotationFileName = _csvRotationPulseLogFile.fileName().toStdString();
@@ -303,6 +301,7 @@ void CustomPlugin::_csvStopRotationPulseLog(bool calcBearing)
             qCDebug(CustomPluginLog) << "Calculated bearing:" << _rgCalcedBearings.last();
             emit calcedBearingsChanged();
         }
+#endif
     }
 }
 

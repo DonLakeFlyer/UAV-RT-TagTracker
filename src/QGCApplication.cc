@@ -106,10 +106,6 @@
 #include "CustomAction.h"
 #include "CustomActionManager.h"
 
-#if defined(QGC_ENABLE_PAIRING)
-#include "PairingManager.h"
-#endif
-
 #ifndef __mobile__
 #include "FirmwareUpgradeController.h"
 #endif
@@ -406,7 +402,7 @@ void QGCApplication::setLanguage()
     _app->removeTranslator(&_qgcTranslatorQtLibs);
     if (_locale.name() != "en_US") {
         QLocale::setDefault(_locale);
-        if(_qgcTranslatorQtLibs.load("qt_" + _locale.name(), QLibraryInfo::location(QLibraryInfo::TranslationsPath))) {
+        if(_qgcTranslatorQtLibs.load("qt_" + _locale.name(), QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
             _app->installTranslator(&_qgcTranslatorQtLibs);
         } else {
             qCWarning(LocalizationLog) << "Qt lib localization for" << _locale.name() << "is not present";
@@ -483,9 +479,6 @@ void QGCApplication::_initCommon()
     qmlRegisterType<LogReplayLinkController>        (kQGroundControl,                       1, 0, "LogReplayLinkController");
 #if !defined(QGC_DISABLE_MAVLINK_INSPECTOR)
     qmlRegisterUncreatableType<MAVLinkChartController> (kQGroundControl,                    1, 0, "MAVLinkChart",               kRefOnly);
-#endif
-#if defined(QGC_ENABLE_PAIRING)
-    qmlRegisterUncreatableType<PairingManager>      (kQGroundControl,                       1, 0, "PairingManager",             kRefOnly);
 #endif
 
     qmlRegisterUncreatableType<AutoPilotPlugin>     ("QGroundControl.AutoPilotPlugin",      1, 0, "AutoPilotPlugin",            kRefOnly);
@@ -825,7 +818,6 @@ bool QGCApplication::isInternetAvailable()
 
 void QGCApplication::_checkForNewVersion()
 {
-#ifndef __mobile__
     if (!_runningUnitTests) {
         if (_parseVersionText(applicationVersion(), _majorVersion, _minorVersion, _buildVersion)) {
             QString versionCheckFile = toolbox()->corePlugin()->stableVersionCheckFileUrl();
@@ -836,15 +828,10 @@ void QGCApplication::_checkForNewVersion()
             }
         }
     }
-#endif
 }
 
 void QGCApplication::_qgcCurrentStableVersionDownloadComplete(QString /*remoteFile*/, QString localFile, QString errorMsg)
 {
-#ifdef __mobile__
-    Q_UNUSED(localFile)
-    Q_UNUSED(errorMsg)
-#else
     if (errorMsg.isEmpty()) {
         QFile versionFile(localFile);
         if (versionFile.open(QIODevice::ReadOnly)) {
@@ -867,7 +854,6 @@ void QGCApplication::_qgcCurrentStableVersionDownloadComplete(QString /*remoteFi
     }
 
     sender()->deleteLater();
-#endif
 }
 
 bool QGCApplication::_parseVersionText(const QString& versionString, int& majorVersion, int& minorVersion, int& buildVersion)
@@ -1024,7 +1010,7 @@ bool QGCApplication::compressEvent(QEvent*event, QObject* receiver, QPostEventLi
 bool QGCApplication::event(QEvent *e)
 {
     if (e->type() == QEvent::Quit) {
-        // On OSX if the user selects Quit from the menu (or Command-Q) the ApplicationWindow does not signal closing. Instead you get a Quit even here only.
+        // On OSX if the user selects Quit from the menu (or Command-Q) the ApplicationWindow does not signal closing. Instead you get a Quit event here only.
         // This in turn causes the standard QGC shutdown sequence to not run. So in this case we close the window ourselves such that the
         // signal is sent and the normal shutdown sequence runs.
         bool forceClose = _mainRootWindow->property("_forceClose").toBool();

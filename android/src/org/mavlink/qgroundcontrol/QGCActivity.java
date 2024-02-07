@@ -63,8 +63,8 @@ import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 
 import com.hoho.android.usbserial.driver.*;
-import org.qtproject.qt5.android.bindings.QtActivity;
-import org.qtproject.qt5.android.bindings.QtApplication;
+import org.qtproject.qt.android.bindings.QtActivity;
+import org.qtproject.qt.android.bindings.QtApplication;
 
 public class QGCActivity extends QtActivity
 {
@@ -78,8 +78,6 @@ public class QGCActivity extends QtActivity
     private static PowerManager.WakeLock                _wakeLock;
     private static final String                         ACTION_USB_PERMISSION = "org.mavlink.qgroundcontrol.action.USB_PERMISSION";
     private static PendingIntent                        _usbPermissionIntent = null;
-    private TaiSync                                     taiSync = null;
-    private Timer                                       probeAccessoriesTimer = null;
     private static WifiManager.MulticastLock            _wifiMulticastLock;
     
     public static Context m_context;
@@ -102,26 +100,6 @@ public class QGCActivity extends QtActivity
                     nativeDeviceNewData(userData, dataA);
                 }
             };
-
-    private final BroadcastReceiver mOpenAccessoryReceiver =
-        new BroadcastReceiver()
-        {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                if (ACTION_USB_PERMISSION.equals(action)) {
-                    UsbAccessory accessory = intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
-                    if (accessory != null && intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        openAccessory(accessory);
-                    }
-                } else if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-                    UsbAccessory accessory = intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
-                    if (accessory != null) {
-                        closeAccessory(accessory);
-                    }
-                }
-            }
-        };
 
     private static UsbSerialDriver _findDriverByDeviceId(int deviceId) {
         for (UsbSerialDriver driver: _drivers) {
@@ -170,11 +148,13 @@ public class QGCActivity extends QtActivity
                     }
                 }
 
-                try {
-                    nativeUpdateAvailableJoysticks();
-                } catch(Exception e) {
-                    Log.e(TAG, "Exception nativeUpdateAvailableJoysticks()");
-                }
+
+                // FIXME-QT6: Not ye converted to Qt6
+                //try {
+                //    nativeUpdateAvailableJoysticks();
+                //} catch(Exception e) {
+                //    Log.e(TAG, "Exception nativeUpdateAvailableJoysticks()");
+                //}
             }
         };
 
@@ -227,54 +207,21 @@ public class QGCActivity extends QtActivity
         // Create intent for usb permission request
         _usbPermissionIntent = PendingIntent.getBroadcast(_instance, 0, new Intent(ACTION_USB_PERMISSION), 0);
 
-	// Workaround for QTBUG-73138
-	if (_wifiMulticastLock == null)
-            {
-                WifiManager wifi = (WifiManager) _instance.getSystemService(Context.WIFI_SERVICE);
-                _wifiMulticastLock = wifi.createMulticastLock("QGroundControl");
-                _wifiMulticastLock.setReferenceCounted(true);
-            }
-
-	_wifiMulticastLock.acquire();
-	Log.d(TAG, "Multicast lock: " + _wifiMulticastLock.toString());
-
-
-        try {
-            taiSync = new TaiSync();
-
-            IntentFilter accessoryFilter = new IntentFilter(ACTION_USB_PERMISSION);
-            filter.addAction(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
-            registerReceiver(mOpenAccessoryReceiver, accessoryFilter);
-
-            probeAccessoriesTimer = new Timer();
-            probeAccessoriesTimer.schedule(new TimerTask() {
-                @Override
-                public void run()
+        // Workaround for QTBUG-73138
+        if (_wifiMulticastLock == null)
                 {
-                    probeAccessories();
+                    WifiManager wifi = (WifiManager) _instance.getSystemService(Context.WIFI_SERVICE);
+                    _wifiMulticastLock = wifi.createMulticastLock("QGroundControl");
+                    _wifiMulticastLock.setReferenceCounted(true);
                 }
-            }, 0, 3000);
-        } catch(Exception e) {
-           Log.e(TAG, "Exception: " + e);
-        }
-    }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-
-        // Plug in of USB ACCESSORY triggers only onResume event.
-        // Then we scan if there is actually anything new
-        probeAccessories();
+        _wifiMulticastLock.acquire();
+        Log.d(TAG, "Multicast lock: " + _wifiMulticastLock.toString());
     }
 
     @Override
     protected void onDestroy()
     {
-        if (probeAccessoriesTimer != null) {
-            probeAccessoriesTimer.cancel();
-        }
-        unregisterReceiver(mOpenAccessoryReceiver);
         try {
             if (_wifiMulticastLock != null) {
                 _wifiMulticastLock.release();
@@ -709,62 +656,6 @@ public class QGCActivity extends QtActivity
             return connectL.getFileDescriptor();
     }
 
-    UsbAccessory openUsbAccessory = null;
-    Object openAccessoryLock = new Object();
-
-    private void openAccessory(UsbAccessory usbAccessory)
-    {
-        Log.i(TAG, "openAccessory: " + usbAccessory.getSerial());
-        try {
-            synchronized(openAccessoryLock) {
-                if ((openUsbAccessory != null && !taiSync.isRunning()) || openUsbAccessory == null) {
-                    openUsbAccessory = usbAccessory;
-                    taiSync.open(_usbManager.openAccessory(usbAccessory));
-                }
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "openAccessory exception: " + e);
-            taiSync.close();
-            closeAccessory(openUsbAccessory);
-        }
-    }
-
-    private void closeAccessory(UsbAccessory usbAccessory)
-    {
-        Log.i(TAG, "closeAccessory");
-
-        synchronized(openAccessoryLock) {
-            if (openUsbAccessory != null && usbAccessory == openUsbAccessory && taiSync.isRunning()) {
-                taiSync.close();
-                openUsbAccessory = null;
-            }
-        }
-    }
-
-    Object probeAccessoriesLock = new Object();
-
-    private void probeAccessories()
-    {
-        final PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-        new Thread(new Runnable() {
-            public void run() {
-                synchronized(openAccessoryLock) {
-//                    Log.i(TAG, "probeAccessories");
-                    UsbAccessory[] accessories = _usbManager.getAccessoryList();
-                    if (accessories != null) {
-                       for (UsbAccessory usbAccessory : accessories) {
-                           if (usbAccessory == null) {
-                               continue;
-                           }
-                           if (_usbManager.hasPermission(usbAccessory)) {
-                               openAccessory(usbAccessory);
-                           }
-                       }
-                    }
-                }
-            }
-        }).start();
-    }
 
     public static String getSDCardPath() {
         StorageManager storageManager = (StorageManager)_instance.getSystemService(Activity.STORAGE_SERVICE);

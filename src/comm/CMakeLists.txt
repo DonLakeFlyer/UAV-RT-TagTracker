@@ -45,12 +45,15 @@ add_library(comm
 target_link_libraries(comm
 	PUBLIC
 		qgc
-		Qt5::Location
-		Qt5::SerialPort
-		Qt5::Test
-		Qt5::TextToSpeech
-		Qt5::Widgets
-		qmdnsengine
+		Qt6::Location
+		Qt6::SerialPort
+		Qt6::Test
+		Qt6::TextToSpeech
+		Qt6::Widgets
 )
+
+if (NOT QT6_DISABLE_DNSENGINE)
+	target_link_libraries(comm PUBLIC qmdnsengine)
+endif ()
 
 target_include_directories(comm INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
