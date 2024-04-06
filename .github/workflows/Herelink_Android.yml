@@ -44,6 +44,17 @@ jobs:
         with:
           version:      ${{ env.QT_VERSION }}
           host:         linux
+          target:       desktop
+          dir:          ${{ runner.temp }}
+          modules:      qtcharts qtlocation qtpositioning qtspeech qtmultimedia qtserialport qtimageformats qtshadertools qtconnectivity qtquick3d
+          setup-python: true
+
+      - name: Install Qt6 for Android
+        uses: jurplel/install-qt-action@v3
+        with:
+          version:      ${{ env.QT_VERSION }}
+          aqtversion:   ==3.1.*
+          host:         linux
           target:       android
           arch:         android_arm64_v8a
           extra:        --autodesktop
