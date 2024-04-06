@@ -166,7 +166,6 @@ Item {
         Component.onCompleted: {
             _planMasterController.start()
             _missionController.setCurrentPlanViewSeqNum(0, true)
-            globals.planMasterControllerPlanView = _planMasterController
         }
 
         onPromptForPlanUsageOnVehicleChange: {
@@ -329,7 +328,8 @@ Item {
     }
 
     PlanViewToolBar {
-        id: planToolBar
+        id:                     planToolBar
+        planMasterController:   _planMasterController
     }
 
     Item {
@@ -412,10 +412,10 @@ Item {
                 model: _missionController.visualItems
                 delegate: MissionItemMapVisual {
                     map:         editorMap
-                    onClicked:   _missionController.setCurrentPlanViewSeqNum(sequenceNumber, false)
                     opacity:     _editingLayer == _layerMission || _editingLayer == _layerUTMSP ? 1 : editorMap._nonInteractiveOpacity
                     interactive: _editingLayer == _layerMission || _editingLayer == _layerUTMSP
                     vehicle:     _planMasterController.controllerVehicle
+                    onClicked:   (sequenceNumber) => { _missionController.setCurrentPlanViewSeqNum(sequenceNumber, false) }
                 }
             }
 
@@ -576,7 +576,7 @@ Item {
                     ToolStripAction {
                         text:           qsTr("Fly")
                         iconSource:     "/qmlimages/PaperPlane.svg"
-                        onTriggered:    mainWindow.popView()
+                        onTriggered:    mainWindow.showFlyView()
                     },
                     ToolStripAction {
                         text:                   qsTr("File")

@@ -10,8 +10,7 @@
 #include "AutoConnectSettings.h"
 #include "LinkManager.h"
 
-#include <QQmlEngine>
-#include <QtQml>
+#include <QtQml/QQmlEngine>
 
 DECLARE_SETTINGGROUP(AutoConnect, "LinkManager")
 {
@@ -28,7 +27,7 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectPixhawk)
 {
     if (!_autoConnectPixhawkFact) {
         _autoConnectPixhawkFact = _createSettingsFact(autoConnectPixhawkName);
-#ifdef __ios__
+#ifdef Q_OS_IOS
         _autoConnectPixhawkFact->setVisible(false);
 #endif
     }
@@ -39,7 +38,7 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectSiKRadio)
 {
     if (!_autoConnectSiKRadioFact) {
         _autoConnectSiKRadioFact = _createSettingsFact(autoConnectSiKRadioName);
-#ifdef __ios__
+#ifdef Q_OS_IOS
         _autoConnectSiKRadioFact->setVisible(false);
 #endif
     }
@@ -50,7 +49,7 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectPX4Flow)
 {
     if (!_autoConnectPX4FlowFact) {
         _autoConnectPX4FlowFact = _createSettingsFact(autoConnectPX4FlowName);
-#ifdef __ios__
+#ifdef Q_OS_IOS
         _autoConnectPX4FlowFact->setVisible(false);
 #endif
     }
@@ -61,7 +60,7 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectRTKGPS)
 {
     if (!_autoConnectRTKGPSFact) {
         _autoConnectRTKGPSFact = _createSettingsFact(autoConnectRTKGPSName);
-#ifdef __ios__
+#ifdef Q_OS_IOS
         _autoConnectRTKGPSFact->setVisible(false);
 #endif
     }
@@ -72,7 +71,7 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectLibrePilot)
 {
     if (!_autoConnectLibrePilotFact) {
         _autoConnectLibrePilotFact = _createSettingsFact(autoConnectLibrePilotName);
-#ifdef __ios__
+#ifdef Q_OS_IOS
         _autoConnectLibrePilotFact->setVisible(false);
 #endif
     }
@@ -83,7 +82,7 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectNmeaPort)
 {
     if (!_autoConnectNmeaPortFact) {
         _autoConnectNmeaPortFact = _createSettingsFact(autoConnectNmeaPortName);
-#ifdef __ios__
+#ifdef Q_OS_IOS
         _autoConnectNmeaPortFact->setVisible(false);
 #endif
     }
@@ -94,7 +93,7 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectNmeaBaud)
 {
     if (!_autoConnectNmeaBaudFact) {
         _autoConnectNmeaBaudFact = _createSettingsFact(autoConnectNmeaBaudName);
-#ifdef __ios__
+#ifdef Q_OS_IOS
         _autoConnectNmeaBaudFact->setVisible(false);
 #endif
     }
@@ -105,7 +104,7 @@ DECLARE_SETTINGSFACT_NO_FUNC(AutoConnectSettings, autoConnectZeroConf)
 {
     if (!_autoConnectZeroConfFact) {
         _autoConnectZeroConfFact = _createSettingsFact(autoConnectZeroConfName);
-#ifdef __ios__
+#ifdef Q_OS_IOS
         _autoConnectZeroConfFact->setVisible(false);
 #endif
     }

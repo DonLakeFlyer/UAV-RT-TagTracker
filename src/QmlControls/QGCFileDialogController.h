@@ -13,8 +13,7 @@
 
 #include <QObject>
 #include <QUrl>
-
-#include "QGCLoggingCategory.h"
+#include <QtCore/QLoggingCategory>
 
 Q_DECLARE_LOGGING_CATEGORY(QGCFileDialogControllerLog)
 
@@ -36,7 +35,7 @@ public:
     /// Deletes the file specified by the fully qualified file name
     Q_INVOKABLE void deleteFile(const QString& filename);
 
-    Q_INVOKABLE QString urlToLocalFile(QUrl url) { return url.toLocalFile(); }
+    Q_INVOKABLE QString urlToLocalFile(QUrl url);
 
     /// Important: Should only be used in mobile builds where default save location cannot be changed.
     /// Returns the standard QGC location portion of a fully qualified folder path.

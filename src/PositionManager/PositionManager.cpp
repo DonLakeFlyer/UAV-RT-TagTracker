@@ -10,12 +10,14 @@
 #include "PositionManager.h"
 #include "QGCApplication.h"
 #include "QGCCorePlugin.h"
+#include "SimulatedPosition.h"
 
-#if !defined(NO_SERIAL_LINK) && !defined(__android__)
+#if !defined(NO_SERIAL_LINK) && !defined(Q_OS_ANDROID)
 #include <QSerialPortInfo>
 #endif
 
 #include <QtPositioning/private/qgeopositioninfosource_p.h>
+#include <QtCore/QPermissions>
 
 QGCPositionManager::QGCPositionManager(QGCApplication* app, QGCToolbox* toolbox)
     : QGCTool           (app, toolbox)
@@ -29,57 +31,50 @@ QGCPositionManager::~QGCPositionManager()
     delete(_nmeaSource);
 }
 
-void QGCPositionManager::setToolbox(QGCToolbox *toolbox)
+void QGCPositionManager::_setupPositionSources(QGCToolbox *toolbox)
 {
-   QGCTool::setToolbox(toolbox);
-   //-- First see if plugin provides a position source
-   _defaultSource = toolbox->corePlugin()->createPositionSource(this);
-   if (_defaultSource) {
-       _usingPluginSource = true;
-   }
+    //-- First see if plugin provides a position source
+    _defaultSource = toolbox->corePlugin()->createPositionSource(this);
+    if (_defaultSource) {
+        _usingPluginSource = true;
+    }
 
-   if (qgcApp()->runningUnitTests()) {
-       // Units test on travis fail due to lack of position source
-       return;
-   }
+    if (qgcApp()->runningUnitTests()) {
+        // Units test on travis fail due to lack of position source
+        return;
+    }
 
-   if (!_defaultSource) {
-       //-- Otherwise, create a default one
-#if 1
-       // Calling this can end up falling through a path which tries to instantiate a serialnmea source.
-       // The Qt code for this will pop a qWarning if there are no serial ports available. This in turn
-       // causes you to be unable to run with QT_FATAL_WARNINGS=1 to debug stuff.
-       _defaultSource = QGeoPositionInfoSource::createDefaultSource(this);
-#else
-       // So instead we create our own version of QGeoPositionInfoSource::createDefaultSource which isn't as stupid.
-       QList<QCborMap> plugins = QGeoPositionInfoSourcePrivate::pluginsSorted();
-       foreach (const auto &obj, plugins) {
-           if (obj.value("Position").isBool() && obj.value("Position").toBool()) {
-               QString pluginName = obj.value("Keys").toArray()[0].toString();
-               if (pluginName == "serialnmea") {
-#if !defined(NO_SERIAL_LINK) && !defined(__android__)
-                   if (QSerialPortInfo::availablePorts().isEmpty()) {
-                       // This prevents the qWarning from popping
-                       continue;
-                   }
-#else
-                   continue;
-#endif
-               }
-               _defaultSource = QGeoPositionInfoSource::createSource(pluginName, this);
-               if (_defaultSource) {
-                   break;
-               }
-           }
-       }
-#endif
-   }
-   _simulatedSource = new SimulatedPosition();
+    if (!_defaultSource) {
+        //-- Otherwise, create a default one
+        _defaultSource = QGeoPositionInfoSource::createDefaultSource(this);
+    }
+
+    _simulatedSource = new SimulatedPosition();
 
 #if 1
    setPositionSource(QGCPositionSource::InternalGPS);
 #else
    setPositionSource(QGCPositionManager::Simulated);
+#endif
+}
+
+void QGCPositionManager::setToolbox(QGCToolbox *toolbox)
+{
+   QGCTool::setToolbox(toolbox);
+
+#if QT_CONFIG(permissions)
+    QLocationPermission locationPermission;
+    if (qApp->checkPermission(locationPermission) == Qt::PermissionStatus::Undetermined) {
+        qApp->requestPermission(locationPermission, [this, toolbox](const QPermission &permission) {
+            if (permission.status() == Qt::PermissionStatus::Granted) {
+                _setupPositionSources(toolbox);
+            }
+        });
+    } else {
+        _setupPositionSources(toolbox);
+    }
+#else
+    _setupPositionSources(toolbox);
 #endif
 }
 
@@ -189,7 +184,10 @@ void QGCPositionManager::setPositionSource(QGCPositionManager::QGCPositionSource
     if (_currentSource != nullptr) {
         _updateInterval = _currentSource->minimumUpdateInterval();
         _currentSource->setPreferredPositioningMethods(QGeoPositionInfoSource::SatellitePositioningMethods);
+        // OSX and iOS do not support setting the update interval
+#if !defined(Q_OS_DARWIN) && !defined(Q_OS_IOS)
         _currentSource->setUpdateInterval(_updateInterval);
+#endif
         connect(_currentSource, &QGeoPositionInfoSource::positionUpdated, this, &QGCPositionManager::_positionUpdated);
         connect(_currentSource, &QGeoPositionInfoSource::errorOccurred, this, &QGCPositionManager::_error);
         _currentSource->startUpdates();

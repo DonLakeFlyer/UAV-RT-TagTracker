@@ -230,6 +230,7 @@
 		<file alias="announcement.svg">../resources/InstrumentValueIcons/announcement.svg</file>
 		<file alias="mood-happy-solid.svg">../resources/InstrumentValueIcons/mood-happy-solid.svg</file>
 		<file alias="indent-increase.svg">../resources/InstrumentValueIcons/indent-increase.svg</file>
+		<file alias="drone.svg">../resources/InstrumentValueIcons/drone.svg</file>
 		<file alias="light-bulb.svg">../resources/InstrumentValueIcons/light-bulb.svg</file>
 		<file alias="location.svg">../resources/InstrumentValueIcons/location.svg</file>
 		<file alias="gift.svg">../resources/InstrumentValueIcons/gift.svg</file>

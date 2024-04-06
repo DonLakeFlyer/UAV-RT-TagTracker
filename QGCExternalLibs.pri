@@ -83,12 +83,6 @@ count(MAVLINK_CONF, 1) {
 }
 
 #
-# [REQUIRED] EIGEN matrix library
-# NOMINMAX constant required to make internal min/max work.
-INCLUDEPATH += libs/eigen
-DEFINES += NOMINMAX
-
-#
 # [REQUIRED] Events submodule
 HEADERS+= \
 	libs/libevents/libevents/libs/cpp/protocol/receive.h \
@@ -116,7 +110,7 @@ SOURCES += \
 WindowsBuild {
     INCLUDEPATH +=  $$SOURCE_DIR/libs/zlib/windows/include
     LIBS += -L$$SOURCE_DIR/libs/zlib/windows/lib
-    LIBS += -lzlibstat
+    LIBS += -lzlibstatic
 } else {
     LIBS += -lz
 }

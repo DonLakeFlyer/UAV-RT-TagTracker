@@ -606,6 +606,39 @@
       <max>6.0</max>
       <decimal>1</decimal>
     </parameter>
+    <parameter name="FW_AT_SYSID_F0" default="1." type="FLOAT">
+      <short_desc>Start frequency of the injected signal</short_desc>
+      <long_desc>Can be set lower or higher than the end frequency</long_desc>
+      <min>0.1</min>
+      <max>30.0</max>
+      <unit>Hz</unit>
+      <decimal>1</decimal>
+    </parameter>
+    <parameter name="FW_AT_SYSID_F1" default="20." type="FLOAT">
+      <short_desc>End frequency of the injected signal</short_desc>
+      <long_desc>Can be set lower or higher than the start frequency</long_desc>
+      <min>0.1</min>
+      <max>30.0</max>
+      <unit>Hz</unit>
+      <decimal>1</decimal>
+    </parameter>
+    <parameter name="FW_AT_SYSID_TIME" default="10." type="FLOAT">
+      <short_desc>Maneuver time for each axis</short_desc>
+      <long_desc>Duration of the input signal sent on each axis during system identification</long_desc>
+      <min>5</min>
+      <max>120</max>
+      <unit>s</unit>
+      <decimal>0</decimal>
+    </parameter>
+    <parameter name="FW_AT_SYSID_TYPE" default="0" type="INT32">
+      <short_desc>Input signal type</short_desc>
+      <long_desc>Type of signal used during system identification to excite the system.</long_desc>
+      <values>
+        <value code="0">Step</value>
+        <value code="1">Linear sine sweep</value>
+        <value code="2">Logarithmic sine sweep</value>
+      </values>
+    </parameter>
     <parameter name="MC_AT_APPLY" default="1" type="INT32">
       <short_desc>Controls when to apply the new gains</short_desc>
       <long_desc>After the auto-tuning sequence is completed, a new set of gains is available and can be applied immediately or after landing. WARNING Applying the gains in air is dangerous as there is no guarantee that those new gains will be able to stabilize the drone properly.</long_desc>
@@ -1057,6 +1090,16 @@
       <short_desc>Next flight UUID</short_desc>
       <long_desc>This number is incremented automatically after every flight on disarming in order to remember the next flight UUID. The first flight is 0.</long_desc>
       <min>0</min>
+    </parameter>
+    <parameter name="COM_FLTT_LOW_ACT" default="3" type="INT32">
+      <short_desc>Remaining flight time low failsafe</short_desc>
+      <long_desc>Action the system takes when the remaining flight time is below the estimated time it takes to reach the RTL destination.</long_desc>
+      <increment>1</increment>
+      <values>
+        <value code="0">None</value>
+        <value code="1">Warning</value>
+        <value code="3">Return</value>
+      </values>
     </parameter>
     <parameter name="COM_FLT_PROFILE" default="0" type="INT32">
       <short_desc>User Flight Profile</short_desc>
@@ -1647,16 +1690,15 @@
       <unit>m/s</unit>
       <decimal>2</decimal>
     </parameter>
-    <parameter name="EKF2_DECL_TYPE" default="7" type="INT32">
+    <parameter name="EKF2_DECL_TYPE" default="3" type="INT32">
       <short_desc>Integer bitmask controlling handling of magnetic declination</short_desc>
-      <long_desc>Set bits in the following positions to enable functions. 0 : Set to true to use the declination from the geo_lookup library when the GPS position becomes available, set to false to always use the EKF2_MAG_DECL value. 1 : Set to true to save the EKF2_MAG_DECL parameter to the value returned by the EKF when the vehicle disarms. 2 : Set to true to always use the declination as an observation when 3-axis magnetometer fusion is being used.</long_desc>
+      <long_desc>Set bits in the following positions to enable functions. 0 : Set to true to use the declination from the geo_lookup library when the GPS position becomes available, set to false to always use the EKF2_MAG_DECL value. 1 : Set to true to save the EKF2_MAG_DECL parameter to the value returned by the EKF when the vehicle disarms.</long_desc>
       <min>0</min>
-      <max>7</max>
+      <max>3</max>
       <reboot_required>true</reboot_required>
       <bitmask>
         <bit index="0">use geo_lookup declination</bit>
         <bit index="1">save EKF2_MAG_DECL on disarm</bit>
-        <bit index="2">use declination as an observation</bit>
       </bitmask>
     </parameter>
     <parameter name="EKF2_DRAG_CTRL" default="0" type="INT32" boolean="true">
@@ -1956,8 +1998,8 @@
       <decimal>3</decimal>
     </parameter>
     <parameter name="EKF2_MAG_ACCLIM" default="0.5" type="FLOAT">
-      <short_desc>Horizontal acceleration threshold used by automatic selection of magnetometer fusion method</short_desc>
-      <long_desc>This parameter is used when the magnetometer fusion method is set automatically (EKF2_MAG_TYPE = 0). If the filtered horizontal acceleration is greater than this parameter value, then the EKF will use 3-axis magnetometer fusion.</long_desc>
+      <short_desc>Horizontal acceleration threshold used for heading observability check</short_desc>
+      <long_desc>The heading is assumed to be observable when the body acceleration is greater than this parameter when a global position/velocity aiding source is active.</long_desc>
       <min>0.0</min>
       <max>5.0</max>
       <unit>m/s^2</unit>
@@ -2040,14 +2082,6 @@
         <value code="1">Magnetic heading</value>
         <value code="5">None</value>
       </values>
-    </parameter>
-    <parameter name="EKF2_MAG_YAWLIM" default="0.20" type="FLOAT">
-      <short_desc>Yaw rate threshold used by automatic selection of magnetometer fusion method</short_desc>
-      <long_desc>This parameter is used when the magnetometer fusion method is set automatically (EKF2_MAG_TYPE = 0). If the filtered yaw rate is greater than this parameter value, then the EKF will use 3-axis magnetometer fusion.</long_desc>
-      <min>0.0</min>
-      <max>1.0</max>
-      <unit>rad/s</unit>
-      <decimal>2</decimal>
     </parameter>
     <parameter name="EKF2_MCOEF" default="0.15" type="FLOAT">
       <short_desc>Propeller momentum drag coefficient used for multi-rotor wind estimation</short_desc>
@@ -4503,6 +4537,7 @@
         <value code="2">Require a landing</value>
         <value code="3">Require a takeoff and a landing</value>
         <value code="4">Require both a takeoff and a landing, or neither</value>
+        <value code="5">Same as previous, but require a landing if in air and no valid VTOL landing approach is present</value>
       </values>
     </parameter>
     <parameter name="MIS_YAW_ERR" default="12.0" type="FLOAT">
@@ -4969,6 +5004,10 @@
       <unit>s</unit>
       <decimal>2</decimal>
     </parameter>
+    <parameter name="MPC_ACC_DECOUPLE" default="1" type="INT32" boolean="true">
+      <short_desc>Acceleration to tilt coupling</short_desc>
+      <long_desc>Set to decouple tilt from vertical acceleration.</long_desc>
+    </parameter>
     <parameter name="MPC_ACC_DOWN_MAX" default="3." type="FLOAT">
       <short_desc>Maximum downwards acceleration in climb rate controlled modes</short_desc>
       <min>2</min>
@@ -5122,8 +5161,8 @@
     </parameter>
     <parameter name="MPC_MAN_TILT_MAX" default="35." type="FLOAT">
       <short_desc>Maximal tilt angle in Stabilized or Altitude mode</short_desc>
-      <min>0</min>
-      <max>90</max>
+      <min>1</min>
+      <max>70</max>
       <unit>deg</unit>
       <decimal>0</decimal>
       <increment>1</increment>
@@ -7416,15 +7455,6 @@
       <decimal>1</decimal>
       <increment>0.5</increment>
     </parameter>
-    <parameter name="RTL_HDG_MD" default="0" type="INT32">
-      <short_desc>RTL heading mode</short_desc>
-      <long_desc>Defines the heading behavior during RTL</long_desc>
-      <values>
-        <value code="0">Towards next waypoint.</value>
-        <value code="1">Heading matches destination.</value>
-        <value code="2">Use current heading.</value>
-      </values>
-    </parameter>
     <parameter name="RTL_LAND_DELAY" default="0.0" type="FLOAT">
       <short_desc>Return mode delay</short_desc>
       <long_desc>Delay before landing (after initial descent) in Return mode. If set to -1 the system will not land but loiter at RTL_DESCEND_ALT.</long_desc>
@@ -7813,6 +7843,10 @@
       <max>86400</max>
       <unit>s</unit>
       <increment>1</increment>
+    </parameter>
+    <parameter name="SIM_BAT_ENABLE" default="1" type="INT32" boolean="true">
+      <short_desc>Simulator Battery enabled</short_desc>
+      <long_desc>Enable or disable the internal battery simulation. This is useful when the battery is simulated externally and interfaced with PX4 through MAVLink for example.</long_desc>
     </parameter>
     <parameter name="SIM_BAT_MIN_PCT" default="50.0" type="FLOAT">
       <short_desc>Simulator Battery minimal percentage</short_desc>
@@ -9325,18 +9359,6 @@
       <min>0</min>
       <max>50</max>
     </parameter>
-    <parameter name="SIM_GZ_HOME_ALT" default="488.0" type="FLOAT">
-      <short_desc>simulator origin altitude</short_desc>
-      <unit>m</unit>
-    </parameter>
-    <parameter name="SIM_GZ_HOME_LAT" default="47.397742" type="FLOAT">
-      <short_desc>simulator origin latitude</short_desc>
-      <unit>deg</unit>
-    </parameter>
-    <parameter name="SIM_GZ_HOME_LON" default="8.545594" type="FLOAT">
-      <short_desc>simulator origin longitude</short_desc>
-      <unit>deg</unit>
-    </parameter>
     <parameter name="SIM_MAG_OFFSET_X" default="0.0" type="FLOAT">
       <short_desc>simulated magnetometer X offset</short_desc>
       <unit>gauss</unit>
@@ -10784,7 +10806,7 @@
     </parameter>
     <parameter name="VT_FWD_THRUST_EN" default="0" type="INT32">
       <short_desc>Use fixed-wing actuation in hover to accelerate forward</short_desc>
-      <long_desc>This feature can be used to avoid the plane having to pitch nose down in order to move forward. Prevents large, negative lift from pitching nose down into wind. Fixed-wing forward actuators refers to puller/pusher (standard VTOL), or forward-tilt (tiltrotor VTOL). Only active if demanded down pitch is below VT_PITCH_MIN. Use VT_FWD_THRUST_SC to tune it. Only active (if enabled) in Altitude, Position and Auto modes, not in Stabilized.</long_desc>
+      <long_desc>This feature can be used to avoid the plane having to pitch nose down in order to move forward. Prevents large, negative lift from pitching nose down into wind. Fixed-wing forward actuators refers to puller/pusher (standard VTOL), or forward-tilt (tiltrotor VTOL). Only active if demanded down pitch is below VT_PITCH_MIN. Use VT_FWD_THRUST_SC to tune it. Descend mode is treated as Landing too. Only active (if enabled) in Altitude, Position and Auto modes, not in Stabilized.</long_desc>
       <values>
         <value code="0">Disabled</value>
         <value code="1">Enabled (except LANDING)</value>

@@ -10,8 +10,6 @@
 #ifndef SettingsManager_H
 #define SettingsManager_H
 
-#include "QGCLoggingCategory.h"
-#include "Joystick.h"
 #include "MultiVehicleManager.h"
 #include "QGCToolbox.h"
 #include "AppSettings.h"
@@ -22,6 +20,7 @@
 #include "FlightModeSettings.h"
 #include "RTKSettings.h"
 #include "FlyViewSettings.h"
+#include "MapsSettings.h"
 #include "PlanViewSettings.h"
 #include "BrandImageSettings.h"
 #include "OfflineMapsSettings.h"
@@ -29,8 +28,9 @@
 #include "FirmwareUpgradeSettings.h"
 #include "ADSBVehicleManagerSettings.h"
 #include "BatteryIndicatorSettings.h"
-#include <QVariantList>
 #include "RemoteIDSettings.h"
+#include "Viewer3DSettings.h"
+#include "CustomMavlinkActionsSettings.h"
 
 /// Provides access to all app settings
 class SettingsManager : public QGCTool
@@ -54,10 +54,15 @@ public:
     Q_PROPERTY(QObject* firmwareUpgradeSettings         READ firmwareUpgradeSettings        CONSTANT)
     Q_PROPERTY(QObject* adsbVehicleManagerSettings      READ adsbVehicleManagerSettings     CONSTANT)
     Q_PROPERTY(QObject* batteryIndicatorSettings        READ batteryIndicatorSettings       CONSTANT)
+    Q_PROPERTY(QObject* mapsSettings                    READ mapsSettings                   CONSTANT)
+    Q_PROPERTY(QObject* viewer3DSettings                READ viewer3DSettings               CONSTANT)
 #if !defined(NO_ARDUPILOT_DIALECT)
     Q_PROPERTY(QObject* apmMavlinkStreamRateSettings    READ apmMavlinkStreamRateSettings   CONSTANT)
 #endif
     Q_PROPERTY(QObject* remoteIDSettings                READ remoteIDSettings               CONSTANT)
+    Q_PROPERTY(QObject* customMavlinkActionsSettings    READ customMavlinkActionsSettings   CONSTANT)
+
+
     // Override from QGCTool
     virtual void setToolbox(QGCToolbox *toolbox);
 
@@ -75,10 +80,14 @@ public:
     FirmwareUpgradeSettings*        firmwareUpgradeSettings     (void) { return _firmwareUpgradeSettings; }
     ADSBVehicleManagerSettings*     adsbVehicleManagerSettings  (void) { return _adsbVehicleManagerSettings; }
     BatteryIndicatorSettings*       batteryIndicatorSettings    (void) { return _batteryIndicatorSettings; }
+    MapsSettings*                   mapsSettings                (void) { return _mapsSettings; }
+    Viewer3DSettings*               viewer3DSettings            (void) { return _viewer3DSettings; }
 #if !defined(NO_ARDUPILOT_DIALECT)
     APMMavlinkStreamRateSettings*   apmMavlinkStreamRateSettings(void) { return _apmMavlinkStreamRateSettings; }
 #endif
     RemoteIDSettings*               remoteIDSettings            (void) { return _remoteIDSettings; }
+    CustomMavlinkActionsSettings*   customMavlinkActionsSettings(void) { return _customMavlinkActionsSettings; }
+
 private:
     AppSettings*                    _appSettings;
     UnitsSettings*                  _unitsSettings;
@@ -94,10 +103,13 @@ private:
     FirmwareUpgradeSettings*        _firmwareUpgradeSettings;
     ADSBVehicleManagerSettings*     _adsbVehicleManagerSettings;
     BatteryIndicatorSettings*       _batteryIndicatorSettings;
+    MapsSettings*                   _mapsSettings;
+    Viewer3DSettings*               _viewer3DSettings;
 #if !defined(NO_ARDUPILOT_DIALECT)
     APMMavlinkStreamRateSettings*   _apmMavlinkStreamRateSettings;
 #endif
     RemoteIDSettings*               _remoteIDSettings;
+    CustomMavlinkActionsSettings*   _customMavlinkActionsSettings;
 };
 
 #endif

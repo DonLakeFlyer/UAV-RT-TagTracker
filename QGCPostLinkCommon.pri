@@ -43,8 +43,8 @@ WindowsBuild {
     ReleaseBuild: DLL_QT_DEBUGCHAR = ""
     COPY_FILE_LIST = \
         $$SOURCE_DIR\\libs\\sdl2\\msvc\\lib\\x64\\SDL2.dll \
-        $$SOURCE_DIR\\libs\\OpenSSL\\windows\\libcrypto-1_1-x64.dll \
-        $$SOURCE_DIR\\libs\\OpenSSL\\windows\\libssl-1_1-x64.dll
+        $$SOURCE_DIR\\libs\\OpenSSL\\windows\\libcrypto-3-x64.dll \
+        $$SOURCE_DIR\\libs\\OpenSSL\\windows\\libssl-3-x64.dll
 
     for(COPY_FILE, COPY_FILE_LIST) {
         QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY \"$$COPY_FILE\" \"$$DESTDIR\"
@@ -95,10 +95,13 @@ LinuxBuild {
         libQt6QmlWorkerScript.so.6 \
         libQt6QuickShapes.so.6 \
         libQt6XcbQpa.so.6 \
-        libQt6Core5Compat.so.6 \
         libQt6Network.so.6 \ 
         libQt6QmlXmlListModel.so.6 \
         libQt6Quick.so.6 \
+        libQt6Quick3D.so.6 \
+        libQt6Quick3DRuntimeRender.so.6 \
+        libQt6Quick3DUtils.so.6 \
+        libQt6Concurrent.so.6 \
         libQt6Xml.so.6 \
         libQt6Core.so.6 \
         libQt6OpenGL.so.6 \
@@ -107,6 +110,8 @@ LinuxBuild {
         libQt6DBus.so.6 \
         libQt6OpenGLWidgets.so.6 \
         libQt6QuickControls2.so.6 \
+        libQt6QuickControls2Basic.so.6 \
+        libQt6QuickControls2BasicStyleImpl.so.6 \
         libQt6SerialPort.so.6 \
         libQt6Gui.so.6 \ 
         libQt6PositioningQuick.so.6 \
@@ -157,7 +162,8 @@ LinuxBuild {
         position \
         sqldrivers \
         texttospeech \
-        multimedia
+        multimedia \
+        tls
 
     UseWayland {
         QT_PLUGIN_LIST += \
@@ -179,16 +185,16 @@ LinuxBuild {
 
     # QGroundControl start script
     contains (CONFIG, QGC_DISABLE_CUSTOM_BUILD) | !exists($$PWD/custom/custom.pri) {
-        QMAKE_POST_LINK += && $$QMAKE_COPY $$SOURCE_DIR/deploy/qgroundcontrol-start.sh $$DESTDIR
-        QMAKE_POST_LINK += && $$QMAKE_COPY $$SOURCE_DIR/deploy/qgroundcontrol.desktop $$DESTDIR
+        QMAKE_POST_LINK += && $$QMAKE_COPY $$SOURCE_DIR/deploy/linux/qgroundcontrol-start.sh $$DESTDIR
+        QMAKE_POST_LINK += && $$QMAKE_COPY $$SOURCE_DIR/deploy/linux/qgroundcontrol.desktop $$DESTDIR
         QMAKE_POST_LINK += && $$QMAKE_COPY $$SOURCE_DIR/resources/icons/qgroundcontrol.png $$DESTDIR
     } else {
         include($$PWD/custom/custom_deploy.pri)
     }
 
     # FIXME-QT6 I don't think this is needed any more -testing
-    #QMAKE_POST_LINK += && SEARCHDIR="$$DESTDIR/Qt" RPATHDIR="$$DESTDIR/Qt/lib" "$$PWD/deploy/linux-fixup-rpaths.bash"
+    #QMAKE_POST_LINK += && SEARCHDIR="$$DESTDIR/Qt" RPATHDIR="$$DESTDIR/Qt/lib" "$$PWD/deploy/linux/linux-fixup-rpaths.bash"
 
     # https://doc.qt.io/qt-5/qt-conf.html
-    QMAKE_POST_LINK += && $$QMAKE_COPY "$$SOURCE_DIR/deploy/qt.conf" "$$DESTDIR"
+    QMAKE_POST_LINK += && $$QMAKE_COPY "$$SOURCE_DIR/deploy/linux/qt.conf" "$$DESTDIR"
 }

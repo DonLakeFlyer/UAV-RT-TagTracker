@@ -75,9 +75,16 @@ Item {
         return Screen.pixelDensity
     }
 
+    // These properties allow us to create simulated mobile sizing for a desktop build.
+    // This makes testing the UI for smaller mobile sizing much easier.
+    // The 731x411 size is the size of the Herelink screen which is our target lower bound
+    property real screenWidth:  ScreenToolsController.fakeMobile ? 731 : Screen.width
+    property real screenHeight: ScreenToolsController.fakeMobile ? 411 : Screen.height
+
     property bool isAndroid:                        ScreenToolsController.isAndroid
     property bool isiOS:                            ScreenToolsController.isiOS
     property bool isMobile:                         ScreenToolsController.isMobile
+    property bool isFakeMobile:                     ScreenToolsController.fakeMobile
     property bool isWindows:                        ScreenToolsController.isWindows
     property bool isDebug:                          ScreenToolsController.isDebug
     property bool isMac:                            ScreenToolsController.isMacOS
@@ -87,8 +94,8 @@ Item {
     property bool isHugeScreen:                     (Screen.width / realPixelDensity) >= (23.5 * 25.4) // 27" monitor
     property bool isSerialAvailable:                ScreenToolsController.isSerialAvailable
 
-    readonly property real minTouchMillimeters:     10      ///< Minimum touch size in millimeters
-    property real minTouchPixels:                   0       ///< Minimum touch size in pixels
+    readonly property real minTouchMillimeters:     5   ///< Minimum touch size in millimeters
+    property real minTouchPixels:                   0   ///< Minimum touch size in pixels (calculatedd from minTouchMillimeters and realPixelDensity)
 
     // The implicit heights/widths for our custom control set
     property real implicitButtonWidth:              Math.round(defaultFontPixelWidth *  (isMobile ? 7.0 : 5.0))
@@ -152,7 +159,7 @@ Item {
             // If using physical sizing takes up too much of the vertical real estate fall back to font based sizing
             minTouchPixels      = defaultFontPixelHeight * 3
         }
-        toolbarHeight           = isMobile ? minTouchPixels : defaultFontPixelHeight * 3
+        toolbarHeight           = defaultFontPixelHeight * 3
         toolbarHeight           = toolbarHeight * QGroundControl.corePlugin.options.toolbarHeightMultiplier
     }
 

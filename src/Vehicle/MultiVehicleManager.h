@@ -18,7 +18,8 @@
 #include "QGCMAVLink.h"
 #include "QmlObjectListModel.h"
 #include "QGCToolbox.h"
-#include "QGCLoggingCategory.h"
+
+#include <QtCore/QLoggingCategory>
 
 class FirmwarePluginManager;
 class FollowMe;
@@ -49,8 +50,6 @@ public:
     // Methods
 
     Q_INVOKABLE Vehicle* getVehicleById(int vehicleId);
-
-    UAS* activeUas(void) { return _activeVehicle ? _activeVehicle->uas() : nullptr; }
 
     // Property accessors
 

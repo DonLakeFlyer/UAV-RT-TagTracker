@@ -120,7 +120,7 @@ Item {
 
             Connections {
                 target:                 _activeVehicle
-                onNewFormattedMessage:  messageText.insert(0, formatMessage(formattedMessage))
+                onNewFormattedMessage: (formattedMessage) => { messageText.insert(0, formatMessage(formattedMessage)) }
             }
 
             FactPanelController {
@@ -175,7 +175,7 @@ Item {
                     fillItem: parent
                     onClicked: {
                         _activeVehicle.clearMessages()
-                        drawer.close()
+                        mainWindow.closeIndicatorDrawer()
                     }
                 }
             }
@@ -204,7 +204,7 @@ Item {
             color:              qgcPal.text
             selectionColor:     qgcPal.text
             selectedTextColor:  qgcPal.window
-            onLinkActivated: {
+            onLinkActivated: (link) => {
                 if (link.startsWith('param://')) {
                     var paramName = link.substr(8);
                     fact = controller.getParameterFact(-1, paramName, true)

@@ -805,7 +805,7 @@ Item {
                             anchors.left:   parent.left
                             anchors.right:  parent.right
                             model:          QGroundControl.mapEngineManager.mapList
-                            onActivated: {
+                            onActivated: (index) => {
                                 mapType = textAt(index)
                             }
                             Component.onCompleted: {
@@ -1028,8 +1028,12 @@ Item {
                         addNewSet()
                     }
                 }
+        QGCLabel { text: QGroundControl.mapEngineManager.tileSets.count }
+
                 Repeater {
+                    id: repeater
                     model: QGroundControl.mapEngineManager.tileSets
+
                     delegate: OfflineMapButton {
                         text:           object.name
                         size:           object.downloadStatus

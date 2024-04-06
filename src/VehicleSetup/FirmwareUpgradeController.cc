@@ -18,15 +18,12 @@
 #include "QGCZlib.h"
 #include "JsonHelper.h"
 #include "LinkManager.h"
+#include "QGCLoggingCategory.h"
 
 #include <QStandardPaths>
-#include <QRegularExpression>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QNetworkProxy>
-
-#include "zlib.h"
 
 const char* FirmwareUpgradeController::_manifestFirmwareJsonKey =               "firmware";
 const char* FirmwareUpgradeController::_manifestBoardIdJsonKey =                "board_id";
@@ -91,6 +88,7 @@ static QMap<int, QString> px4_board_name_map {
     {1009, "cuav_nora_default"},
     {1010, "cuav_x7pro_default"},
     {1017, "mro_pixracerpro_default"},
+    {1022, "mro_ctrl-zero-classic_default"},
     {1023, "mro_ctrl-zero-h7_default"},
     {1024, "mro_ctrl-zero-h7-oem_default"},
     {1048, "holybro_kakuteh7_default"},
@@ -505,8 +503,7 @@ void FirmwareUpgradeController::_appendStatusLog(const QString& text, bool criti
 {
     Q_ASSERT(_statusLog);
     
-    QVariant returnedValue;
-    QVariant varText;
+    QString varText;
     
     if (critical) {
         varText = QString("<font color=\"yellow\">%1</font>").arg(text);
@@ -516,8 +513,7 @@ void FirmwareUpgradeController::_appendStatusLog(const QString& text, bool criti
     
     QMetaObject::invokeMethod(_statusLog,
                               "append",
-                              Q_RETURN_ARG(QVariant, returnedValue),
-                              Q_ARG(QVariant, varText));
+                              Q_ARG(QString, varText));
 }
 
 void FirmwareUpgradeController::_errorCancel(const QString& msg)

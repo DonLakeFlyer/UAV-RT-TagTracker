@@ -11,13 +11,6 @@
 #ifndef VideoManager_H
 #define VideoManager_H
 
-#include <QObject>
-#include <QTimer>
-#include <QTime>
-#include <QUrl>
-
-#include "QGCMAVLink.h"
-#include "QGCLoggingCategory.h"
 #include "VideoReceiver.h"
 #include "QGCToolbox.h"
 #include "SubtitleWriter.h"
@@ -39,7 +32,6 @@ public:
     Q_PROPERTY(bool             hasVideo                READ    hasVideo                                    NOTIFY hasVideoChanged)
     Q_PROPERTY(bool             isGStreamer             READ    isGStreamer                                 NOTIFY isGStreamerChanged)
     Q_PROPERTY(bool             isUvc                   READ    isUvc                                       NOTIFY isUvcChanged)
-    Q_PROPERTY(bool             isTaisync               READ    isTaisync       WRITE   setIsTaisync        NOTIFY isTaisyncChanged)
     Q_PROPERTY(QString          uvcVideoSourceID        READ    uvcVideoSourceID                            NOTIFY uvcVideoSourceIDChanged)
     Q_PROPERTY(bool             uvcEnabled              READ    uvcEnabled                                  CONSTANT)
     Q_PROPERTY(bool             fullScreen              READ    fullScreen      WRITE   setfullScreen       NOTIFY fullScreenChanged)
@@ -60,7 +52,6 @@ public:
     virtual bool        hasVideo            ();
     virtual bool        isGStreamer         ();
     virtual bool        isUvc               ();
-    virtual bool        isTaisync           () { return _isTaisync; }
     virtual bool        fullScreen          () { return _fullScreen; }
     virtual QString     uvcVideoSourceID    () { return _uvcVideoSourceID; }
     virtual double      aspectRatio         ();
@@ -100,7 +91,6 @@ public:
 #endif
 
     virtual void        setfullScreen       (bool f);
-    virtual void        setIsTaisync        (bool t) { _isTaisync = t;  emit isTaisyncChanged(); }
 
     // Override from QGCTool
     virtual void        setToolbox          (QGCToolbox *toolbox);
@@ -120,7 +110,6 @@ signals:
     void uvcVideoSourceIDChanged    ();
     void fullScreenChanged          ();
     void isAutoStreamChanged        ();
-    void isTaisyncChanged           ();
     void aspectRatioChanged         ();
     void autoStreamConfiguredChanged();
     void imageFileChanged           ();
@@ -157,7 +146,6 @@ protected:
     QString                 _videoFile;
     QString                 _imageFile;
     SubtitleWriter          _subtitleWriter;
-    bool                    _isTaisync              = false;
     VideoReceiver*          _videoReceiver[2]       = { nullptr, nullptr };
     void*                   _videoSink[2]           = { nullptr, nullptr };
     QString                 _videoUri[2];

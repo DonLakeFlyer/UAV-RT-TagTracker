@@ -19,10 +19,12 @@
 #include "QGCApplication.h"
 #include "QGCMapTileSet.h"
 #include "QGCMapUrlEngine.h"
+#include "QGCMapEngine.h"
+#include "QGCLoggingCategory.h"
 
 #include <QSettings>
 #include <QStorageInfo>
-#include <stdio.h>
+#include <QtQml/QQmlEngine>
 
 QGC_LOGGING_CATEGORY(QGCMapEngineManagerLog, "QGCMapEngineManagerLog")
 
@@ -222,10 +224,15 @@ QGCMapEngineManager::mapList()
 QStringList
 QGCMapEngineManager::mapProviderList()
 {
-    // Extract Provider name from MapName ( format : "Provider Type")
     QStringList mapList = getQGCMapEngine()->getMapNameList();
+
+    // Don't return the Elevations provider. This is not selectable as a map provider by the user.
+    mapList.removeAll(UrlFactory::kCopernicusElevationProviderKey);
+
+    // Extract Provider name from MapName ( format : "Provider Type")
     mapList.replaceInStrings(QRegularExpression("^([^\\ ]*) (.*)$"),"\\1");
     mapList.removeDuplicates();
+
     return mapList;
 }
 
@@ -239,34 +246,6 @@ QGCMapEngineManager::mapTypeList(QString provider)
     mapList.replaceInStrings(QRegularExpression("^([^\\ ]*) (.*)$"),"\\2");
     mapList.removeDuplicates();
     return mapList;
-}
-
-//-----------------------------------------------------------------------------
-quint32
-QGCMapEngineManager::maxMemCache()
-{
-    return getQGCMapEngine()->getMaxMemCache();
-}
-
-//-----------------------------------------------------------------------------
-void
-QGCMapEngineManager::setMaxMemCache(quint32 size)
-{
-    getQGCMapEngine()->setMaxMemCache(size);
-}
-
-//-----------------------------------------------------------------------------
-quint32
-QGCMapEngineManager::maxDiskCache()
-{
-    return getQGCMapEngine()->getMaxDiskCache();
-}
-
-//-----------------------------------------------------------------------------
-void
-QGCMapEngineManager::setMaxDiskCache(quint32 size)
-{
-    getQGCMapEngine()->setMaxDiskCache(size);
 }
 
 //-----------------------------------------------------------------------------

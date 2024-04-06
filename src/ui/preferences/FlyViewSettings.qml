@@ -20,17 +20,31 @@ import QGroundControl.Controls
 import QGroundControl.ScreenTools
 import QGroundControl.MultiVehicleManager
 import QGroundControl.Palette
+import QGroundControl.Controllers
 
 SettingsPage {
     property var    _settingsManager:                   QGroundControl.settingsManager
+    property var    _flyViewSettings:                   _settingsManager.flyViewSettings
+    property var    _customMavlinkActionsSettings:      _settingsManager.customMavlinkActionsSettings
     property Fact   _virtualJoystick:                   _settingsManager.appSettings.virtualJoystick
     property Fact   _virtualJoystickAutoCenterThrottle: _settingsManager.appSettings.virtualJoystickAutoCenterThrottle
-    property Fact   _alternateInstrumentPanel:          _settingsManager.flyViewSettings.alternateInstrumentPanel
-    property Fact   _showAdditionalIndicatorsCompass:   _settingsManager.flyViewSettings.showAdditionalIndicatorsCompass
-    property Fact   _lockNoseUpCompass:                 _settingsManager.flyViewSettings.lockNoseUpCompass
-    property Fact   _guidedMinimumAltitude:             _settingsManager.flyViewSettings.guidedMinimumAltitude
-    property Fact   _guidedMaximumAltitude:             _settingsManager.flyViewSettings.guidedMaximumAltitude
-    property Fact   _maxGoToLocationDistance:           _settingsManager.flyViewSettings.maxGoToLocationDistance
+    property Fact   _showAdditionalIndicatorsCompass:   _flyViewSettings.showAdditionalIndicatorsCompass
+    property Fact   _lockNoseUpCompass:                 _flyViewSettings.lockNoseUpCompass
+    property Fact   _guidedMinimumAltitude:             _flyViewSettings.guidedMinimumAltitude
+    property Fact   _guidedMaximumAltitude:             _flyViewSettings.guidedMaximumAltitude
+    property Fact   _maxGoToLocationDistance:           _flyViewSettings.maxGoToLocationDistance
+    property Fact   _viewer3DEnabled:                   _settingsManager.viewer3DSettings.enabled
+    property Fact   _viewer3DOsmFilePath:               _settingsManager.viewer3DSettings.osmFilePath
+    property Fact   _viewer3DBuildingLevelHeight:       _settingsManager.viewer3DSettings.buildingLevelHeight
+    property Fact   _viewer3DAltitudeBias:              _settingsManager.viewer3DSettings.altitudeBias
+
+    QGCFileDialogController { id: fileController }
+
+    function customActionList() {
+        var fileModel = fileController.getFiles(_settingsManager.appSettings.customActionsSavePath, "*.json")
+        fileModel.unshift(qsTr("<None>"))
+        return fileModel
+    }
 
     SettingsGroupLayout {
         Layout.fillWidth:   true
@@ -59,7 +73,7 @@ SettingsPage {
             text:               qsTr("Keep Map Centered On Vehicle")
             fact:               _keepMapCenteredOnVehicle
             visible:            _keepMapCenteredOnVehicle.visible
-            property Fact _keepMapCenteredOnVehicle: _settingsManager.flyViewSettings.keepMapCenteredOnVehicle
+            property Fact _keepMapCenteredOnVehicle: _flyViewSettings.keepMapCenteredOnVehicle
         }
 
         FactCheckBoxSlider {
@@ -67,7 +81,7 @@ SettingsPage {
             text:               qsTr("Show Telemetry Log Replay Status Bar")
             fact:               _showLogReplayStatusBar
             visible:            _showLogReplayStatusBar.visible
-            property Fact _showLogReplayStatusBar: _settingsManager.flyViewSettings.showLogReplayStatusBar
+            property Fact _showLogReplayStatusBar: _flyViewSettings.showLogReplayStatusBar
         }
 
         FactCheckBoxSlider {
@@ -76,7 +90,7 @@ SettingsPage {
             visible:            _showDumbCameraControl.visible
             fact:               _showDumbCameraControl
 
-            property Fact _showDumbCameraControl: _settingsManager.flyViewSettings.showSimpleCameraControl
+            property Fact _showDumbCameraControl: _flyViewSettings.showSimpleCameraControl
         }
 
         FactCheckBoxSlider {
@@ -84,7 +98,7 @@ SettingsPage {
             text:               qsTr("Update return to home position based on device location.")
             fact:               _updateHomePosition
             visible:            _updateHomePosition.visible
-            property Fact _updateHomePosition: _settingsManager.flyViewSettings.updateHomePosition
+            property Fact _updateHomePosition: _flyViewSettings.updateHomePosition
         }
     }
 
@@ -116,8 +130,39 @@ SettingsPage {
     }
 
     SettingsGroupLayout {
+        Layout.fillWidth:       true
+        Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 35
+        heading:                qsTr("Custom MAVLink Actions")
+        headingDescription:     qsTr("Custom action JSON files should be created in the '%1' folder.").arg(QGroundControl.settingsManager.appSettings.customActionsSavePath)
+
+        LabelledComboBox {
+            Layout.fillWidth:   true
+            label:              qsTr("Fly View Custom Actions")
+            model:              customActionList()
+            onActivated:        (index) => index == 0 ? _customMavlinkActionsSettings.flyViewActionsFile.rawValue = "" : _customMavlinkActionsSettings.flyViewActionsFile.rawValue = comboBox.currentText
+
+            Component.onCompleted: {
+                var index = comboBox.find(_customMavlinkActionsSettings.flyViewActionsFile.valueString)
+                comboBox.currentIndex = index == -1 ? 0 : index
+            }
+        }
+
+        LabelledComboBox {
+            Layout.fillWidth:   true
+            label:              qsTr("Joystick Custom Actions")
+            model:              customActionList()
+            onActivated:        (index) => index == 0 ? _customMavlinkActionsSettings.joystickActionsFile.rawValue = "" : _customMavlinkActionsSettings.joystickActionsFile.rawValue = comboBox.currentText
+
+            Component.onCompleted: {
+                var index = comboBox.find(_customMavlinkActionsSettings.joystickActionsFile.valueString)
+                comboBox.currentIndex = index == -1 ? 0 : index
+            }
+        }
+    }
+
+    SettingsGroupLayout {
         Layout.fillWidth:   true
-        heading:            qsTr("Virtual Joystick") 
+        heading:            qsTr("Virtual Joystick")
         visible:            _virtualJoystick.visible || _virtualJoystickAutoCenterThrottle.visible
 
         FactCheckBoxSlider {
@@ -139,14 +184,7 @@ SettingsPage {
     SettingsGroupLayout {
         Layout.fillWidth:   true
         heading:            qsTr("Instrument Panel")
-        visible:            _alternateInstrumentPanel.visible || _showAdditionalIndicatorsCompass.visible || _lockNoseUpCompass.visible
-
-        FactCheckBoxSlider {
-            Layout.fillWidth:   true
-            text:               qsTr("Use Vertical Instruments")
-            visible:            _alternateInstrumentPanel.visible
-            fact:               _alternateInstrumentPanel
-        }
+        visible:            _showAdditionalIndicatorsCompass.visible || _lockNoseUpCompass.visible
 
         FactCheckBoxSlider {
             Layout.fillWidth:   true
@@ -160,6 +198,89 @@ SettingsPage {
             text:               qsTr("Lock Compass Nose-Up")
             visible:            _lockNoseUpCompass.visible
             fact:               _lockNoseUpCompass
+        }
+    }
+
+    SettingsGroupLayout {
+        Layout.fillWidth:   true
+        heading:            qsTr("3D View")
+
+        FactCheckBoxSlider {
+            Layout.fillWidth:   true
+            text:               qsTr("Enabled")
+            fact:               _viewer3DEnabled
+        }
+        ColumnLayout{
+            Layout.fillWidth:   true
+            spacing: ScreenTools.defaultFontPixelWidth
+            enabled:            _viewer3DEnabled.rawValue
+
+            RowLayout{
+                Layout.fillWidth:   true
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    wrapMode:           Text.WordWrap
+                    visible:            true
+                    text: qsTr("3D Map File:")
+                }
+
+                QGCTextField {
+                    id:                 osmFileTextField
+                    height:             ScreenTools.defaultFontPixelWidth * 4.5
+                    unitsLabel:         ""
+                    showUnits:          false
+                    visible:            true
+                    Layout.fillWidth:   true
+                    readOnly: true
+                    text: _viewer3DOsmFilePath.rawValue
+                }
+            }
+            RowLayout{
+                Layout.alignment: Qt.AlignRight
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCButton {
+                    text:       qsTr("Clear")
+
+                    onClicked: {
+                        osmFileTextField.text = "Please select an OSM file"
+                        _viewer3DOsmFilePath.value = osmFileTextField.text
+                    }
+                }
+
+                QGCButton {
+                    text:       qsTr("Select File")
+
+                    onClicked: {
+                        fileDialog.openForLoad()
+                    }
+
+                    QGCFileDialog {
+                        id:             fileDialog
+                        nameFilters:    [qsTr("OpenStreetMap files (*.osm)")]
+                        title:          qsTr("Select map file")
+                        onAcceptedForLoad: (file) => {
+                                               osmFileTextField.text = file
+                                               _viewer3DOsmFilePath.value = osmFileTextField.text
+                                           }
+                    }
+                }
+            }
+        }
+
+        LabelledFactTextField {
+            Layout.fillWidth:   true
+            label:              qsTr("Average Building Level Height")
+            fact:               _viewer3DBuildingLevelHeight
+            enabled:            _viewer3DEnabled.rawValue
+        }
+
+        LabelledFactTextField {
+            Layout.fillWidth:   true
+            label:              qsTr("Vehicles Altitude Bias")
+            fact:               _viewer3DAltitudeBias
+            enabled:            _viewer3DEnabled.rawValue
         }
     }
 }

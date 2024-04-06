@@ -54,10 +54,11 @@ T.ComboBox {
     }
 
     function _calcPopupWidth() {
-        if (_onCompleted && model) {
+        _popupWidth = control.width
+        if (_onCompleted && sizeToContents && model) {
             var largestTextWidth = 0
             for (var i = 0; i < model.length; i++){
-                textMetrics.text = model[i]
+                textMetrics.text = control.textRole ? (Array.isArray(control.model) ? model[i][control.textRole] : model[control.textRole]) : model[i]
                 largestTextWidth = Math.max(textMetrics.width, largestTextWidth)
             }
             _popupWidth = largestTextWidth + itemDelegateMetrics.leftPadding + itemDelegateMetrics.rightPadding
