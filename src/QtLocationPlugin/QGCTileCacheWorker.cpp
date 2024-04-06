@@ -18,6 +18,7 @@
 
 #include "QGCMapEngine.h"
 #include "QGCMapTileSet.h"
+#include "QGCLoggingCategory.h"
 
 #include <QVariant>
 #include <QtSql/QSqlQuery>
@@ -27,6 +28,7 @@
 #include <QApplication>
 #include <QFile>
 #include <QSettings>
+#include <QtNetwork/QNetworkProxy>
 
 #include "time.h"
 
@@ -1156,7 +1158,7 @@ QGCCacheWorker::_testInternet()
         TCP connection to 8.8.8.8:53 on Android and do the lookup/connect on the
         other platforms.
     */
-#if defined(__android__)
+#if defined(Q_OS_ANDROID)
     QTcpSocket socket;
     socket.connectToHost("8.8.8.8", 53);
     if (socket.waitForConnected(2000)) {
@@ -1177,7 +1179,7 @@ QGCCacheWorker::_testInternet()
 void
 QGCCacheWorker::_lookupReady(QHostInfo info)
 {
-#if defined(__android__)
+#if defined(Q_OS_ANDROID)
     Q_UNUSED(info);
 #else
     _hostLookupID = 0;

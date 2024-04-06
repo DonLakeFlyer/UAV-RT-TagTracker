@@ -1,56 +1,256 @@
+option(QGC_ENABLE_VIDEOSTREAMING "Enable video streaming" ON)
+if(QGC_ENABLE_VIDEOSTREAMING)
+	message(STATUS "Enabling video streaming support")
 
-find_package(Qt6Gui ${QT_VERSION}  REQUIRED )
-find_package(Qt6 ${QT_VERSION}  REQUIRED )
-find_package(OpenGL REQUIRED)
+	if(ANDROID)
+		set(GST_STATIC_BUILD ON)
+	else()
+		set(GST_STATIC_BUILD OFF)
+	endif()
 
-add_library(qmlglsink
-	gst-plugins-good/ext/qt6/gstplugin.cc
-    gst-plugins-good/ext/qt6/gstqml6glsink.cc
-    gst-plugins-good/ext/qt6/gstqsg6glnode.cc
-    gst-plugins-good/ext/qt6/gstqt6element.cc
-    gst-plugins-good/ext/qt6/gstqt6glutility.cc
-    gst-plugins-good/ext/qt6/qt6glitem.cc
-    gst-plugins-good/ext/qt6/gstqt6gl.h
-)
+    if(LINUX)
+	    set(GST_TARGET_VERSION 1.16)
+	elseif(ANDROID)
+		set(GST_TARGET_VERSION 1.18.5)
+	else()
+		set(GST_TARGET_VERSION 1.18)
+	endif()
 
-if(LINUX)
-	if (USE_WAYLAND)
-		message(STATUS "Using wayland for qmlglsink")
-		# use wayland
-		target_compile_definitions(qmlglsink PUBLIC HAVE_QT_WAYLAND)
-	else ()
-		message(STATUS "Using x11 for qmlglsink")
-		target_compile_definitions(qmlglsink PUBLIC HAVE_QT_X11)
-	endif ()
-	target_compile_definitions(qmlglsink PUBLIC HAVE_QT_EGLFS HAVE_QT_QPA_HEADER)
-elseif(APPLE)
-	target_compile_definitions(qmlglsink PUBLIC HAVE_QT_MAC)
-elseif(IOS)
-	target_compile_definitions(qmlglsink PUBLIC HAVE_QT_MAC)
-elseif(WIN32)
-	target_compile_definitions(qmlglsink PUBLIC HAVE_QT_WIN32 HAVE_QT_QPA_HEADER)
+	set(GST_TARGET_PLUGINS
+        gstcoreelements
+        gstplayback
+        gstudp
+        gstrtp
+        gstrtsp
+        gstx264
+        gstlibav
+        gstsdpelem
+        gstvideoparsersbad
+        gstrtpmanager
+        gstisomp4
+        gstmatroska
+        gstmpegtsdemux
+        gstopengl
+        gsttcp
+	)
+	if(ANDROID)
+    	list(APPEND GST_TARGET_PLUGINS gstandroidmedia)
+    elseif(IOS)
+    	list(APPEND GST_TARGET_PLUGINS gstapplemedia)
+    endif()
 
-	target_link_libraries(qmlglsink PUBLIC user32.lib)
-	target_link_libraries(qmlglsink PUBLIC OpenGL::GL)
-elseif(ANDROID)
-	target_compile_definitions(qmlglsink PUBLIC HAVE_QT_ANDROID)
-endif()
+    set(GST_TARGET_MODULES
+		gstreamer-1.0
+		gstreamer-gl-1.0
+		gstreamer-video-1.0
+	)
+	if(LINUX)
+		list(APPEND GST_TARGET_MODULES egl)
+	endif()
 
-target_link_libraries(qmlglsink
-	PUBLIC
-		Qt6::Core
-		Qt6::OpenGL
-		Qt6::GuiPrivate
-		${GST_LINK_LIBRARIES}
-)
+	set(GSTREAMER_ROOT)
+	if(WIN32)
+		if(EXISTS $ENV{GSTREAMER_ROOT_X86_64})
+			set(GSTREAMER_ROOT $ENV{GSTREAMER_ROOT_X86_64})
+		elseif(EXISTS $ENV{GSTREAMER_1_0_ROOT_MSVC_X86_64})
+			set(GSTREAMER_ROOT $ENV{GSTREAMER_1_0_ROOT_MSVC_X86_64})
+		endif()
+	elseif(MACOS)
+		set(GSTREAMER_ROOT "/Library/Frameworks/GStreamer.framework")
+	elseif(ANDROID)
+		if(${ANDROID_ABI} STREQUAL armeabi-v7a)
+            set(GSTREAMER_ROOT ${CMAKE_SOURCE_DIR}/gstreamer-1.0-android-universal-${GST_TARGET_VERSION}/armv7)
+        elseif(${ANDROID_ABI} STREQUAL arm64-v8a)
+            set(GSTREAMER_ROOT ${CMAKE_SOURCE_DIR}/gstreamer-1.0-android-universal-${GST_TARGET_VERSION}/arm64)
+        endif()
+	endif()
 
-target_include_directories(qmlglsink PRIVATE ${GST_INCLUDE_DIRS})
-if (MSVC)
-	target_include_directories(qmlglsink PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/windows)
-else()
-	target_compile_options(qmlglsink
-			PRIVATE
-			-Wno-unused-parameter
-			-Wno-implicit-fallthrough
+	find_package(PkgConfig)
+	if(NOT EXISTS ${GSTREAMER_ROOT})
+		pkg_check_modules(GSTREAMER gstreamer-1.0>=${GST_TARGET_VERSION})
+		if(GSTREAMER_FOUND)
+			set(GSTREAMER_ROOT ${GSTREAMER_PREFIX})
+		endif()
+	endif()
+
+	if(EXISTS ${GSTREAMER_ROOT})
+		message(STATUS "Gstreamer found")
+		cmake_print_variables(GSTREAMER_ROOT)
+
+		find_package(Qt6 REQUIRED COMPONENTS Core)
+		qt_add_library(qmlglsink STATIC)
+
+		if(GST_STATIC_BUILD)
+			list(APPEND PKG_CONFIG_ARGN --static)
+		endif()
+
+		list(PREPEND CMAKE_PREFIX_PATH ${GSTREAMER_ROOT})
+		if(ANDROID)
+			set(ENV{PKG_CONFIG_PATH} "${GSTREAMER_ROOT}/lib/pkgconfig:${GSTREAMER_ROOT}/lib/gstreamer-1.0/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+			list(APPEND PKG_CONFIG_ARGN
+				--define-prefix
+				--define-variable=prefix=${GSTREAMER_ROOT}
+				--define-variable=libdir=${GSTREAMER_ROOT}/lib
+				--define-variable=includedir=${GSTREAMER_ROOT}/include
 			)
+			pkg_check_modules(GST
+				IMPORTED_TARGET
+				NO_CMAKE_ENVIRONMENT_PATH
+				${GST_TARGET_MODULES}
+				${GST_TARGET_PLUGINS}
+			)
+		elseif(LINUX)
+			set(ENV{PKG_CONFIG_PATH} "${GSTREAMER_ROOT}/lib/pkgconfig:${GSTREAMER_ROOT}/x86_64-linux-gnu/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+			pkg_check_modules(GST IMPORTED_TARGET ${GST_TARGET_MODULES})
+		elseif(MACOS)
+			set(ENV{PKG_CONFIG_PATH} "${GSTREAMER_ROOT}/Versions/Current/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+			pkg_check_modules(GST IMPORTED_TARGET ${GST_TARGET_MODULES})
+		else()
+			pkg_check_modules(GST IMPORTED_TARGET ${GST_TARGET_MODULES})
+		endif()
+
+		if(TARGET PkgConfig::GST)
+			target_link_libraries(qmlglsink PUBLIC PkgConfig::GST)
+			target_include_directories(qmlglsink PUBLIC ${GSTREAMER_ROOT}/include/gstreamer-1.0)
+			if(GST_STATIC_BUILD)
+		        target_link_libraries(qmlglsink PUBLIC ${GST_STATIC_LINK_LIBRARIES})
+	    		target_link_directories(qmlglsink PUBLIC ${GST_STATIC_LIBRARY_DIRS})
+		        target_link_options(qmlglsink PUBLIC ${GST_STATIC_LDFLAGS} ${GST_STATIC_LDFLAGS_OTHER})
+		        target_compile_options(qmlglsink PUBLIC ${GST_STATIC_CFLAGS} ${GST_STATIC_CFLAGS_OTHER})
+	    		target_include_directories(qmlglsink PUBLIC ${GST_STATIC_INCLUDE_DIRS})
+	    		if(ANDROID)
+					target_link_options(PkgConfig::GST INTERFACE "-Wl,-Bsymbolic")
+				endif()
+	    	else()
+		        target_link_libraries(qmlglsink PUBLIC ${GST_LINK_LIBRARIES})
+	    		target_link_directories(qmlglsink PUBLIC ${GST_LIBRARY_DIRS})
+		        target_link_options(qmlglsink PUBLIC ${GST_LDFLAGS} ${GST_LDFLAGS_OTHER})
+		        target_compile_options(qmlglsink PUBLIC ${GST_CFLAGS} ${GST_CFLAGS_OTHER})
+	    		target_include_directories(qmlglsink PUBLIC ${GST_INCLUDE_DIRS})
+	    	endif()
+		endif()
+	else()
+		message(WARNING "Gstreamer Not Found")
+    endif()
+
+	if(GST_FOUND)
+		message(STATUS "GST Modules Found")
+		target_sources(qmlglsink
+	        PRIVATE
+	            qt6/gstplugin.cc
+	            qt6/gstqml6glsink.cc
+	            qt6/gstqml6glsink.h
+	            qt6/gstqsg6glnode.cc
+	            qt6/gstqsg6glnode.h
+	            qt6/gstqt6element.cc
+	            qt6/gstqt6elements.h
+	            qt6/gstqt6gl.h
+	            qt6/gstqt6glutility.cc
+	            qt6/gstqt6glutility.h
+	            qt6/qt6glitem.cc
+	            qt6/qt6glitem.h
+	    )
+
+		find_package(Qt6 REQUIRED COMPONENTS Core Gui OpenGL Qml Quick)
+	    target_link_libraries(qmlglsink
+	        PUBLIC
+				Qt6::Core
+				Qt6::Gui
+				Qt6::GuiPrivate
+				Qt6::OpenGL
+				Qt6::Qml
+				Qt6::Quick
+		)
+		if(WIN32)
+			find_package(OpenGL)
+			target_link_libraries(qmlglsink PUBLIC OpenGL::GL)
+		elseif(LINUX)
+			find_package(Qt6 COMPONENTS WaylandClient)
+			if(Qt6WaylandClient_FOUND)
+				target_link_libraries(qmlglsink PRIVATE Qt6::WaylandClient)
+			endif()
+		endif()
+
+	    target_include_directories(qmlglsink PUBLIC qt6)
+
+	    target_compile_definitions(qmlglsink
+	        PRIVATE
+	            HAVE_QT_QPA_HEADER
+	            QT_QPA_HEADER=<QtGui/qpa/qplatformnativeinterface.h>
+	        PUBLIC
+	            QGC_GST_STREAMING
+	            QGC_CMAKE_GST
+	    )
+	    if(LINUX)
+	    	target_compile_definitions(qmlglsink PRIVATE HAVE_QT_X11)
+	    	if(EGL_FOUND)
+				target_compile_definitions(qmlglsink PRIVATE HAVE_QT_EGLFS)
+			endif()
+	        if(Qt6WaylandClient_FOUND)
+				target_compile_definitions(qmlglsink PRIVATE HAVE_QT_WAYLAND)
+			endif()
+		elseif(ANDROID)
+			target_compile_definitions(qmlglsink PRIVATE HAVE_QT_ANDROID)
+		elseif(WIN32)
+			target_compile_definitions(qmlglsink PRIVATE HAVE_QT_WIN32)
+	    elseif(MACOS)
+	    	target_compile_definitions(qmlglsink PRIVATE HAVE_QT_MAC)
+	    elseif(IOS)
+			target_compile_definitions(qmlglsink PRIVATE HAVE_QT_IOS)
+			message(WARNING "qmlglsink not supported for IOS")
+	   	endif()
+
+	   	if(UNIX)
+	   		target_compile_options(qmlglsink
+	            PRIVATE
+	                -Wno-unused-parameter
+	                -Wno-implicit-fallthrough
+	                -Wno-unused-private-field
+	        )
+	    endif()
+
+	    message(STATUS "GStreamer version: ${GST_gstreamer-1.0_VERSION}")
+	    message(STATUS "GStreamer prefix: ${GST_gstreamer-1.0_PREFIX}")
+	    message(STATUS "GStreamer include dir: ${GST_gstreamer-1.0_INCLUDEDIR}")
+	    message(STATUS "GStreamer libdir: ${GST_gstreamer-1.0_LIBDIR}")
+		if(GST_STATIC_BUILD)
+			list(REMOVE_DUPLICATES GST_STATIC_LIBRARIES)
+			list(REMOVE_DUPLICATES GST_STATIC_LINK_LIBRARIES)
+			list(REMOVE_DUPLICATES GST_STATIC_LIBRARY_DIRS)
+			list(REMOVE_DUPLICATES GST_STATIC_INCLUDE_DIRS)
+			list(REMOVE_DUPLICATES GST_STATIC_LDFLAGS)
+			list(REMOVE_DUPLICATES GST_STATIC_LDFLAGS_OTHER)
+			list(REMOVE_DUPLICATES GST_STATIC_CFLAGS)
+			list(REMOVE_DUPLICATES GST_STATIC_CFLAGS_OTHER)
+		    message(VERBOSE "GStreamer static libs: ${GST_STATIC_LIBRARIES}")
+		    message(VERBOSE "GStreamer static link libs: ${GST_STATIC_LINK_LIBRARIES}")
+		    message(VERBOSE "GStreamer static link dirs: ${GST_STATIC_LIBRARY_DIRS}")
+		    message(VERBOSE "GStreamer static include dirs: ${GST_STATIC_INCLUDE_DIRS}")
+		    message(VERBOSE "GStreamer static ldflags: ${GST_STATIC_LDFLAGS}")
+		    message(VERBOSE "GStreamer static ldflags other: ${GST_STATIC_LDFLAGS_OTHER}")
+		    message(VERBOSE "GStreamer static cflags: ${GST_STATIC_CFLAGS}")
+		    message(VERBOSE "GStreamer static cflags other: ${GST_STATIC_CFLAGS_OTHER}")
+		else()
+			list(REMOVE_DUPLICATES GST_LIBRARIES)
+			list(REMOVE_DUPLICATES GST_LINK_LIBRARIES)
+			list(REMOVE_DUPLICATES GST_LIBRARY_DIRS)
+			list(REMOVE_DUPLICATES GST_LDFLAGS)
+			list(REMOVE_DUPLICATES GST_LDFLAGS_OTHER)
+			list(REMOVE_DUPLICATES GST_INCLUDE_DIRS)
+			list(REMOVE_DUPLICATES GST_CFLAGS)
+			list(REMOVE_DUPLICATES GST_CFLAGS_OTHER)
+		    message(VERBOSE "GStreamer libs: ${GST_LIBRARIES}")
+		    message(VERBOSE "GStreamer link libs: ${GST_LINK_LIBRARIES}")
+		    message(VERBOSE "GStreamer link dirs: ${GST_LIBRARY_DIRS}")
+		    message(VERBOSE "GStreamer ldflags: ${GST_LDFLAGS}")
+		    message(VERBOSE "GStreamer ldflags other: ${GST_LDFLAGS_OTHER}")
+		    message(VERBOSE "GStreamer include dirs: ${GST_INCLUDE_DIRS}")
+		    message(VERBOSE "GStreamer cflags: ${GST_CFLAGS}")
+		    message(VERBOSE "GStreamer cflags other: ${GST_CFLAGS_OTHER}")
+		endif()
+	else()
+		message(WARNING "GST Modules Not Found")
+    endif()
+else()
+    message(STATUS "Video streaming disabled")
 endif()

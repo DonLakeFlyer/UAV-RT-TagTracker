@@ -78,6 +78,10 @@ To install Qt:
 
    Then install the following components:
 
+::: info
+To see a complete list of all available components in the installer _Select Components_ dialog, you might need to check the **"Archive"** box in the right column under the **"Categories"** tab, then click on **"Filter"**.
+:::
+
    - Under _Qt _{{ $frontmatter.qt_version }}_ select:
        - Depending on the OS you want to build for:
 			- **Windows**: _MSVC 2019 64 bit_
@@ -86,6 +90,8 @@ To install Qt:
 			- **Android**: _Android_
 		- _Qt 5 Compatibility Module_
 		- _Qt Shader Tools_
+		- _Qt Quick 3D_
+
    - Under _Additional Libraries_ select:
      - _Qt Charts_
      - _Qt Connectivity_
@@ -97,7 +103,7 @@ To install Qt:
 
 1. Install Additional Packages (Platform Specific)
 
-   - **Ubuntu:** `sudo apt-get install speech-dispatcher libudev-dev libsdl2-dev patchelf build-essential`
+   - **Ubuntu:** `bash ./qgroundcontrol/tools/setup/ubuntu.sh`
    - **Fedora:** `sudo dnf install speech-dispatcher SDL2-devel SDL2 systemd-devel patchelf`
    - **Arch Linux:** `pacman -Sy speech-dispatcher patchelf`
    - **OSX** [Setup](https://doc.qt.io/qt-6/macos.html)

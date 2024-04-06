@@ -1,4 +1,4 @@
-/****************************************************************************
+﻿/****************************************************************************
  *
  * (c) 2009-2020 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
  *
@@ -11,11 +11,13 @@
 #include "Joystick.h"
 #include "QGC.h"
 #include "AutoPilotPlugin.h"
-#include "UAS.h"
 #include "QGCApplication.h"
 #include "VideoManager.h"
 #include "QGCCameraManager.h"
-#include "QGCCameraControl.h"
+#include "CustomAction.h"
+#include "SettingsManager.h"
+#include "CustomMavlinkActionsSettings.h"
+#include "QGCLoggingCategory.h"
 
 #include <QSettings>
 
@@ -102,13 +104,14 @@ AssignableButtonAction::AssignableButtonAction(QObject* parent, QString action_,
 }
 
 Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager)
-    : _name(name)
-    , _axisCount(axisCount)
-    , _buttonCount(buttonCount)
-    , _hatCount(hatCount)
-    , _hatButtonCount(4 * hatCount)
-    , _totalButtonCount(_buttonCount+_hatButtonCount)
-    , _multiVehicleManager(multiVehicleManager)
+    : _name                 (name)
+    , _axisCount            (axisCount)
+    , _buttonCount          (buttonCount)
+    , _hatCount             (hatCount)
+    , _hatButtonCount       (4 * hatCount)
+    , _totalButtonCount     (_buttonCount+_hatButtonCount)
+    , _multiVehicleManager  (multiVehicleManager)
+    , _customActionManager  (qgcApp()->toolbox()->settingsManager()->customMavlinkActionsSettings()->joystickActionsFile())
 {
     qRegisterMetaType<GRIPPER_ACTIONS>();
 
@@ -127,8 +130,6 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     _loadSettings();
     connect(_multiVehicleManager, &MultiVehicleManager::activeVehicleChanged, this, &Joystick::_activeVehicleChanged);
     connect(qgcApp()->toolbox()->multiVehicleManager()->vehicles(), &QmlObjectListModel::countChanged, this, &Joystick::_vehicleCountChanged);
-
-    _customMavCommands = JoystickMavCommand::load("JoystickMavCommands.json");
 }
 
 void Joystick::stop()
@@ -492,7 +493,6 @@ float Joystick::_adjustRange(int value, Calibration_t calibration, bool withDead
     return std::max(-1.0f, std::min(correctedValue, 1.0f));
 }
 
-
 void Joystick::run()
 {
     //-- Joystick thread
@@ -778,6 +778,7 @@ void Joystick::stopPolling(void)
         }
         _exitThread = true;
     }
+    _activeVehicle = nullptr;
 }
 
 void Joystick::setCalibration(int axis, Calibration_t& calibration)
@@ -1078,9 +1079,10 @@ void Joystick::_executeButtonAction(const QString& action, bool buttonDown)
         if (buttonDown) emit landingGearRetract();
     } else {
         if (buttonDown && _activeVehicle) {
-            for (auto& item : _customMavCommands) {
-                if (action == item.name()) {
-                    item.send(_activeVehicle);
+            for (int i=0; i<_customActionManager.actions()->count(); i++) {
+                auto customAction = _customActionManager.actions()->value<CustomAction*>(i);
+                if (action == customAction->label()) {
+                    customAction->sendTo(_activeVehicle);
                     return;
                 }
             }
@@ -1173,8 +1175,9 @@ void Joystick::_buildActionList(Vehicle* activeVehicle)
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionLandingGearDeploy));
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionLandingGearRetract));
 
-    for (auto& item : _customMavCommands) {
-        _assignableButtonActions.append(new AssignableButtonAction(this, item.name()));
+    for (int i=0; i<_customActionManager.actions()->count(); i++) {
+        auto customAction = _customActionManager.actions()->value<CustomAction*>(i);
+        _assignableButtonActions.append(new AssignableButtonAction(this, customAction->label()));
     }
 
     for(int i = 0; i < _assignableButtonActions.count(); i++) {

@@ -14,13 +14,8 @@
 #ifndef AIRFRAMECOMPONENTAIRFRAMES_H
 #define AIRFRAMECOMPONENTAIRFRAMES_H
 
-#include <QObject>
-#include <QQuickItem>
 #include <QList>
 #include <QMap>
-
-#include "UASInterface.h"
-#include "AutoPilotPlugin.h"
 
 /// MVC Controller for AirframeComponent.qml.
 class AirframeComponentAirframes

@@ -10,13 +10,14 @@
 
 #pragma once
 
-#ifdef __android__
+#include <QtCore/QtSystemDetection>
+#ifdef Q_OS_ANDROID
     #include "qserialportinfo.h"
 #else
     #include <QSerialPortInfo>
 #endif
 
-#include "QGCLoggingCategory.h"
+#include <QtCore/QLoggingCategory>
 
 Q_DECLARE_LOGGING_CATEGORY(QGCSerialPortInfoLog)
 

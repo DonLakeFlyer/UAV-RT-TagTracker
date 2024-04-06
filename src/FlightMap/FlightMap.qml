@@ -106,54 +106,34 @@ Map {
     }
 
     Connections {
-        target:             QGroundControl.settingsManager.flightMapSettings.mapType
+        target: QGroundControl.settingsManager.flightMapSettings.mapType
         function onRawValueChanged() { updateActiveMapType() }
     }
 
     Connections {
-        target:             QGroundControl.settingsManager.flightMapSettings.mapProvider
+        target: QGroundControl.settingsManager.flightMapSettings.mapProvider
         function onRawValueChanged() { updateActiveMapType() }
     }
 
     signal mapPanStart
     signal mapPanStop
-    signal mapClicked(var mouse)
+    signal mapClicked(var position)
     
-    MouseArea {
-        anchors.fill:       parent
-        acceptedButtons:    Qt.LeftButton
+    PinchHandler {
+        id:                 pinch
+        target:             null
+        grabPermissions:    PointerHandler.TakeOverForbidden
 
-        property real startMouseX: 0
-        property real startMouseY: 0
-        property real lastMouseX: 0
-        property real lastMouseY: 0
+        property var pinchStartCentroid
 
-        onClicked: (mouse) => {
-            var deltaX = Math.abs(startMouseX - lastMouseX)
-            var deltaY = Math.abs(startMouseY - lastMouseY)
-            if (deltaX < 5 && deltaY < 5) {
-                mapClicked(mouse)
+        onActiveChanged: {
+            if (active) {
+                pinchStartCentroid = _map.toCoordinate(pinch.centroid.position, false)
             }
         }
-
-        onPressed: (mouse) => {
-            lastMouseX = Math.round(mouse.x)
-            lastMouseY = Math.round(mouse.y)
-            startMouseX = lastMouseX
-            startMouseY = lastMouseY
-            mapPanStart()
-        }
-
-        onPositionChanged: (mouse) => { 
-            var newMouseX = Math.round(mouse.x)
-            var newMouseY = Math.round(mouse.y)
-            _map.pan(lastMouseX - newMouseX, lastMouseY - newMouseY)     
-            lastMouseX = newMouseX
-            lastMouseY = newMouseY
-        }
-
-        onReleased: {
-            mapPanStop()
+        onScaleChanged: (delta) => {
+            _map.zoomLevel += Math.log2(delta)
+            _map.alignCoordinateToPoint(pinchStartCentroid, pinch.centroid.position)
         }
     }
 
@@ -161,13 +141,31 @@ Map {
         // workaround for QTBUG-87646 / QTBUG-112394 / QTBUG-112432:
         // Magic Mouse pretends to be a trackpad but doesn't work with PinchHandler
         // and we don't yet distinguish mice and trackpads on Wayland either
-        acceptedDevices: Qt.platform.pluginName === "cocoa" || Qt.platform.pluginName === "wayland"
-                         ? PointerDevice.Mouse | PointerDevice.TouchPad
-                         : PointerDevice.Mouse
-        rotationScale: 1/120
-        property: "zoomLevel"
+        acceptedDevices:    Qt.platform.pluginName === "cocoa" || Qt.platform.pluginName === "wayland" ? 
+                                PointerDevice.Mouse | PointerDevice.TouchPad : PointerDevice.Mouse
+        rotationScale:      1 / 120
+        property:           "zoomLevel"
     }
 
+    DragHandler {
+        target: null
+        grabPermissions: PointerHandler.TakeOverForbidden
+
+        onActiveChanged: {
+            if (active) {
+                mapPanStart()
+            } else {
+                mapPanStop()
+            }
+        }
+
+        onActiveTranslationChanged: (delta) => _map.pan(-delta.x, -delta.y)
+    }
+
+    TapHandler {
+        onTapped: (eventPoint) => mapClicked(eventPoint.position)
+    }
+    
     /// Ground Station location
     MapQuickItem {
         anchorPoint.x:  sourceItem.width / 2

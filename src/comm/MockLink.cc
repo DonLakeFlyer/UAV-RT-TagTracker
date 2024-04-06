@@ -11,15 +11,14 @@
 #include "QGCLoggingCategory.h"
 #include "QGCApplication.h"
 #include "LinkManager.h"
-
-#ifdef UNITTEST_BUILD
-#include "UnitTest.h"
-#endif
+#include "QGCLoggingCategory.h"
 
 #include <QDebug>
 #include <QFile>
 #include <QMutexLocker>
 #include <QTimer>
+#include <QtCore/QTemporaryFile>
+#include <QtCore/QRandomGenerator>
 
 #include <string.h>
 
@@ -1599,6 +1598,24 @@ void MockLink::_handleLogRequestList(const mavlink_message_t& msg)
     respondWithMavlinkMessage(responseMsg);
 }
 
+QString MockLink::_createRandomFile(uint32_t byteCount)
+{
+    QTemporaryFile tempFile;
+
+    tempFile.setAutoRemove(false);
+    if (tempFile.open()) {
+        for (uint32_t bytesWritten=0; bytesWritten<byteCount; bytesWritten++) {
+            unsigned char byte = (QRandomGenerator::global()->generate() * 0xFF) / RAND_MAX;
+            tempFile.write((char *)&byte, 1);
+        }
+        tempFile.close();
+        return tempFile.fileName();
+    } else {
+        qWarning() << "MockLink::createRandomFile open failed" << tempFile.errorString();
+        return QString();
+    }
+}
+
 void MockLink::_handleLogRequestData(const mavlink_message_t& msg)
 {
     mavlink_log_request_data_t request;
@@ -1607,7 +1624,7 @@ void MockLink::_handleLogRequestData(const mavlink_message_t& msg)
 
     if (_logDownloadFilename.isEmpty()) {
 #ifdef UNITTEST_BUILD
-        _logDownloadFilename = UnitTest::createRandomFile(_logDownloadFileSize);
+        _logDownloadFilename = _createRandomFile(_logDownloadFileSize);
 #endif
     }
 

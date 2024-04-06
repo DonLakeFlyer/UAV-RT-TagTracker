@@ -44,7 +44,7 @@ SetupPage {
                         font.pointSize:         ScreenTools.mediumFontPointSize
                         visible:                actuators.mixer.helpUrl
                         textFormat:             Text.RichText
-                        onLinkActivated: {
+                        onLinkActivated: (link) => {
                             Qt.openUrlExternally(link);
                         }
                     }
@@ -267,7 +267,7 @@ SetupPage {
 
                                 ActuatorSlider {
                                     channel: object
-                                    onActuatorValueChanged: {
+                                    onActuatorValueChanged: (value) =>{
                                         if (isNaN(value)) {
                                             actuators.actuatorTest.stopControl(index);
                                             stop();

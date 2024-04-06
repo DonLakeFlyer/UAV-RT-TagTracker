@@ -11,8 +11,8 @@
 #include "QGCApplication.h"
 #include "SettingsManager.h"
 #include "RemoteIDSettings.h"
-#include "QGCQGeoCoordinate.h"
 #include "PositionManager.h"
+#include "QGCLoggingCategory.h"
 
 #include <QDebug>
 
@@ -24,7 +24,7 @@ QGC_LOGGING_CATEGORY(RemoteIDManagerLog, "RemoteIDManagerLog")
 #define ALLOWED_GPS_DELAY 5000
 #define RID_TIMEOUT 2500 // Messages should be arriving at 1 Hz, so we set a 2 second timeout
 
-const uint8_t* RemoteIDManager::_id_or_mac_unknown = {NULL};
+const uint8_t* RemoteIDManager::_id_or_mac_unknown = new uint8_t[MAVLINK_MSG_OPEN_DRONE_ID_OPERATOR_ID_FIELD_ID_OR_MAC_LEN]();
 
 RemoteIDManager::RemoteIDManager(Vehicle* vehicle)
     : QObject               (vehicle)
@@ -111,6 +111,12 @@ void RemoteIDManager::_handleArmStatus(mavlink_message_t& message)
         return;
     }
 
+    if (!_available) {
+        _available = true;
+        emit availableChanged();
+        qCDebug(RemoteIDManagerLog) << "Receiving ODID_ARM_STATUS for first time. Mavlink Open Drone ID support is available.";
+    }
+
     // We set the targetsystem
     if (_targetSystem != message.sysid) {
         _targetSystem = message.sysid;
@@ -161,11 +167,6 @@ void RemoteIDManager::_handleArmStatus(mavlink_message_t& message)
 // Function that sends messages periodically
 void RemoteIDManager::_sendMessages()
 {
-    // We only send RemoteID messages if we have it enabled in General settings
-    if (!_settings->enable()->rawValue().toBool()) {
-        return;
-    }
-
     // We always try to send System
     _sendSystem();
 
@@ -212,32 +213,30 @@ void RemoteIDManager::_sendSelfIDMsg()
 // We need to return the correct description for the self ID type we have selected
 const char* RemoteIDManager::_getSelfIDDescription()
 {
-    QByteArray bytesFree = (_settings->selfIDFree()->rawValue().toString()).toLocal8Bit();
-    QByteArray bytesEmergency = (_settings->selfIDEmergency()->rawValue().toString()).toLocal8Bit();
-    QByteArray bytesExtended = (_settings->selfIDExtended()->rawValue().toString()).toLocal8Bit();
-
-    const char* descriptionToSend;
+    QString descriptionToSend;
 
     if (_emergencyDeclared) {
         // If emergency is declared we dont care about the settings and we send emergency directly
-        descriptionToSend = bytesEmergency.data();
+        descriptionToSend = _settings->selfIDEmergency()->rawValue().toString();
     } else {
         switch (_settings->selfIDType()->rawValue().toInt()) {
             case 0:
-                descriptionToSend = bytesFree.data();
+                descriptionToSend = _settings->selfIDFree()->rawValue().toString();
                 break;
             case 1:
-                descriptionToSend = bytesEmergency.data();
+                descriptionToSend = _settings->selfIDEmergency()->rawValue().toString();
                 break;
             case 2:
-                descriptionToSend = bytesExtended.data();
+                descriptionToSend = _settings->selfIDExtended()->rawValue().toString();
                 break;
             default:
-                descriptionToSend = bytesEmergency.data();
+                descriptionToSend = _settings->selfIDEmergency()->rawValue().toString();
         }
     }
 
-    return descriptionToSend;
+    QByteArray descriptionBuffer = descriptionToSend.toLocal8Bit();
+    descriptionBuffer.resize(MAVLINK_MSG_OPEN_DRONE_ID_SELF_ID_FIELD_DESCRIPTION_LEN);
+    return descriptionBuffer.constData();
 }
 
 void RemoteIDManager::_sendOperatorID()
@@ -249,7 +248,7 @@ void RemoteIDManager::_sendOperatorID()
         mavlink_message_t msg;
 
         QByteArray bytesOperatorID = (_settings->operatorID()->rawValue().toString()).toLocal8Bit();
-        const char* descriptionToSend = bytesOperatorID.data();
+        bytesOperatorID.resize(MAVLINK_MSG_OPEN_DRONE_ID_OPERATOR_ID_FIELD_OPERATOR_ID_LEN);
 
         mavlink_msg_open_drone_id_operator_id_pack_chan(
                                                     _mavlink->getSystemId(),
@@ -260,7 +259,7 @@ void RemoteIDManager::_sendOperatorID()
                                                     _targetComponent,
                                                     _id_or_mac_unknown,
                                                     _settings->operatorIDType()->rawValue().toInt(),
-                                                    descriptionToSend);
+                                                    bytesOperatorID.constData());
 
         _vehicle->sendMessageOnLinkThreadSafe(sharedLink.get(), msg);
     }

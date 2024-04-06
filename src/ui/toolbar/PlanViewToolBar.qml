@@ -25,8 +25,11 @@ Rectangle {
     height: ScreenTools.toolbarHeight
     color:  qgcPal.toolbarBackground
 
-    property var _activeVehicle: QGroundControl.multiVehicleManager.activeVehicle
+    property var    planMasterController
 
+    property var    _activeVehicle:         QGroundControl.multiVehicleManager.activeVehicle
+    property real   _controllerProgressPct: planMasterController.missionController.progressPct
+    
     QGCPalette { id: qgcPal }
 
     /// Bottom single pixel divider
@@ -67,22 +70,31 @@ Rectangle {
         flickableDirection:     Flickable.HorizontalFlick
 
         PlanToolBarIndicators {
-            id:                 toolIndicators
-            anchors.top:        parent.top
-            anchors.bottom:     parent.bottom
+            id:                     toolIndicators
+            anchors.top:            parent.top
+            anchors.bottom:         parent.bottom
+            planMasterController:   _root.planMasterController
         }
     }
 
-    // Small parameter download progress bar
+    // Small mission download progress bar
     Rectangle {
+        id:             progressBar
+        anchors.left:   parent.left
         anchors.bottom: parent.bottom
-        height:         _root.height * 0.05
-        width:          _activeVehicle ? _activeVehicle.loadProgress * parent.width : 0
+        height:         4
+        width:          _controllerProgressPct * parent.width
         color:          qgcPal.colorGreen
-        visible:        !largeProgressBar.visible
+        visible:        false
+
+        onVisibleChanged: {
+            if (visible) {
+                largeProgressBar._userHide = false
+            }
+        }
     }
 
-    // Large parameter download progress bar
+    // Large mission download progress bar
     Rectangle {
         id:             largeProgressBar
         anchors.bottom: parent.bottom
@@ -92,26 +104,33 @@ Rectangle {
         color:          qgcPal.window
         visible:        _showLargeProgress
 
-        property bool _initialDownloadComplete: _activeVehicle ? _activeVehicle.initialConnectComplete : true
         property bool _userHide:                false
-        property bool _showLargeProgress:       !_initialDownloadComplete && !_userHide && qgcPal.globalTheme === QGCPalette.Light
+        property bool _showLargeProgress:       progressBar.visible && !_userHide && qgcPal.globalTheme === QGCPalette.Light
 
         Connections {
             target:                 QGroundControl.multiVehicleManager
-            function onActiveVehicleChanged(activeVehicle) { largeProgressBar._userHide = false }
+            onActiveVehicleChanged: largeProgressBar._userHide = false
         }
 
         Rectangle {
             anchors.top:    parent.top
             anchors.bottom: parent.bottom
-            width:          _activeVehicle ? _activeVehicle.loadProgress * parent.width : 0
+            width:          _controllerProgressPct * parent.width
             color:          qgcPal.colorGreen
         }
 
         QGCLabel {
             anchors.centerIn:   parent
-            text:               qsTr("Downloading")
+            text:               qsTr("Syncing Mission")
             font.pointSize:     ScreenTools.largeFontPointSize
+            visible:            _controllerProgressPct !== 1
+        }
+
+        QGCLabel {
+            anchors.centerIn:   parent
+            text:               qsTr("Done")
+            font.pointSize:     ScreenTools.largeFontPointSize
+            visible:            _controllerProgressPct === 1
         }
 
         QGCLabel {
@@ -127,5 +146,27 @@ Rectangle {
             anchors.fill:   parent
             onClicked:      largeProgressBar._userHide = true
         }
+    }
+    // Progress bar
+    Connections {
+        target: planMasterController.missionController
+
+        onProgressPctChanged: {
+            if (_controllerProgressPct === 1) {
+                if (_root.visible) {
+                    resetProgressTimer.start()
+                } else {
+                    progressBar.visible = false
+                }
+            } else if (_controllerProgressPct > 0) {
+                progressBar.visible = true
+            }
+        }
+    }
+
+    Timer {
+        id:             resetProgressTimer
+        interval:       3000
+        onTriggered:    progressBar.visible = false
     }
 }

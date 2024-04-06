@@ -48,7 +48,7 @@ ColumnLayout {
         implicitWidth:      _contentLayout.implicitWidth + (_margins * 2)
         implicitHeight:     _contentLayout.implicitHeight + (_margins * 2)
         color:              "transparent"
-        border.color:       Qt.darker(QGroundControl.globalPalette.text, 4)
+        border.color:       QGroundControl.globalPalette.groupBorder
         border.width:       1
         radius:             ScreenTools.defaultFontPixelHeight / 2
 
@@ -60,8 +60,10 @@ ColumnLayout {
                 y:                  _contentItem.y + _contentItem.height + _margins + _margins
                 width:              parent.width - (_margins * 2)
                 height:             1
-                color:              outerRect.border.color
-                visible:            _contentItem.visible && index < _contentLayout.children.length - 1
+                color:              QGroundControl.globalPalette.groupBorder
+                visible:            _contentItem.visible && 
+                                        _contentItem.width !== 0 && _contentItem.height !== 0 &&
+                                        index < _contentLayout.children.length - 1
 
                 property var _contentItem: _contentLayout.children[index]
             }

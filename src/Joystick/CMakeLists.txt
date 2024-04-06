@@ -1,37 +1,43 @@
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
-set(EXTRA_SRC)
-
-if (ANDROID)
-	list(APPEND EXTRA_SRC
-		JoystickAndroid.cc
-	)
-endif()
-
-add_library(Joystick
+qt_add_library(Joystick STATIC
 	Joystick.cc
+	Joystick.h
 	JoystickManager.cc
-	JoystickSDL.cc
-	JoystickMavCommand.cc
-	${EXTRA_SRC}
+	JoystickManager.h
 )
+
+if(ANDROID)
+	target_sources(Joystick
+		PRIVATE
+			JoystickAndroid.cc
+			JoystickAndroid.h
+	)
+
+	target_link_libraries(Joystick
+		PUBLIC
+			Qt6::CorePrivate
+	)
+else()
+	include(BuildSdl2)
+	if(SDL2_FOUND)
+		target_sources(Joystick
+			PRIVATE
+				JoystickSDL.cc
+				JoystickSDL.h
+		)
+    	target_link_libraries(Joystick
+    		PUBLIC
+    			SDL2::SDL2
+    	)
+	endif()
+endif()
 
 target_link_libraries(Joystick
 	PUBLIC
+		Qt6::Core
 		qgc
+		Vehicle
 )
 
 target_include_directories(Joystick PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-if(WIN32)
-	target_link_libraries(Joystick PUBLIC sdl2)
-else()
-	find_package(SDL2 REQUIRED)
-	if (IS_DIRECTORY "${SDL2_INCLUDE_DIRS}")
-		include_directories(${SDL2_INCLUDE_DIRS})
-		string(STRIP "${SDL2_LIBRARIES}" SDL2_LIBRARIES)
-		target_link_libraries(Joystick PRIVATE ${SDL2_LIBRARIES})
-	else()
-		include_directories(${SDL2_DIR})
-		target_link_libraries(Joystick PRIVATE SDL2::SDL2)
-	endif()
-endif()

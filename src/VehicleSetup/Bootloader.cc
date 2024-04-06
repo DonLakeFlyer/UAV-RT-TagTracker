@@ -9,13 +9,10 @@
 
 #include "Bootloader.h"
 #include "QGCLoggingCategory.h"
-
+#include "QGC.h"
 #include <QFile>
-#include <QSerialPortInfo>
 #include <QDebug>
 #include <QElapsedTimer>
-
-#include "QGC.h"
 
 /// This class manages interactions with the bootloader
 Bootloader::Bootloader(bool sikRadio, QObject *parent)

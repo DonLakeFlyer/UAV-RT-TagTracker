@@ -12,10 +12,8 @@
 #include <QObject>
 #include <QDir>
 #include <QTimer>
-#include <QQueue>
+#include <QtCore/QLoggingCategory>
 
-#include "UASInterface.h"
-#include "QGCLoggingCategory.h"
 #include "QGCMAVLink.h"
 
 Q_DECLARE_LOGGING_CATEGORY(FTPManagerLog)
