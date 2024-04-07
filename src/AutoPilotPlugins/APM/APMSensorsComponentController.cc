@@ -9,14 +9,11 @@
 
 
 #include "APMSensorsComponentController.h"
-#include "QGCMAVLink.h"
-#include "UAS.h"
 #include "QGCApplication.h"
 #include "APMAutoPilotPlugin.h"
 #include "ParameterManager.h"
-
+#include "QGCLoggingCategory.h"
 #include <QVariant>
-#include <QQmlProperty>
 
 QGC_LOGGING_CATEGORY(APMSensorsComponentControllerLog, "APMSensorsComponentControllerLog")
 QGC_LOGGING_CATEGORY(APMSensorsComponentControllerVerboseLog, "APMSensorsComponentControllerVerboseLog")
@@ -86,12 +83,10 @@ void APMSensorsComponentController::_appendStatusLog(const QString& text)
 {
     Q_ASSERT(_statusLog);
     
-    QVariant returnedValue;
-    QVariant varText = text;
+    QString varText = text;
     QMetaObject::invokeMethod(_statusLog,
                               "append",
-                              Q_RETURN_ARG(QVariant, returnedValue),
-                              Q_ARG(QVariant, varText));
+                              Q_ARG(QString, varText));
 }
 
 void APMSensorsComponentController::_startLogCalibration(void)

@@ -12,6 +12,7 @@
 #include "QGeoMapReplyQGC.h"
 #include "QGCFileDownload.h"
 #include "QGCApplication.h"
+#include "QGCLoggingCategory.h"
 
 #include <QUrl>
 #include <QUrlQuery>
@@ -24,7 +25,7 @@
 #include <QJsonArray>
 #include <QTimer>
 #include <QtLocation/private/qgeotilespec_p.h>
-
+#include <QtLocation/private/qgeotiledmapreply_p.h>
 #include <cmath>
 
 QGC_LOGGING_CATEGORY(TerrainQueryLog, "TerrainQueryLog")
@@ -455,7 +456,7 @@ bool TerrainTileManager::getAltitudesForCoordinates(const QList<QGeoCoordinate>&
                 spec.setX(getQGCMapEngine()->urlFactory()->long2tileX(kMapType, coordinate.longitude(), 1));
                 spec.setY(getQGCMapEngine()->urlFactory()->lat2tileY(kMapType, coordinate.latitude(), 1));
                 spec.setZoom(1);
-                spec.setMapId(getQGCMapEngine()->urlFactory()->getIdFromType(kMapType));
+                spec.setMapId(getQGCMapEngine()->urlFactory()->getQtMapIdFromProviderType(kMapType));
                 QGeoTiledMapReplyQGC* reply = new QGeoTiledMapReplyQGC(&_networkManager, request, spec);
                 connect(reply, &QGeoTiledMapReplyQGC::terrainDone, this, &TerrainTileManager::_terrainDone);
                 _state = State::Downloading;
@@ -496,7 +497,7 @@ void TerrainTileManager::_terrainDone(QByteArray responseBytes, QNetworkReply::N
 
     // remove from download queue
     QGeoTileSpec spec = reply->tileSpec();
-    QString hash = QGCMapEngine::getTileHash(kMapType, spec.x(), spec.y(), spec.zoom());
+    QString hash = getQGCMapEngine()->getTileHash(kMapType, spec.x(), spec.y(), spec.zoom());
 
     // handle potential errors
     if (error != QNetworkReply::NoError) {
@@ -562,7 +563,7 @@ void TerrainTileManager::_terrainDone(QByteArray responseBytes, QNetworkReply::N
 
 QString TerrainTileManager::_getTileHash(const QGeoCoordinate& coordinate)
 {
-    QString ret = QGCMapEngine::getTileHash(
+    QString ret = getQGCMapEngine()->getTileHash(
         kMapType,
         getQGCMapEngine()->urlFactory()->long2tileX(kMapType, coordinate.longitude(), 1),
         getQGCMapEngine()->urlFactory()->lat2tileY(kMapType, coordinate.latitude(), 1),

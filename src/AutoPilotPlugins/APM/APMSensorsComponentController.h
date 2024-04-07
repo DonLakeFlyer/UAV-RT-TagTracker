@@ -10,10 +10,9 @@
 #pragma once
 
 #include <QObject>
+#include <QtCore/QLoggingCategory>
 
-#include "UASInterface.h"
 #include "FactPanelController.h"
-#include "QGCLoggingCategory.h"
 #include "APMSensorsComponent.h"
 
 Q_DECLARE_LOGGING_CATEGORY(APMSensorsComponentControllerLog)

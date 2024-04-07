@@ -9,9 +9,9 @@
 
 #include "FactPanelController.h"
 #include "MultiVehicleManager.h"
-#include "UAS.h"
 #include "QGCApplication.h"
 #include "ParameterManager.h"
+#include "QGCLoggingCategory.h"
 
 #include <QQmlEngine>
 
@@ -24,7 +24,6 @@ FactPanelController::FactPanelController()
 {
     _vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
     if (_vehicle) {
-        _uas = _vehicle->uas();
         _autopilot = _vehicle->autopilotPlugin();
     } else {
         _vehicle = qgcApp()->toolbox()->multiVehicleManager()->offlineEditingVehicle();

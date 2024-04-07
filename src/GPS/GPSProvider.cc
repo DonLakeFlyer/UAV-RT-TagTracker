@@ -10,8 +10,6 @@
 
 #include "GPSProvider.h"
 #include "QGCLoggingCategory.h"
-#include "QGCApplication.h"
-#include "SettingsManager.h"
 
 #define GPS_RECEIVE_TIMEOUT 1200
 
@@ -226,6 +224,10 @@ int GPSProvider::callback(GPSCallbackType type, void *data1, int data2)
             break;
 
         case GPSCallbackType::setClock:
+            /* do nothing */
+            break;
+
+        case GPSCallbackType::gotRelativePositionMessage:
             /* do nothing */
             break;
     }

@@ -23,9 +23,6 @@
 #include <QThread>
 #include <QTimer>
 #include <QTime>
-#include <QSerialPort>
-
-#include <stdint.h>
 
 class PX4FirmwareUpgradeThreadController;
 

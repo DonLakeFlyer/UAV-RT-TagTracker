@@ -7,7 +7,6 @@
  *
  ****************************************************************************/
 
-#include <QtCore>
 #include <QDateTime>
 #include <QDate>
 
@@ -55,7 +54,7 @@ void SimulatedPosition::stopUpdates(void)
 
 void SimulatedPosition::requestUpdate(int /*timeout*/)
 {
-    emit updateTimeout();
+    emit errorOccurred(QGeoPositionInfoSource::UpdateTimeoutError);
 }
 
 void SimulatedPosition::_updatePosition(void)

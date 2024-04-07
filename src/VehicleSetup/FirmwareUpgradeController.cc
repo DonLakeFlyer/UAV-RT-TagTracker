@@ -18,15 +18,12 @@
 #include "QGCZlib.h"
 #include "JsonHelper.h"
 #include "LinkManager.h"
+#include "QGCLoggingCategory.h"
 
 #include <QStandardPaths>
-#include <QRegularExpression>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <QNetworkProxy>
-
-#include "zlib.h"
 
 const char* FirmwareUpgradeController::_manifestFirmwareJsonKey =               "firmware";
 const char* FirmwareUpgradeController::_manifestBoardIdJsonKey =                "board_id";
@@ -62,7 +59,7 @@ static QMap<int, QString> px4_board_name_map {
     {54, "px4_fmu-v6u_default"},
     {56, "px4_fmu-v6c_default"},
     {57, "ark_fmu-v6x_default"},
-    {58, "px4_fmu-v6xrt_default"},
+    {35, "px4_fmu-v6xrt_default"},
     {55, "sky-drones_smartap-airlink_default"},
     {88, "airmind_mindpx-v2_default"},
     {12, "bitcraze_crazyflie_default"},
@@ -91,6 +88,7 @@ static QMap<int, QString> px4_board_name_map {
     {1009, "cuav_nora_default"},
     {1010, "cuav_x7pro_default"},
     {1017, "mro_pixracerpro_default"},
+    {1022, "mro_ctrl-zero-classic_default"},
     {1023, "mro_ctrl-zero-h7_default"},
     {1024, "mro_ctrl-zero-h7-oem_default"},
     {1048, "holybro_kakuteh7_default"},
@@ -292,7 +290,7 @@ void FirmwareUpgradeController::_foundBoardInfo(int bootloaderVersion, int board
     if (_startFlashWhenBootloaderFound) {
         flash(_startFlashWhenBootloaderFoundFirmwareIdentity);
     } else {
-        if (_rgManifestFirmwareInfo.count()) {
+        if (_rgManifestFirmwareInfo.length()) {
             _buildAPMFirmwareNames();
         }
         emit showFirmwareSelectDlg();
@@ -505,8 +503,7 @@ void FirmwareUpgradeController::_appendStatusLog(const QString& text, bool criti
 {
     Q_ASSERT(_statusLog);
     
-    QVariant returnedValue;
-    QVariant varText;
+    QString varText;
     
     if (critical) {
         varText = QString("<font color=\"yellow\">%1</font>").arg(text);
@@ -516,8 +513,7 @@ void FirmwareUpgradeController::_appendStatusLog(const QString& text, bool criti
     
     QMetaObject::invokeMethod(_statusLog,
                               "append",
-                              Q_RETURN_ARG(QVariant, returnedValue),
-                              Q_ARG(QVariant, varText));
+                              Q_ARG(QString, varText));
 }
 
 void FirmwareUpgradeController::_errorCancel(const QString& msg)
@@ -598,7 +594,7 @@ void FirmwareUpgradeController::_buildAPMFirmwareNames(void)
 
     if (_apmFirmwareNamesBestIndex == -1) {
         _apmFirmwareNamesBestIndex++;
-        if (_apmFirmwareNames.count() > 1) {
+        if (_apmFirmwareNames.length() > 1) {
             _apmFirmwareNames.prepend(tr("Choose board type"));
             _apmFirmwareUrls.prepend(QString());
         }
@@ -610,8 +606,8 @@ void FirmwareUpgradeController::_buildAPMFirmwareNames(void)
 
 FirmwareUpgradeController::FirmwareVehicleType_t FirmwareUpgradeController::vehicleTypeFromFirmwareSelectionIndex(int index)
 {
-    if (index < 0 || index >= _apmVehicleTypeFromCurrentVersionList.count()) {
-        qWarning() << "Invalid index, index:count" << index << _apmVehicleTypeFromCurrentVersionList.count();
+    if (index < 0 || index >= _apmVehicleTypeFromCurrentVersionList.length()) {
+        qWarning() << "Invalid index, index:count" << index << _apmVehicleTypeFromCurrentVersionList.length();
         return CopterFirmware;
     }
 
@@ -749,8 +745,8 @@ void FirmwareUpgradeController::_ardupilotManifestDownloadComplete(QString remot
                     QString pid = vidpid[1];
 
                     bool ok;
-                    firmwareInfo.rgVID.append(vid.right(vid.count() - 2).toInt(&ok, 16));
-                    firmwareInfo.rgPID.append(pid.right(pid.count() - 2).toInt(&ok, 16));
+                    firmwareInfo.rgVID.append(vid.right(vid.length() - 2).toInt(&ok, 16));
+                    firmwareInfo.rgPID.append(pid.right(pid.length() - 2).toInt(&ok, 16));
                 }
 
                 QString brandName = firmwareJson[_manifestBrandNameKey].toString();

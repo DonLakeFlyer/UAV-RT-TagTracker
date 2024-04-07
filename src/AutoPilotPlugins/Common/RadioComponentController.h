@@ -16,11 +16,9 @@
 #ifndef RadioComponentController_H
 #define RadioComponentController_H
 
-#include <QTimer>
+#include <QtCore/QLoggingCategory>
 
 #include "FactPanelController.h"
-#include "UASInterface.h"
-#include "QGCLoggingCategory.h"
 #include "AutoPilotPlugin.h"
 
 Q_DECLARE_LOGGING_CATEGORY(RadioComponentControllerLog)

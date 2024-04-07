@@ -14,11 +14,9 @@
 ///     @author Don Gagne <don@thegagnes.com>
 
 #include <QObject>
-#include <QQuickItem>
+#include <QtCore/QLoggingCategory>
 
-#include "UASInterface.h"
 #include "AutoPilotPlugin.h"
-#include "QGCLoggingCategory.h"
 
 Q_DECLARE_LOGGING_CATEGORY(FactPanelControllerLog)
 
@@ -50,7 +48,6 @@ protected:
     void _reportMissingParameter(int componentId, const QString& name);
 
     Vehicle*            _vehicle    = nullptr;
-    UASInterface*       _uas        = nullptr;
     AutoPilotPlugin*    _autopilot  = nullptr;
 
 private slots:

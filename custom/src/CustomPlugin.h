@@ -7,6 +7,7 @@
 #endif
 #include "QmlObjectListModel.h"
 #include "CustomOptions.h"
+#include "CustomSettings.h"
 #include "FactSystem.h"
 #include "TunnelProtocol.h"
 #include "PulseInfo.h"
@@ -18,8 +19,6 @@
 #include <QTimer>
 #include <QLoggingCategory>
 #include <QFile>
-
-class CustomSettings;
 
 Q_DECLARE_LOGGING_CATEGORY(CustomPluginLog)
 

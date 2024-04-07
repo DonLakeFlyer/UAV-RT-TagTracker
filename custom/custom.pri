@@ -1,4 +1,4 @@
-message("Adding Custom Plugin")
+message("Adding Custom Herelink Plugin")
 
 #-- Version control
 #   Major and minor versions are defined here (manually)
@@ -9,10 +9,6 @@ CUSTOM_QGC_VER_FIRST_BUILD = 0
 
 linux {
     QMAKE_CXXFLAGS_WARN_ON += -Wno-strict-aliasing
-}
-
-!WindowsBuild {
-    QMAKE_CXXFLAGS_WARN_ON += -Wno-sometimes-uninitialized
 }
 
 # Build number is automatic
@@ -40,9 +36,6 @@ DEFINES += \
     QGC_GST_TAISYNC_DISABLED
     NO_SERIAL_LINK
     QGC_DISABLE_BLUETOOTH
-
-# Tag Tracker is set as an android Home App
-CONFIG += AndroidHomeApp
 
 # Branding
 
@@ -73,6 +66,12 @@ DEFINES += \
 RESOURCES += \
     $$PWD/custom.qrc
 
+# Enable Herelink AirUnit video config
+DEFINES += \
+    QGC_HERELINK_AIRUNIT_VIDEO
+
+CONFIG += AndroidHomeApp
+
 QML_IMPORT_PATH += \
    $$PWD/src
 
@@ -81,15 +80,23 @@ Herelink {
 
     DEFINES += HERELINK_BUILD
 
-# Herelink sources
-SOURCES += \
-    $$PWD/src/HerelinkCorePlugin.cc \
-    $$PWD/src/HerelinkOptions.cc \
+    # Herelink sources
+    # Herelink specific custom sources
+    SOURCES += \
+        $$PWD/src/HerelinkCorePlugin.cc \
+        $$PWD/src/HerelinkOptions.cc \
 
-HEADERS += \
-    $$PWD/src/HerelinkCorePlugin.h \
-    $$PWD/src/HerelinkOptions.h \
+    HEADERS += \
+        $$PWD/src/HerelinkCorePlugin.h \
+        $$PWD/src/HerelinkOptions.h \
 }
+
+# Custom versions of a Herelink build should only add changes below here to prevent conflicts
+
+QMAKE_CXXFLAGS_WARN_ON += -Wno-sometimes-uninitialized # Matlab generated code pops this error
+
+INCLUDEPATH += \
+    $$PWD/src \
 
 # TagTracker custom sources
 SOURCES += \
@@ -117,9 +124,6 @@ HEADERS += \
     $$PWD/src/TagDatabase.h \
     $$PWD/src/PulseInfo.h \
     $$PWD/src/PulseInfoList.h \
-
-INCLUDEPATH += \
-    $$PWD/src \
 
 # Bearing calc matlab code
     INCLUDEPATH += \

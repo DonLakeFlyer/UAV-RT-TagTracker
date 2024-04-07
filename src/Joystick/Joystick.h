@@ -14,12 +14,12 @@
 
 #include <QObject>
 #include <QThread>
+#include <QtCore/QLoggingCategory>
 #include <atomic>
 
-#include "QGCLoggingCategory.h"
 #include "Vehicle.h"
 #include "MultiVehicleManager.h"
-#include "JoystickMavCommand.h"
+#include "CustomActionManager.h"
 
 // JoystickLog Category declaration moved to QGCLoggingCategory.cc to allow access in Vehicle
 Q_DECLARE_LOGGING_CATEGORY(JoystickValuesLog)
@@ -218,12 +218,9 @@ signals:
     void setVtolInFwdFlight         (bool set);
     void setFlightMode              (const QString& flightMode);
     void emergencyStop              ();
-    /**
-     * @brief Send MAV_CMD_DO_GRIPPER command to the vehicle
-     * 
-     * @param gripperAction (Open / Close) Gripper action to command
-     */
     void gripperAction              (GRIPPER_ACTIONS gripperAction);
+    void landingGearDeploy          ();
+    void landingGearRetract         ();
 
 protected:
     void    _setDefaultCalibration  ();
@@ -306,7 +303,7 @@ protected:
     QStringList                     _availableActionTitles;
     MultiVehicleManager*            _multiVehicleManager = nullptr;
 
-    QList<JoystickMavCommand> _customMavCommands;
+    CustomActionManager _customActionManager;
 
     static const float  _minAxisFrequencyHz;
     static const float  _maxAxisFrequencyHz;
@@ -361,7 +358,8 @@ private:
     static const char* _buttonActionEmergencyStop;
     static const char* _buttonActionGripperGrab;
     static const char* _buttonActionGripperRelease;
-
+    static const char* _buttonActionLandingGearDeploy;
+    static const char* _buttonActionLandingGearRetract;
 
 private slots:
     void _activeVehicleChanged(Vehicle* activeVehicle);

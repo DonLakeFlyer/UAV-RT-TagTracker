@@ -1,8 +1,8 @@
-import QtQuick                  2.15
-import QtQuick.Controls         2.15
+import QtQuick
+import QtQuick.Controls
 
-import QGroundControl.ScreenTools   1.0
-import QGroundControl.Palette       1.0
+import QGroundControl.ScreenTools
+import QGroundControl.Palette
 
 /// The SliderSwitch control implements a sliding switch control similar to the power off
 /// control on an iPhone. It supports holding the space bar to slide the switch.
@@ -22,32 +22,23 @@ Rectangle {
     property real _diameter:                    height - (_border * 2)
     property real _dragStartX:                  _border
     property real _dragStopX:                   _root.width - (_diameter + _border)
-    property bool _waitingForLastAutoRepeat:    false
 
-    Keys.onSpacePressed: {
-        if (visible && event.modifiers === Qt.NoModifier && event.isAutoRepeat && !sliderDragArea.drag.active) {
+    Keys.onSpacePressed: (event) => {
+        if (visible && event.modifiers === Qt.NoModifier && !sliderDragArea.drag.active) {
             event.accepted = true
-            if (_waitingForLastAutoRepeat) {
-                resetSpaceBarSliding()
-                accept()
-            } else {
-                sliderAnimation.start()
-                spaceBarTimout.restart()
-            }
+            sliderAnimation.start()
+        }
+    }
+
+    Keys.onReleased: (event) => {
+        if (visible && event.key === Qt.Key_Space) {
+            event.accepted = true
+            resetSpaceBarSliding()
         }
     }
 
     function resetSpaceBarSliding() {
-        _waitingForLastAutoRepeat = false
-        spaceBarTimout.stop()
         slider.reset()
-    }
-
-    Timer {
-        id:             spaceBarTimout
-        interval:       200
-        repeat:         false
-        onTriggered:    _root.resetSpaceBarSliding()
     }
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
@@ -90,7 +81,11 @@ Rectangle {
             from:       _dragStartX
             to:         _dragStopX
             running:    false
-            onFinished: _waitingForLastAutoRepeat = true
+
+            onFinished: {
+                slider.reset()
+                _root.accept()
+            }
         }
 
         function reset() {

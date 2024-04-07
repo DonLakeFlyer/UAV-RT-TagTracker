@@ -21,9 +21,9 @@
 #include "QGCMapEngineManager.h"
 #include "QGCFileDownload.h"
 #include "TerrainTile.h"
+#include "QGCLoggingCategory.h"
 
-#include <QSettings>
-#include <math.h>
+#include <QtNetwork/QNetworkProxy>
 
 QGC_LOGGING_CATEGORY(QGCCachedTileSetLog, "QGCCachedTileSetLog")
 
@@ -288,7 +288,7 @@ QGCCachedTileSet::_networkReplyFinished()
             }
             qCDebug(QGCCachedTileSetLog) << "Tile fetched" << hash;
             QByteArray image = reply->readAll();
-            QString type = getQGCMapEngine()->hashToType(hash);
+            QString type = getQGCMapEngine()->tileHashToType(hash);
             if (type == UrlFactory::kCopernicusElevationProviderKey) {
                 image = TerrainTile::serializeFromAirMapJson(image);
             }
