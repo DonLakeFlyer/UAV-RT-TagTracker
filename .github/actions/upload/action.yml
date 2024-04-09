@@ -1,24 +1,24 @@
-name: 'Upload Release'
-description: 'Uploads a built release file'
+name: Upload Release
+description: Uploads a built release file
 inputs:
   artifact_name:
-    description: 'artifact name'
+    description: artifact name
     required: true
   aws_key_id:
-    description: 'aws key id'
+    description: aws key id
     required: true
   aws_secret_access_key:
-    description: 'aws secret access key'
+    description: aws secret access key
     required: true
   source:
+    description: source location
     required: false
-    type: string
-    default: 'package'
+    default: package
 runs:
   using: "composite"
   steps:
     - name: Save artifact
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact_name }}
         path: ${{ runner.temp }}/shadow_build_dir/${{ inputs.source }}/${{ inputs.artifact_name }}
