@@ -93,7 +93,9 @@ Herelink {
 
 # Custom versions of a Herelink build should only add changes below here to prevent conflicts
 
-QMAKE_CXXFLAGS_WARN_ON += -Wno-sometimes-uninitialized # Matlab generated code pops this error
+!WindowsBuild {
+    QMAKE_CXXFLAGS_WARN_ON += -Wno-sometimes-uninitialized # Matlab generated code pops this error
+}
 
 INCLUDEPATH += \
     $$PWD/src \
