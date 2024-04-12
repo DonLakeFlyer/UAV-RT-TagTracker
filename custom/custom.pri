@@ -103,6 +103,12 @@ HEADERS += \
     $$PWD/src/HerelinkOptions.h \
 }
 
+# Custom versions of a Herelink build should only add changes below here to prevent conflicts
+
+!WindowsBuild {
+    QMAKE_CXXFLAGS_WARN_ON += -Wno-sometimes-uninitialized # Matlab generated code pops this error
+}
+
 # TagTracker custom sources
 SOURCES += \
     $$PWD/src/CustomFirmwarePluginFactory.cc \

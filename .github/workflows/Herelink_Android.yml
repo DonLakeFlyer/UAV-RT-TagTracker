@@ -100,7 +100,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run:  |
             ls /home/runner/work/_temp/Qt/6.6.1
-            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer ANDROID_ABIS="arm64-v8a"
+            qmake -r ${SOURCE_DIR}/qgroundcontrol.pro -spec android-clang CONFIG+=${BUILD_TYPE} CONFIG+=installer CONFIG+=Herelink ANDROID_ABIS="arm64-v8a"
             make -j2
 
       - name: ccache post-run
@@ -109,5 +109,5 @@ jobs:
       - name: Save artifact
         uses: actions/upload-artifact@master
         with:
-          name: TagTracker.apk
-          path: ${{ runner.temp }}/shadow_build_dir/android-build/TagTracker.apk
+          name: TagTracker64.apk
+          path: ${{ runner.temp }}/shadow_build_dir/package/TagTracker64.apk
