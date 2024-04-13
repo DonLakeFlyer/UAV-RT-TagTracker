@@ -7,18 +7,18 @@
  *
  ****************************************************************************/
 
-import QtQuick                      2.11
-import QtQuick.Controls             2.4
-import QtQuick.Dialogs              1.3
-import QtQuick.Layouts              1.11
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Dialogs
+import QtQuick.Layouts
 
-import QGroundControl               1.0
-import QGroundControl.Palette       1.0
-import QGroundControl.Controls      1.0
-import QGroundControl.ScreenTools   1.0
-import QGroundControl.Controllers   1.0
-import QGroundControl.FactSystem    1.0
-import QGroundControl.FactControls  1.0
+import QGroundControl
+import QGroundControl.Palette
+import QGroundControl.Controls
+import QGroundControl.ScreenTools
+import QGroundControl.Controllers
+import QGroundControl.FactSystem
+import QGroundControl.FactControls
 
 Item {
     width:  mainCol.width  + (ScreenTools.defaultFontPixelWidth  * 2)
@@ -80,7 +80,7 @@ Item {
                 width:              ScreenTools.defaultFontPixelWidth * 40
                 Layout.alignment:   Qt.AlignVCenter
                 model:              joystickManager.joystickNames
-                onActivated:        joystickManager.activeJoystickName = textAt(index)
+                onActivated: (index) => { joystickManager.activeJoystickName = textAt(index) }
                 Component.onCompleted: {
                     var index = joystickCombo.find(joystickManager.activeJoystickName)
                     if (index === -1) {
@@ -211,7 +211,7 @@ Item {
 
                     Connections {
                         target:             _activeJoystick
-                        onAxisValues: {
+                        onAxisValues: (roll, pitch, yaw, throttle) => {
                             rollAxis.axisValue      = roll  * 32768.0
                             pitchAxis.axisValue     = pitch * 32768.0
                             yawAxis.axisValue       = yaw   * 32768.0
@@ -233,7 +233,7 @@ Item {
                     anchors.centerIn:   parent
                     Connections {
                         target:     _activeJoystick
-                        onRawButtonPressedChanged: {
+                        onRawButtonPressedChanged: (index, pressed) => {
                             if (buttonMonitorRepeater.itemAt(index)) {
                                 buttonMonitorRepeater.itemAt(index).pressed = pressed
                             }

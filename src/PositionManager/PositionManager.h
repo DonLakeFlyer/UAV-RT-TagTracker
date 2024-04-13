@@ -12,10 +12,7 @@
 #include <QGeoPositionInfoSource>
 #include <QNmeaPositionInfoSource>
 
-#include <QVariant>
-
 #include "QGCToolbox.h"
-#include "SimulatedPosition.h"
 
 class QGCPositionManager : public QGCTool {
     Q_OBJECT
@@ -60,6 +57,8 @@ signals:
     void gcsPositionHorizontalAccuracyChanged();
 
 private:
+    void _setupPositionSources(QGCToolbox *toolbox);
+
     int                 _updateInterval =   0;
     QGeoPositionInfo    _geoPositionInfo;
     QGeoCoordinate      _gcsPosition;

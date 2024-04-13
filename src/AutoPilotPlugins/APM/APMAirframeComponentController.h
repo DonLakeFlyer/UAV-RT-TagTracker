@@ -10,12 +10,7 @@
 #pragma once
 
 #include <QObject>
-#include <QQuickItem>
-#include <QList>
-#include <QAbstractListModel>
 
-#include "UASInterface.h"
-#include "AutoPilotPlugin.h"
 #include "FactPanelController.h"
 
 class APMAirframeModel;

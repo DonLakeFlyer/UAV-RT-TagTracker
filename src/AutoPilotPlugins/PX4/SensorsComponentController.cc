@@ -8,13 +8,9 @@
  ****************************************************************************/
 
 #include "SensorsComponentController.h"
-#include "QGCMAVLink.h"
-#include "UAS.h"
 #include "QGCApplication.h"
 #include "ParameterManager.h"
-
-#include <QVariant>
-#include <QQmlProperty>
+#include "QGCLoggingCategory.h"
 
 QGC_LOGGING_CATEGORY(SensorsComponentControllerLog, "SensorsComponentControllerLog")
 
@@ -84,12 +80,10 @@ void SensorsComponentController::_appendStatusLog(const QString& text)
         return;
     }
     
-    QVariant returnedValue;
-    QVariant varText = text;
+    QString varText = text;
     QMetaObject::invokeMethod(_statusLog,
                               "append",
-                              Q_RETURN_ARG(QVariant, returnedValue),
-                              Q_ARG(QVariant, varText));
+                              Q_ARG(QString, varText));
 }
 
 void SensorsComponentController::_startLogCalibration(void)

@@ -16,6 +16,7 @@
 #include "CompInfoEvents.h"
 #include "CompInfoActuators.h"
 #include "QGCApplication.h"
+#include "QGCLoggingCategory.h"
 
 #include <QStandardPaths>
 
@@ -229,7 +230,8 @@ QString RequestMetaDataTypeStateMachine::typeToString(void)
     return "Unknown";
 }
 
-static void _requestMessageResultHandler(void* resultHandlerData, MAV_RESULT result, Vehicle::RequestMessageResultHandlerFailureCode_t failureCode, const mavlink_message_t &message)
+static void _requestMessageResultHandler(void* resultHandlerData, MAV_RESULT result,
+    [[maybe_unused]] Vehicle::RequestMessageResultHandlerFailureCode_t failureCode, const mavlink_message_t &message)
 {
     RequestMetaDataTypeStateMachine* requestMachine = static_cast<RequestMetaDataTypeStateMachine*>(resultHandlerData);
 

@@ -14,13 +14,14 @@
 #include "Fact.h"
 
 #include <QObject>
-#include <QUrl>
 #include <QTimer>
-#include <QNetworkAccessManager>
-#include <QNetworkReply>
 #include <QPixmap>
 #include <QQuickItem>
+#ifdef Q_OS_ANDROID
+#include "qserialport.h"
+#else
 #include <QSerialPort>
+#endif
 
 #include <stdint.h>
 

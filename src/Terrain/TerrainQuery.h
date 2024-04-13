@@ -10,8 +10,6 @@
 #pragma once
 
 #include "TerrainTile.h"
-#include "QGCMapEngineData.h"
-#include "QGCLoggingCategory.h"
 
 #include <QObject>
 #include <QGeoCoordinate>
@@ -19,7 +17,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QTimer>
-#include <QtLocation/private/qgeotiledmapreply_p.h>
+#include <QtCore/QMutex>
+#include <QtCore/QLoggingCategory>
 
 Q_DECLARE_LOGGING_CATEGORY(TerrainQueryLog)
 Q_DECLARE_LOGGING_CATEGORY(TerrainQueryVerboseLog)
@@ -179,7 +178,7 @@ private:
     typedef struct {
         TerrainAtCoordinateQuery*   terrainAtCoordinateQuery;
         bool                        queryObjectDestroyed;
-        int                         cCoord;
+        qsizetype                   cCoord;
     } SentRequestInfo_t;
 
 

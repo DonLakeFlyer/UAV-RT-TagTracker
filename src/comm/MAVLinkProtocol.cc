@@ -7,26 +7,16 @@
  *
  ****************************************************************************/
 
-#include <inttypes.h>
-#include <iostream>
-
 #include <QDebug>
-#include <QTime>
 #include <QApplication>
 #include <QSettings>
 #include <QStandardPaths>
-#include <QtEndian>
 #include <QMetaType>
 #include <QDir>
 #include <QFileInfo>
 
 #include "MAVLinkProtocol.h"
-#include "UASInterface.h"
-#include "UASInterface.h"
-#include "UAS.h"
 #include "LinkManager.h"
-#include "QGCMAVLink.h"
-#include "QGC.h"
 #include "QGCApplication.h"
 #include "QGCLoggingCategory.h"
 #include "MultiVehicleManager.h"
@@ -171,7 +161,7 @@ void MAVLinkProtocol::logSentBytes(LinkInterface* link, QByteArray b){
 
         b.insert(0,QByteArray((const char*)bytes_time,sizeof(bytes_time)));
 
-        int len = b.count();
+        int len = b.length();
 
         if(_tempLogFile.write(b) != len)
         {

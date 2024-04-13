@@ -10,14 +10,12 @@
 #include "AppSettings.h"
 #include "QGCPalette.h"
 #include "QGCApplication.h"
-#include "ParameterManager.h"
 
-#ifdef __android__
+#ifdef Q_OS_ANDROID
 #include "AndroidInterface.h"
 #endif
 
-#include <QQmlEngine>
-#include <QtQml>
+#include <QtQml/QQmlEngine>
 #include <QStandardPaths>
 
 const char* AppSettings::parameterFileExtension =   "params";
@@ -30,6 +28,7 @@ const char* AppSettings::telemetryFileExtension =   "tlog";
 const char* AppSettings::kmlFileExtension =         "kml";
 const char* AppSettings::shpFileExtension =         "shp";
 const char* AppSettings::logFileExtension =         "ulg";
+const char* AppSettings::tilesetFileExtension =     "qgctiledb";
 
 const char* AppSettings::parameterDirectory =       QT_TRANSLATE_NOOP("AppSettings", "Parameters");
 const char* AppSettings::telemetryDirectory =       QT_TRANSLATE_NOOP("AppSettings", "Telemetry");
@@ -94,13 +93,13 @@ DECLARE_SETTINGGROUP(App, "")
 
     if (!userHasModifiedSavePath) {
 #ifdef __mobile__
-    #ifdef __ios__
+    #ifdef Q_OS_IOS
         // This will expose the directories directly to the File iOs app
         QDir rootDir = QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation));
         savePathFact->setRawValue(rootDir.absolutePath());
     #else
         QString rootDirPath;
-        #ifdef __android__
+        #ifdef Q_OS_ANDROID
         if (androidSaveToSDCard()->rawValue().toBool()) {
                 rootDirPath = AndroidInterface::getSDCardPath();
             qDebug() << "AndroidInterface::getSDCardPath();" << rootDirPath;
@@ -161,9 +160,6 @@ DECLARE_SETTINGSFACT(AppSettings, defaultFirmwareType)
 DECLARE_SETTINGSFACT(AppSettings, gstDebugLevel)
 DECLARE_SETTINGSFACT(AppSettings, followTarget)
 DECLARE_SETTINGSFACT(AppSettings, apmStartMavlinkStreams)
-DECLARE_SETTINGSFACT(AppSettings, enableTaisync)
-DECLARE_SETTINGSFACT(AppSettings, enableTaisyncVideo)
-DECLARE_SETTINGSFACT(AppSettings, enableMicrohard)
 DECLARE_SETTINGSFACT(AppSettings, disableAllPersistence)
 DECLARE_SETTINGSFACT(AppSettings, usePairing)
 DECLARE_SETTINGSFACT(AppSettings, saveCsvTelemetry)
@@ -171,6 +167,8 @@ DECLARE_SETTINGSFACT(AppSettings, firstRunPromptIdsShown)
 DECLARE_SETTINGSFACT(AppSettings, forwardMavlink)
 DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkHostName)
 DECLARE_SETTINGSFACT(AppSettings, forwardMavlinkAPMSupportHostName)
+DECLARE_SETTINGSFACT(AppSettings, loginAirLink)
+DECLARE_SETTINGSFACT(AppSettings, passAirLink)
 
 DECLARE_SETTINGSFACT_NO_FUNC(AppSettings, indoorPalette)
 {

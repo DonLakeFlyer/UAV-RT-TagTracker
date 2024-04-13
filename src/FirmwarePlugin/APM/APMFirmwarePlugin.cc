@@ -18,7 +18,6 @@
 #include "APMSubMotorComponentController.h"
 #include "MissionManager.h"
 #include "ParameterManager.h"
-#include "QGCFileDownload.h"
 #include "SettingsManager.h"
 #include "AppSettings.h"
 #include "APMMavlinkStreamRateSettings.h"
@@ -27,12 +26,13 @@
 #include "ArduRoverFirmwarePlugin.h"
 #include "ArduSubFirmwarePlugin.h"
 #include "LinkManager.h"
+#include "QGCLoggingCategory.h"
 
 #include <QTcpSocket>
+#include <QtCore/QRegularExpression>
+#include <QtCore/QRegularExpressionMatch>
 
 QGC_LOGGING_CATEGORY(APMFirmwarePluginLog, "APMFirmwarePluginLog")
-
-static const QRegExp APM_FRAME_REXP("^Frame: ");
 
 const char* APMFirmwarePlugin::_artooIP =                   "10.1.1.1"; ///< IP address of ARTOO controller
 const int   APMFirmwarePlugin::_artooVideoHandshakePort =   5502;       ///< Port for video handshake on ARTOO controller
@@ -80,6 +80,7 @@ bool APMFirmwarePlugin::isCapable(const Vehicle* vehicle, FirmwareCapabilities c
     uint32_t available = SetFlightModeCapability | PauseVehicleCapability | GuidedModeCapability | ROIModeCapability;
     if (vehicle->multiRotor()) {
         available |= TakeoffVehicleCapability;
+        available |= ROIModeCapability;
     } else if (vehicle->vtol()) {
         available |= TakeoffVehicleCapability;
     }
@@ -259,21 +260,18 @@ bool APMFirmwarePlugin::_handleIncomingStatusText(Vehicle* /*vehicle*/, mavlink_
     // APM user facing calibration messages come through as high severity, we need to parse them out
     // and lower the severity on them so that they don't pop in the users face.
 
-    QString messageText = _getMessageText(message);
+    const QString messageText = _getMessageText(message);
     if (messageText.contains("Place vehicle") || messageText.contains("Calibration successful")) {
         _adjustCalibrationMessageSeverity(message);
         return true;
     }
 
-    if (messageText.contains(APM_FRAME_REXP)) {
-        // We need to parse the Frame: message in order to determine whether the motors are coaxial or not
-        QRegExp frameTypeRegex("^Frame: (\\S*)");
-        if (frameTypeRegex.indexIn(messageText) != -1) {
-            QString frameType = frameTypeRegex.cap(1);
-            if (!frameType.isEmpty() && (frameType == QStringLiteral("Y6") || frameType == QStringLiteral("OCTA_QUAD") || frameType == QStringLiteral("COAX"))) {
-                _coaxialMotors = true;
-            }
-        }
+    static const QRegularExpression APM_FRAME_REXP("^Frame: (\\S*)");
+    const QRegularExpressionMatch match = APM_FRAME_REXP.match(messageText);
+    if (match.hasMatch()) {
+        static const QSet<QString> coaxialFrames = {"Y6", "OCTA_QUAD", "COAX", "QUAD/PLUS"};
+        const QString frameType = match.captured(1);
+        _coaxialMotors = coaxialFrames.contains(frameType);
     }
 
     return true;
@@ -365,7 +363,7 @@ QString APMFirmwarePlugin::_getMessageText(mavlink_message_t* message) const
 
     // Ensure NUL-termination
     b[b.length()-1] = '\0';
-    return QString(b);
+    return QString::fromLocal8Bit(b, std::strlen(b.constData()));
 }
 
 void APMFirmwarePlugin::_setInfoSeverity(mavlink_message_t* message) const
@@ -544,9 +542,10 @@ QList<MAV_CMD> APMFirmwarePlugin::supportedMissionCommands(QGCMAVLink::VehicleCl
         MAV_CMD_DO_SET_RELAY, MAV_CMD_DO_REPEAT_RELAY,
         MAV_CMD_DO_SET_SERVO, MAV_CMD_DO_REPEAT_SERVO,
         MAV_CMD_DO_LAND_START,
-        MAV_CMD_DO_SET_ROI,
+        MAV_CMD_DO_SET_ROI_LOCATION, MAV_CMD_DO_SET_ROI_NONE,
         MAV_CMD_DO_DIGICAM_CONFIGURE, MAV_CMD_DO_DIGICAM_CONTROL,
         MAV_CMD_DO_MOUNT_CONTROL,
+        MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
         MAV_CMD_DO_SET_CAM_TRIGG_DIST,
         MAV_CMD_DO_FENCE_ENABLE,
         MAV_CMD_DO_PARACHUTE,
@@ -644,9 +643,27 @@ const QVariantList& APMFirmwarePlugin::toolIndicators(const Vehicle* vehicle)
     if (_toolIndicatorList.size() == 0) {
         // First call the base class to get the standard QGC list
         _toolIndicatorList = FirmwarePlugin::toolIndicators(vehicle);
+
+        // Find the generic flight mode indicator and replace with the custom one
+        for (int i=0; i<_toolIndicatorList.size(); i++) {
+            if (_toolIndicatorList.at(i).toUrl().toString().contains("FlightModeIndicator.qml")) {
+                _toolIndicatorList[i] = QVariant::fromValue(QUrl::fromUserInput("qrc:/APM/Indicators/APMFlightModeIndicator.qml"));
+                break;
+            }
+        }
+
+        // Find the generic battery indicator and replace with the custom one
+        for (int i=0; i<_toolIndicatorList.size(); i++) {
+            if (_toolIndicatorList.at(i).toUrl().toString().contains("BatteryIndicator.qml")) {
+                _toolIndicatorList[i] = QVariant::fromValue(QUrl::fromUserInput("qrc:/APM/Indicators/APMBatteryIndicator.qml"));
+                break;
+            }
+        }
+
         // Then add the forwarding support indicator
         _toolIndicatorList.append(QVariant::fromValue(QUrl::fromUserInput("qrc:/toolbar/APMSupportForwardingIndicator.qml")));
     }
+
     return _toolIndicatorList;
 }
 
@@ -668,93 +685,49 @@ void APMFirmwarePlugin::_artooSocketError(QAbstractSocket::SocketError socketErr
     qgcApp()->showAppMessage(tr("Error during Solo video link setup: %1").arg(socketError));
 }
 
-QString APMFirmwarePlugin::_internalParameterMetaDataFile(Vehicle* vehicle)
+QString APMFirmwarePlugin::_internalParameterMetaDataFile(const Vehicle* vehicle) const
 {
-    switch (vehicle->vehicleType()) {
-    case MAV_TYPE_QUADROTOR:
-    case MAV_TYPE_HEXAROTOR:
-    case MAV_TYPE_OCTOROTOR:
-    case MAV_TYPE_TRICOPTER:
-    case MAV_TYPE_COAXIAL:
-    case MAV_TYPE_HELICOPTER:
-        if (vehicle->versionCompare(4, 2, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Copter.4.2.xml");
-        }
-        if (vehicle->versionCompare(4, 1, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Copter.4.1.xml");
-        }
-        if (vehicle->versionCompare(4, 0, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Copter.4.0.xml");
-        }
-        if (vehicle->versionCompare(3, 7, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Copter.3.7.xml");
-        }
-        if (vehicle->versionCompare(3, 6, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Copter.3.6.xml");
+    const QGCMAVLink::VehicleClass_t vehicleClass = QGCMAVLink::vehicleClass(vehicle->vehicleType());
+    const int currMajor = vehicle->firmwareMajorVersion();
+    const int currMinor = vehicle->firmwareMinorVersion();
+    QString fileName = QString(":/FirmwarePlugin/APM/APMParameterFactMetaData.{Vehicle}.%1.%2.xml").arg(currMajor).arg(currMinor);
+
+    switch (vehicleClass) {
+    case QGCMAVLink::VehicleClassMultiRotor:
+        fileName.replace("{Vehicle}", "Copter");
+        if(QFileInfo::exists(fileName))
+        {
+            return fileName;
         }
         return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Copter.3.5.xml");
 
-    case MAV_TYPE_VTOL_TAILSITTER_DUOROTOR:
-    case MAV_TYPE_VTOL_TAILSITTER_QUADROTOR:
-    case MAV_TYPE_VTOL_TILTROTOR:
-    case MAV_TYPE_VTOL_FIXEDROTOR:
-    case MAV_TYPE_VTOL_TAILSITTER:
-    case MAV_TYPE_VTOL_TILTWING:
-    case MAV_TYPE_VTOL_RESERVED5:
-    case MAV_TYPE_FIXED_WING:
-        if (vehicle->versionCompare(4, 2, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Plane.4.2.xml");
-        }
-        if (vehicle->versionCompare(4, 1, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Plane.4.1.xml");
-        }
-        if (vehicle->versionCompare(4, 0, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Plane.4.0.xml");
-        }
-        if (vehicle->versionCompare(3, 10, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Plane.3.10.xml");
-        }
-        if (vehicle->versionCompare(3, 9, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Plane.3.9.xml");
+    case QGCMAVLink::VehicleClassFixedWing:
+    case QGCMAVLink::VehicleClassVTOL:
+        fileName.replace("{Vehicle}", "Plane");
+        if(QFileInfo::exists(fileName))
+        {
+            return fileName;
         }
         return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Plane.3.8.xml");
 
-    case MAV_TYPE_GROUND_ROVER:
-    case MAV_TYPE_SURFACE_BOAT:
-        if (vehicle->versionCompare(4, 2, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.4.2.xml");
-        }
-        if (vehicle->versionCompare(4, 1, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.4.1.xml");
-        }
-        if (vehicle->versionCompare(4, 0, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.4.0.xml");
-        }
-        if (vehicle->versionCompare(3, 6, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.3.6.xml");
-        }
-        if (vehicle->versionCompare(3, 5, 0) >= 0) {
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.3.5.xml");
+    case QGCMAVLink::VehicleClassRoverBoat:
+        fileName.replace("{Vehicle}", "Rover");
+        if(QFileInfo::exists(fileName))
+        {
+            return fileName;
         }
         return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Rover.3.4.xml");
 
-    case MAV_TYPE_SUBMARINE:
-        if (vehicle->versionCompare(4, 1, 0) >= 0) { // 4.1.x
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Sub.4.1.xml");
+    case QGCMAVLink::VehicleClassSub:
+        fileName.replace("{Vehicle}", "Sub");
+        if(QFileInfo::exists(fileName))
+        {
+            return fileName;
         }
-        if (vehicle->versionCompare(4, 0, 0) >= 0) { // 4.0.x
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Sub.4.0.xml");
-        }
-        if (vehicle->versionCompare(3, 6, 0) >= 0) { // 3.6.x
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Sub.3.6.xml");
-        }
-        if (vehicle->versionCompare(3, 5, 0) >= 0) { // 3.5.x
-            return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Sub.3.5.xml");
-        }
-        // up to 3.4.x
         return QStringLiteral(":/FirmwarePlugin/APM/APMParameterFactMetaData.Sub.3.4.xml");
 
     default:
+        qWarning() << Q_FUNC_INFO << "called with bad VehicleClass_t:" << vehicleClass;
         return QString();
     }
 }
@@ -777,10 +750,8 @@ typedef struct {
     Vehicle*            vehicle;
 } MAV_CMD_DO_REPOSITION_HandlerData_t;
 
-static void _MAV_CMD_DO_REPOSITION_ResultHandler(void* resultHandlerData, int /*compId*/, MAV_RESULT commandResult, uint8_t progress, Vehicle::MavCmdResultFailureCode_t failureCode)
+static void _MAV_CMD_DO_REPOSITION_ResultHandler(void* resultHandlerData, int /*compId*/, const mavlink_command_ack_t& ack, Vehicle::MavCmdResultFailureCode_t /*failureCode*/)
 {
-    Q_UNUSED(progress);
-
     auto* data = (MAV_CMD_DO_REPOSITION_HandlerData_t*)resultHandlerData;
     auto* vehicle = data->vehicle;
     auto* instanceData = qobject_cast<APMFirmwarePluginInstanceData*>(vehicle->firmwarePluginInstanceData());
@@ -791,8 +762,8 @@ static void _MAV_CMD_DO_REPOSITION_ResultHandler(void* resultHandlerData, int /*
         goto out;
     }
 
-    instanceData->MAV_CMD_DO_REPOSITION_supported = (commandResult == MAV_RESULT_ACCEPTED);
-    instanceData->MAV_CMD_DO_REPOSITION_unsupported = (commandResult == MAV_RESULT_UNSUPPORTED);
+    instanceData->MAV_CMD_DO_REPOSITION_supported = (ack.result == MAV_RESULT_ACCEPTED);
+    instanceData->MAV_CMD_DO_REPOSITION_unsupported = (ack.result == MAV_RESULT_UNSUPPORTED);
 
 out:
     delete data;
@@ -818,9 +789,13 @@ void APMFirmwarePlugin::guidedModeGotoLocation(Vehicle* vehicle, const QGeoCoord
             auto* result_handler_data = new MAV_CMD_DO_REPOSITION_HandlerData_t{
                 vehicle
             };
+
+            Vehicle::MavCmdAckHandlerInfo_t handlerInfo = {};
+            handlerInfo.resultHandler       = _MAV_CMD_DO_REPOSITION_ResultHandler;
+            handlerInfo.resultHandlerData   = result_handler_data;
+
             vehicle->sendMavCommandIntWithHandler(
-                _MAV_CMD_DO_REPOSITION_ResultHandler,
-                result_handler_data,
+                &handlerInfo,
                 vehicle->defaultComponentId(),
                 MAV_CMD_DO_REPOSITION,
                 MAV_FRAME_GLOBAL,
@@ -1130,4 +1105,51 @@ QMutex& APMFirmwarePlugin::_reencodeMavlinkChannelMutex()
 {
     static QMutex _mutex{};
     return _mutex;
+}
+
+double APMFirmwarePlugin::maximumEquivalentAirspeed(Vehicle* vehicle)
+{
+    QString airspeedMax("ARSPD_FBW_MAX");
+
+    if (vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, airspeedMax)) {
+        return vehicle->parameterManager()->getParameter(FactSystem::defaultComponentId, airspeedMax)->rawValue().toDouble();
+    }
+
+    return FirmwarePlugin::maximumEquivalentAirspeed(vehicle);
+}
+
+double APMFirmwarePlugin::minimumEquivalentAirspeed(Vehicle* vehicle)
+{
+    QString airspeedMin("ARSPD_FBW_MIN");
+
+    if (vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, airspeedMin)) {
+        return vehicle->parameterManager()->getParameter(FactSystem::defaultComponentId, airspeedMin)->rawValue().toDouble();
+    }
+
+    return FirmwarePlugin::minimumEquivalentAirspeed(vehicle);
+}
+
+bool APMFirmwarePlugin::fixedWingAirSpeedLimitsAvailable(Vehicle* vehicle)
+{
+    return vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, "ARSPD_FBW_MIN") &&
+           vehicle->parameterManager()->parameterExists(FactSystem::defaultComponentId, "ARSPD_FBW_MAX");
+}
+
+void APMFirmwarePlugin::guidedModeChangeEquivalentAirspeedMetersSecond(Vehicle* vehicle, double airspeed_equiv)
+{
+
+    vehicle->sendMavCommand(
+        vehicle->defaultComponentId(),
+        MAV_CMD_DO_CHANGE_SPEED,
+        true,                                 // show error is fails
+        0,                                    // 0: airspeed, 1: groundspeed
+        static_cast<float>(airspeed_equiv),   // speed setpoint
+        -1,                                   // throttle, no change
+        0                                     // 0: absolute speed, 1: relative to current
+        );                                    // param 5-7 unused
+}
+
+QVariant APMFirmwarePlugin::mainStatusIndicatorContentItem(const Vehicle*) const
+{
+    return QVariant::fromValue(QUrl::fromUserInput("qrc:/APM/Indicators/APMMainStatusIndicatorContentItem.qml"));
 }

@@ -14,13 +14,13 @@
  *   @author Gus Grubba <gus@auterion.com>
  */
 
-import QtQuick              2.3
-import QtGraphicalEffects   1.0
+import QtQuick
+import QtQuick.Effects
 
-import QGroundControl               1.0
-import QGroundControl.Controls      1.0
-import QGroundControl.ScreenTools   1.0
-import QGroundControl.Palette       1.0
+import QGroundControl
+import QGroundControl.Controls
+import QGroundControl.ScreenTools
+import QGroundControl.Palette
 
 Item {
     id: root
@@ -99,18 +99,26 @@ Item {
         }
     }
 
-    Rectangle {
-        id:             mask
-        anchors.fill:   instrument
-        radius:         width / 2
-        color:          "black"
-        visible:        false
+    MultiEffect {
+        source: instrument
+        anchors.fill: instrument
+        maskEnabled: true
+        maskSource: mask
     }
 
-    OpacityMask {
-        anchors.fill: instrument
-        source: instrument
-        maskSource: mask
+    Item {
+        id: mask
+        width: instrument.width
+        height: instrument.height
+        layer.enabled: true
+        visible: false
+
+        Rectangle {
+            width: parent.width
+            height: parent.height
+            radius: width/2
+            color: "black"
+        }
     }
 
     Rectangle {

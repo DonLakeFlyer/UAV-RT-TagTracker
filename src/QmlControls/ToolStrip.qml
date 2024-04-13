@@ -7,18 +7,18 @@
  *
  ****************************************************************************/
 
-import QtQuick          2.11
-import QtQuick.Controls 2.2
+import QtQuick
+import QtQuick.Controls
 
-import QGroundControl               1.0
-import QGroundControl.ScreenTools   1.0
-import QGroundControl.Palette       1.0
-import QGroundControl.Controls      1.0
+import QGroundControl
+import QGroundControl.ScreenTools
+import QGroundControl.Palette
+import QGroundControl.Controls
 
 Rectangle {
     id:         _root
     color:      qgcPal.toolbarBackground
-    width:      _idealWidth < repeater.contentWidth ? repeater.contentWidth : _idealWidth
+    width:      ScreenTools.defaultFontPixelWidth * 8
     height:     Math.min(maxHeight, toolStripColumn.height + (flickable.anchors.margins * 2))
     radius:     ScreenTools.defaultFontPixelWidth / 2
 
@@ -36,9 +36,6 @@ Rectangle {
         }
         button.clicked()
     }
-
-    // Ensure we don't get narrower than content
-    property real _idealWidth: (ScreenTools.isMobile ? ScreenTools.minTouchPixels : ScreenTools.defaultFontPixelWidth * 8) + toolStripColumn.anchors.margins * 2
 
     signal dropped(int index)
 
@@ -84,7 +81,7 @@ Rectangle {
                     fontPointSize:      ScreenTools.smallFontPointSize
                     toolStripAction:    modelData
                     dropPanel:          _dropPanel
-                    onDropped:          _root.dropped(index)
+                    onDropped: (index) => _root.dropped(index)
 
                     onCheckedChanged: {
                         // We deal with exclusive check state manually since usinug autoExclusive caused all sorts of crazt problems

@@ -8,36 +8,31 @@
  ****************************************************************************/
 
 
-#include <QQmlContext>
 #include <QQmlEngine>
-#include <QSettings>
-#include <QUrl>
 #include <QDir>
 #include <QQuickWindow>
 
 #ifndef QGC_DISABLE_UVC
-#include <QCameraInfo>
+#include <QMediaDevices>
+#include <QCameraDevice>
+#include <QtCore/QPermissions>
 #endif
 
-#include "ScreenToolsController.h"
+#include "QGCApplication.h"
 #include "VideoManager.h"
 #include "QGCToolbox.h"
 #include "QGCCorePlugin.h"
-#include "QGCOptions.h"
 #include "MultiVehicleManager.h"
 #include "Settings/SettingsManager.h"
 #include "Vehicle.h"
 #include "QGCCameraManager.h"
+#include "QGCLoggingCategory.h"
 
 #if defined(QGC_GST_STREAMING)
 #include "GStreamer.h"
 #include "VideoSettings.h"
 #else
 #include "GLVideoItemStub.h"
-#endif
-
-#ifdef QGC_GST_TAISYNC_ENABLED
-#include "TaisyncHandler.h"
 #endif
 
 QGC_LOGGING_CATEGORY(VideoManagerLog, "VideoManagerLog")
@@ -106,7 +101,7 @@ VideoManager::setToolbox(QGCToolbox *toolbox)
    connect(pVehicleMgr, &MultiVehicleManager::activeVehicleChanged, this, &VideoManager::_setActiveVehicle);
 
 #if defined(QGC_GST_STREAMING)
-    GStreamer::blacklist(static_cast<VideoSettings::VideoDecoderOptions>(_videoSettings->forceVideoDecoder()->rawValue().toInt()));
+    GStreamer::blacklist(static_cast<VideoDecoderOptions>(_videoSettings->forceVideoDecoder()->rawValue().toInt()));
 #ifndef QGC_DISABLE_UVC
    // If we are using a UVC camera setup the device name
    _updateUVC();
@@ -475,12 +470,11 @@ VideoManager::_updateUVC()
         _uvcVideoSourceID = "";
     } else {
         QString videoSource = _videoSettings->videoSource()->rawValue().toString();
-        QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
-        for (const QCameraInfo &cameraInfo : cameras) {
-            if (cameraInfo.description() == videoSource) {
-                _uvcVideoSourceID = cameraInfo.deviceName();
-                qCDebug(VideoManagerLog)
-                    << "Found USB source:" << _uvcVideoSourceID << " Name:" << videoSource;
+        auto videoInputs = QMediaDevices::videoInputs();
+        for (const auto& cameraDevice: videoInputs) {
+            if (cameraDevice.description() == videoSource) {
+                _uvcVideoSourceID = cameraDevice.description();
+                qCDebug(VideoManagerLog) << "Found USB source:" << _uvcVideoSourceID << " Name:" << videoSource;
                 break;
             }
         }
@@ -488,10 +482,19 @@ VideoManager::_updateUVC()
 
     if (oldUvcVideoSrcID != _uvcVideoSourceID) {
         qCDebug(VideoManagerLog) << "UVC changed from [" << oldUvcVideoSrcID << "] to [" << _uvcVideoSourceID << "]";
+#if QT_CONFIG(permissions)
+        QCameraPermission cameraPermission;
+        if (qApp->checkPermission(cameraPermission) == Qt::PermissionStatus::Undetermined) {
+            qApp->requestPermission(cameraPermission, [](const QPermission &permission) {
+                if (permission.status() == Qt::PermissionStatus::Granted) {
+                    qgcApp()->showRebootAppMessage(tr("Restart application for changes to take effect."));
+                }
+            });
+        }
+#endif
         emit uvcVideoSourceIDChanged();
         emit isUvcChanged();
     }
-
 #endif
 }
 
@@ -590,7 +593,7 @@ VideoManager::isUvc()
 bool
 VideoManager::uvcEnabled()
 {
-    return QCameraInfo::availableCameras().count() > 0;
+    return QMediaDevices::videoInputs().count() > 0;
 }
 #endif
 
@@ -764,22 +767,6 @@ VideoManager::_updateSettings(unsigned id)
 bool
 VideoManager::_updateVideoUri(unsigned id, const QString& uri)
 {
-#if defined(QGC_GST_TAISYNC_ENABLED) && (defined(__android__) || defined(__ios__))
-    //-- Taisync on iOS or Android sends a raw h.264 stream
-    if (isTaisync()) {
-        if (id == 0) {
-            return _updateVideoUri(0, QString("tsusb://0.0.0.0:%1").arg(TAISYNC_VIDEO_UDP_PORT));
-        } if (id == 1) {
-            // FIXME: AV: TAISYNC_VIDEO_UDP_PORT is used by video stream, thermal stream should go via its own proxy
-            if (!_videoUri[1].isEmpty()) {
-                _videoUri[1].clear();
-                return true;
-            } else {
-                return false;
-            }
-        }
-    }
-#endif
     if (uri == _videoUri[id]) {
         return false;
     }
@@ -877,7 +864,7 @@ VideoManager::_setActiveVehicle(Vehicle* vehicle)
     if(_activeVehicle) {
         disconnect(_activeVehicle->vehicleLinkManager(), &VehicleLinkManager::communicationLostChanged, this, &VideoManager::_communicationLostChanged);
         if(_activeVehicle->cameraManager()) {
-            QGCCameraControl* pCamera = _activeVehicle->cameraManager()->currentCameraInstance();
+            auto pCamera = _activeVehicle->cameraManager()->currentCameraInstance();
             if(pCamera) {
                 pCamera->stopStream();
             }
@@ -889,7 +876,7 @@ VideoManager::_setActiveVehicle(Vehicle* vehicle)
         connect(_activeVehicle->vehicleLinkManager(), &VehicleLinkManager::communicationLostChanged, this, &VideoManager::_communicationLostChanged);
         if(_activeVehicle->cameraManager()) {
             connect(_activeVehicle->cameraManager(), &QGCCameraManager::streamChanged, this, &VideoManager::_restartAllVideos);
-            QGCCameraControl* pCamera = _activeVehicle->cameraManager()->currentCameraInstance();
+            auto pCamera = _activeVehicle->cameraManager()->currentCameraInstance();
             if(pCamera) {
                 pCamera->resumeStream();
             }
