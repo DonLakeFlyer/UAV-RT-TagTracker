@@ -36,8 +36,8 @@ installer {
         QMAKE_POST_LINK += && rsync -a --delete $${TARGET}.app staging
         QMAKE_POST_LINK += && rm -rf /tmp/tmp.dmg
         QMAKE_POST_LINK += && rm -rf package/$${TARGET}.dmg
-        QMAKE_POST_LINK += && hdiutil -verbose create /tmp/tmp.dmg -ov -volname "$${TARGET}-$${MAC_VERSION}" -fs HFS+ -srcfolder "staging"
-        QMAKE_POST_LINK += && hdiutil -verbose convert /tmp/tmp.dmg -format UDBZ -o package/$${TARGET}.dmg
+        QMAKE_POST_LINK += && hdiutil create -verbose /tmp/tmp.dmg -ov -volname "$${TARGET}-$${MAC_VERSION}" -fs HFS+ -srcfolder "staging"
+        QMAKE_POST_LINK += && hdiutil convert -verbose /tmp/tmp.dmg -format UDBZ -o package/$${TARGET}.dmg
         QMAKE_POST_LINK += && rm /tmp/tmp.dmg
     }
     WindowsBuild {
