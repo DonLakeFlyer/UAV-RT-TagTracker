@@ -8,7 +8,6 @@
 #include "QmlComponentInfo.h"
 #include "TunnelProtocol.h"
 #include "PulseInfoList.h"
-#include "FTPManager.h"
 
 #include <QDebug>
 #include <QPointF>
