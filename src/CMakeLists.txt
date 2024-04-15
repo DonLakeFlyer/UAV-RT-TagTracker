@@ -52,6 +52,7 @@ target_link_libraries(qgc
 		Qt6::QuickControls2
 		Qt6::QuickWidgets
 		Qt6::Widgets
+		Qt6::Core5Compat
 
 		ADSB
 		AirLink
@@ -86,12 +87,19 @@ target_link_libraries(qgc
 target_include_directories(qgc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(ANDROID)
-	target_sources(qgc
-		PRIVATE
-			${CMAKE_SOURCE_DIR}/android/src/AndroidInterface.cc
-			${CMAKE_SOURCE_DIR}/android/src/AndroidInterface.h
-	)
-	target_include_directories(qgc PUBLIC ${CMAKE_SOURCE_DIR}/android/src)
+    target_sources(qgc
+        PUBLIC
+            ${CMAKE_SOURCE_DIR}/android/src/AndroidInit.cpp
+            ${CMAKE_SOURCE_DIR}/android/src/AndroidInterface.cc
+            ${CMAKE_SOURCE_DIR}/android/src/AndroidInterface.h
+    )
+
+    target_link_libraries(qgc
+        PUBLIC
+            qtandroidserialport
+    )
+
+    target_include_directories(qgc PUBLIC ${CMAKE_SOURCE_DIR}/android/src)
 else()
 	target_sources(qgc
 		PRIVATE
