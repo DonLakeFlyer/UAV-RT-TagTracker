@@ -1061,6 +1061,28 @@ void CustomPlugin::downloadLogDirFiles(const QString& logDir)
 
     qCDebug(CustomPluginLog) << "downloadLogDirFiles - logDir" << logDir;
 
+    QString logSavePath = QStringLiteral("%1/%2").arg(_logSavePath(), logDir);
+    qCDebug(CustomPluginLog) << "downloadLogDirFiles - requesting download - logDir:logSavePath" << logDir << logSavePath;
+
+    // Delete any previous download directory
+    QDir qgcLogDir(_logSavePath());
+    if (qgcLogDir.exists(logDir)) {
+        QDir logSaveDir(logSavePath);
+        qCDebug(CustomPluginLog) << "downloadLogDirFiles - removing existing directory" << logSaveDir.path();
+        if (!logSaveDir.removeRecursively()) {
+            qCDebug(CustomPluginLog) << "downloadLogDirFiles - removeRecursively: returned false";
+            emit downloadLogDirFilesComplete(QStringLiteral("removeRecursively failed"));
+            return;
+        }
+    }
+
+    // Create new download directory
+    if (!qgcLogDir.mkdir(logDir)) {
+        qCDebug(CustomPluginLog) << "downloadLogDirFiles - mkdir: returned false";
+        emit downloadLogDirFilesComplete(QStringLiteral("mkdir failed"));
+        return;
+    }
+
     auto ftpManager = vehicle->ftpManager();
     connect(ftpManager, &FTPManager::listDirectoryComplete, this, &CustomPlugin::_logDirDownloadedForFiles);
     _logDirPathOnVehicle = logDir;
@@ -1085,7 +1107,7 @@ void CustomPlugin::_logDirDownloadedForFiles(const QStringList& dirList, const Q
     // For each entry in the dirList, look for a directories which start with "Logs-"
     _logFileDownloadList.clear();
     for (const QString& entry: dirList) {
-        if (entry.startsWith("F") && !entry.startsWith("F.")) {
+        if (entry.startsWith("F") && !entry.startsWith("F.") && !entry.startsWith("Fdata_record") && !entry.startsWith("Fspectro_segment")) {
             // Note MavlinkTagController only sends file name. It doesn't include file size.
             _logFileDownloadList.append(entry.last(entry.length() - 1));
         }
@@ -1115,25 +1137,6 @@ void CustomPlugin::_logFilesDownloadWorker(void)
     QString logSavePath = QStringLiteral("%1/%2").arg(_logSavePath(), _logDirPathOnVehicle);
     QString logFilePath = QStringLiteral("%1/%2").arg(_logDirPathOnVehicle, _logFileDownloadList[_curLogFileDownloadIndex]);
     qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - requesting download - logSavePath:logFilePath" << logSavePath << logFilePath;
-
-    // Delete any previous download directory
-    QDir qgcLogDir(_logSavePath());
-    if (qgcLogDir.exists(_logDirPathOnVehicle)) {
-        QDir logSaveDir(logSavePath);
-        qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - removing existing directory" << logSaveDir.path();
-        if (!logSaveDir.removeRecursively()) {
-            qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - removeRecursively: returned false";
-            emit downloadLogDirFilesComplete(QStringLiteral("removeRecursively failed"));
-            return;
-        }
-    }
-
-    // Create new download directory
-    if (!qgcLogDir.mkdir(_logDirPathOnVehicle)) {
-        qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - mkdir: returned false";
-        emit downloadLogDirFilesComplete(QStringLiteral("mkdir failed"));
-        return;
-    }
 
     if (!ftpManager->download(MAV_COMP_ID_ONBOARD_COMPUTER, logFilePath, logSavePath)) {
         qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - download: returned false";
