@@ -26,11 +26,6 @@ DEFINES += APP_VERSION_STR=\"\\\"$$CUSTOM_QGC_VERSION\\\"\"
 
 message(Custom QGC Version: $${CUSTOM_QGC_VERSION})
 
-# We implement our own plugin factories
-CONFIG  +=  \
-    QGC_DISABLE_PX4_PLUGIN_FACTORY \
-    QGC_DISABLE_APM_PLUGIN_FACTORY
-
 # Remove code which the Herelink doesn't need
 DEFINES += \
     QGC_GST_TAISYNC_DISABLED
@@ -102,11 +97,8 @@ INCLUDEPATH += \
 
 # TagTracker custom sources
 SOURCES += \
-    $$PWD/src/CustomFirmwarePluginFactory.cc \
     $$PWD/src/CustomOptions.cc \
     $$PWD/src/CustomPlugin.cc \
-    $$PWD/src/CustomPX4FirmwarePlugin.cc \
-    $$PWD/src/CustomArduCopterFirmwarePlugin.cc \
     $$PWD/src/CustomSettings.cc \
     $$PWD/src/DetectorInfo.cc \
     $$PWD/src/DetectorInfoListModel.cc \
@@ -115,11 +107,8 @@ SOURCES += \
     $$PWD/src/PulseInfoList.cc \
 
 HEADERS += \
-    $$PWD/src/CustomFirmwarePluginFactory.h \
     $$PWD/src/CustomOptions.h \
     $$PWD/src/CustomPlugin.h \
-    $$PWD/src/CustomPX4FirmwarePlugin.h \
-    $$PWD/src/CustomArduCopterFirmwarePlugin.h \
     $$PWD/src/CustomSettings.h \
     $$PWD/src/DetectorInfo.h \
     $$PWD/src/DetectorInfoListModel.h \
