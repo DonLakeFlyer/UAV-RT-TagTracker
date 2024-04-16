@@ -6,7 +6,6 @@
 #include "AppSettings.h"
 #include "FlyViewSettings.h"
 #include "TunnelProtocol.h"
-#include "FTPManager.h"
 #include "DetectorInfoListModel.h"
 #include "QGC.h"
 #include "QGCLoggingCategory.h"
@@ -1006,38 +1005,6 @@ void CustomPlugin::_sendTunnelCommand(uint8_t* payload, size_t payloadSize)
 QmlObjectListModel* CustomPlugin::customMapItems(void)
 {
     return &_customMapItems;
-}
-
-void CustomPlugin::_ftpDownloadComplete(const QString& file, const QString& errorMsg)
-{
-    qgcApp()->showAppMessage(QString("Download Complete %1").arg(errorMsg), file);
-}
-
-void CustomPlugin::_ftpCommandError(const QString& msg)
-{
-    qgcApp()->showAppMessage(msg);
-}
-
-void CustomPlugin::downloadLogs()
-{
-    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
-    if (!vehicle) {
-        qCDebug(CustomPluginLog) << "downloadLogs called with no vehicle active";
-        return;
-    }
-
-    auto ftpManager = vehicle->ftpManager();
-
-    connect(ftpManager, &FTPManager::downloadComplete,  this, &CustomPlugin::_ftpDownloadComplete);
-    connect(ftpManager, &FTPManager::commandError,      this, &CustomPlugin::_ftpCommandError);
-
-    bool success = ftpManager->download(
-                        MAV_COMP_ID_ONBOARD_COMPUTER,
-                        "/home/vmware/MavlinkTagController.log",
-                        _csvLogFilePath());
-    if (!success) {
-        qCDebug(CustomPluginLog) << "FTP download failed to start";
-    }
 }
 
 void CustomPlugin::_controllerHeartbeatFailed()

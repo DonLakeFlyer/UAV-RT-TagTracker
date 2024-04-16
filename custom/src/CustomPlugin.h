@@ -63,7 +63,6 @@ public:
     Q_INVOKABLE void startDetection     (void);
     Q_INVOKABLE void stopDetection      (void);
     Q_INVOKABLE void rawCapture         (void);
-    Q_INVOKABLE void downloadLogs       (void);
 
     // Overrides from QGCCorePlugin
     bool                mavlinkMessage          (Vehicle* vehicle, LinkInterface* link, mavlink_message_t message) final;
@@ -90,8 +89,6 @@ private slots:
     void _updateFlightMachineActive     (bool flightMachineActive);
     void _mavCommandResult              (int vehicleId, int component, int command, int result, bool noResponseFromVehicle);
     void _tunnelCommandAckFailed        (void);
-    void _ftpDownloadComplete           (const QString& file, const QString& errorMsg);
-    void _ftpCommandError               (const QString& msg);
     void _controllerHeartbeatFailed     (void);
 
 private:
