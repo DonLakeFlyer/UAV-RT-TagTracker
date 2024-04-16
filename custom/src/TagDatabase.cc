@@ -377,7 +377,7 @@ void TagDatabase::_updateNextIds(void)
     _nextTagId = maxId + 2;
 
     maxId = 0;
-    for (int i=0; i<_tagInfoListModel->count(); i++) {
+    for (int i=0; i<_tagManufacturerListModel->count(); i++) {
         TagManufacturer* tagManufacturer = _tagManufacturerListModel->value<TagManufacturer*>(i);
         maxId = std::max(tagManufacturer->id()->rawValue().toUInt(), maxId);
     }
