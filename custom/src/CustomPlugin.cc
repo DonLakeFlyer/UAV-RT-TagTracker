@@ -9,6 +9,7 @@
 #include "DetectorInfoListModel.h"
 #include "QGC.h"
 #include "QGCLoggingCategory.h"
+#include "FTPManager.h"
 
 #include "coder_array.h"
 #include "bearing.h"
@@ -77,6 +78,7 @@ const QVariantList& CustomPlugin::toolBarIndicators(void)
 {
     QGCCorePlugin::toolBarIndicators();
     _toolBarIndicatorList.append(QVariant::fromValue(QUrl::fromUserInput("qrc:/qml/ControllerIndicator.qml")));
+    _toolBarIndicatorList.append(QVariant::fromValue(QUrl::fromUserInput("qrc:/qml/LogDownloadIndicator.qml")));
     return _toolBarIndicatorList;
 }
 
@@ -229,7 +231,7 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
 
 }
 
-QString CustomPlugin::_csvLogFilePath(void)
+QString CustomPlugin::_logSavePath(void)
 {
     return qgcApp()->toolbox()->settingsManager()->appSettings()->logSavePath();
 }
@@ -241,7 +243,7 @@ void CustomPlugin::_csvStartFullPulseLog(void)
         return;
     }
 
-    _csvFullPulseLogFile.setFileName(QString("%1/Pulse-%2.csv").arg(_csvLogFilePath(), QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data()));
+    _csvFullPulseLogFile.setFileName(QString("%1/Pulse-%2.csv").arg(_logSavePath(), QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data()));
     qCDebug(CustomPluginLog) << "Full CSV Pulse logging to:" << _csvFullPulseLogFile.fileName();
     if (!_csvFullPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Unbuffered)) {
         qgcApp()->showAppMessage(QString("Open of full pulse csv log file failed: %1").arg(_csvFullPulseLogFile.errorString()));
@@ -258,7 +260,7 @@ void CustomPlugin::_csvStopFullPulseLog(void)
 
 void CustomPlugin::_csvClearPrevRotationLogs(void)
 {
-    QDir csvLogDir(_csvLogFilePath(), {"Rotation-*.csv"});
+    QDir csvLogDir(_logSavePath(), {"Rotation-*.csv"});
     for (const QString & filename: csvLogDir.entryList()){
         csvLogDir.remove(filename);
     }
@@ -271,7 +273,7 @@ void CustomPlugin::_csvStartRotationPulseLog(int rotationCount)
         return;
     }
 
-    _csvRotationPulseLogFile.setFileName(QString("%1/Rotation-%2.csv").arg(_csvLogFilePath()).arg(rotationCount));
+    _csvRotationPulseLogFile.setFileName(QString("%1/Rotation-%2.csv").arg(_logSavePath()).arg(rotationCount));
     qCDebug(CustomPluginLog) << "Rotation CSV Pulse logging to:" << _csvRotationPulseLogFile.fileName();
     if (!_csvRotationPulseLogFile.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Unbuffered)) {
         qgcApp()->showAppMessage(QString("Open of rotation pulse csv log file failed: %1").arg(_csvRotationPulseLogFile.errorString()));
@@ -1011,4 +1013,151 @@ void CustomPlugin::_controllerHeartbeatFailed()
 {
     _controllerLostHeartbeat = true;
     emit controllerLostHeartbeatChanged();
+}
+
+void CustomPlugin::downloadLogDirList(void)
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        return;
+    }
+
+    auto ftpManager = vehicle->ftpManager();
+    connect(ftpManager, &FTPManager::listDirectoryComplete, this, &CustomPlugin::_logDirListDownloaded);
+    if (!ftpManager->listDirectory(MAV_COMP_ID_ONBOARD_COMPUTER, ".")) {
+        qCDebug(CustomPluginLog) << "downloadLogDirList: returned false";
+        emit logDirListDownloaded(QStringList(), QStringLiteral("download failed"));
+    }
+}
+
+void CustomPlugin::_logDirListDownloaded(const QStringList& dirList, const QString& errorMsg)
+{
+    disconnect(qobject_cast<FTPManager*>(sender()), &FTPManager::listDirectoryComplete, this, &CustomPlugin::_logDirListDownloaded);
+
+    if (!errorMsg.isEmpty()) {
+        qCDebug(CustomPluginLog) << "_logDirListDownloaded: error" << errorMsg;
+        emit logDirListDownloaded(QStringList(), errorMsg);
+        return;
+    }
+    
+    QStringList logDirectories;
+
+    // For each entry in the dirList, look for a directories which start with "Logs-"
+    for (const QString& entry: dirList) {
+        if (entry.startsWith("DLogs-")) {
+            logDirectories.append(entry.last(entry.length() - 1));
+        }
+    }
+    
+    emit logDirListDownloaded(logDirectories, errorMsg);
+}
+
+void CustomPlugin::downloadLogDirFiles(const QString& logDir)
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        return;
+    }
+
+    qCDebug(CustomPluginLog) << "downloadLogDirFiles - logDir" << logDir;
+
+    auto ftpManager = vehicle->ftpManager();
+    connect(ftpManager, &FTPManager::listDirectoryComplete, this, &CustomPlugin::_logDirDownloadedForFiles);
+    _logDirPathOnVehicle = logDir;
+    if (!ftpManager->listDirectory(MAV_COMP_ID_ONBOARD_COMPUTER, logDir)) {
+        qCDebug(CustomPluginLog) << "downloadLogDirFiles - listDirectory: returned false";
+        emit downloadLogDirFilesComplete(QStringLiteral("listDirectory failed"));
+    }
+}
+
+void CustomPlugin::_logDirDownloadedForFiles(const QStringList& dirList, const QString& errorMsg)
+{
+    qCDebug(CustomPluginLog) << "_logDirDownloadedForFiles - dirList:errorMsg" << dirList << errorMsg;
+
+    disconnect(qobject_cast<FTPManager*>(sender()), &FTPManager::listDirectoryComplete, this, &CustomPlugin::_logDirDownloadedForFiles);
+
+    if (!errorMsg.isEmpty()) {
+        qCDebug(CustomPluginLog) << "_logDirDownloadedForFiles: error" << errorMsg;
+        emit downloadLogDirFilesComplete(errorMsg);
+        return;
+    }
+    
+    // For each entry in the dirList, look for a directories which start with "Logs-"
+    _logFileDownloadList.clear();
+    for (const QString& entry: dirList) {
+        if (entry.startsWith("F") && !entry.startsWith("F.")) {
+            // Note MavlinkTagController only sends file name. It doesn't include file size.
+            _logFileDownloadList.append(entry.last(entry.length() - 1));
+        }
+    }
+    qCDebug(CustomPluginLog) << "_logDirDownloadedForFiles: _logFileDownloadList" << _logFileDownloadList;
+    
+    if (_logFileDownloadList.count() == 0) {
+        qCDebug(CustomPluginLog) << "_logDirDownloadedForFiles: no files found";
+        emit downloadLogDirFilesComplete(QStringLiteral("no files found"));
+        return;
+    }
+
+    _curLogFileDownloadIndex = 0;
+    _logFilesDownloadWorker();
+}
+
+void CustomPlugin::_logFilesDownloadWorker(void)
+{
+    Vehicle* vehicle = qgcApp()->toolbox()->multiVehicleManager()->activeVehicle();
+    if (!vehicle) {
+        return;
+    }
+
+    auto ftpManager = vehicle->ftpManager();
+    connect(ftpManager, &FTPManager::downloadComplete, this, &CustomPlugin::_logFileDownloadComplete);
+
+    QString logSavePath = QStringLiteral("%1/%2").arg(_logSavePath(), _logDirPathOnVehicle);
+    QString logFilePath = QStringLiteral("%1/%2").arg(_logDirPathOnVehicle, _logFileDownloadList[_curLogFileDownloadIndex]);
+    qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - requesting download - logSavePath:logFilePath" << logSavePath << logFilePath;
+
+    // Delete any previous download directory
+    QDir qgcLogDir(_logSavePath());
+    if (qgcLogDir.exists(_logDirPathOnVehicle)) {
+        QDir logSaveDir(logSavePath);
+        qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - removing existing directory" << logSaveDir.path();
+        if (!logSaveDir.removeRecursively()) {
+            qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - removeRecursively: returned false";
+            emit downloadLogDirFilesComplete(QStringLiteral("removeRecursively failed"));
+            return;
+        }
+    }
+
+    // Create new download directory
+    if (!qgcLogDir.mkdir(_logDirPathOnVehicle)) {
+        qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - mkdir: returned false";
+        emit downloadLogDirFilesComplete(QStringLiteral("mkdir failed"));
+        return;
+    }
+
+    if (!ftpManager->download(MAV_COMP_ID_ONBOARD_COMPUTER, logFilePath, logSavePath)) {
+        qCDebug(CustomPluginLog) << "_logFilesDownloadWorker - download: returned false";
+        emit downloadLogDirFilesComplete(QStringLiteral("download failed"));
+        return;
+    }
+}
+
+void CustomPlugin::_logFileDownloadComplete(const QString& file, const QString& errorMsg)
+{
+    disconnect(qobject_cast<FTPManager*>(sender()), &FTPManager::downloadComplete, this, &CustomPlugin::_logFileDownloadComplete);
+
+    if (!errorMsg.isEmpty()) {
+        qCDebug(CustomPluginLog) << QStringLiteral("_logFileDownloadComplete: failed to download file(%1) - error(%2)").arg(file).arg(errorMsg);
+        emit downloadLogDirFilesComplete(errorMsg);
+        return;
+    }
+
+    qCDebug(CustomPluginLog) << "_logFileDownloadComplete: downloaded file successfully -" << file;
+
+    _curLogFileDownloadIndex++;
+    if (_curLogFileDownloadIndex < _logFileDownloadList.count()) {
+        _logFilesDownloadWorker();
+    } else {
+        emit downloadLogDirFilesComplete(QString());
+    }
 }

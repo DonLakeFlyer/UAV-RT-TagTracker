@@ -63,6 +63,8 @@ public:
     Q_INVOKABLE void startDetection     (void);
     Q_INVOKABLE void stopDetection      (void);
     Q_INVOKABLE void rawCapture         (void);
+    Q_INVOKABLE void downloadLogDirList (void);
+    Q_INVOKABLE void downloadLogDirFiles(const QString& dirPath);
 
     // Overrides from QGCCorePlugin
     bool                mavlinkMessage          (Vehicle* vehicle, LinkInterface* link, mavlink_message_t message) final;
@@ -81,15 +83,20 @@ signals:
     void pulseInfoListsChanged          (void);
     void controllerLostHeartbeatChanged ();
     void controllerStatusChanged        ();
+    void logDirListDownloaded           (const QStringList& dirList, const QString& errorMsg);
+    void downloadLogDirFilesComplete    (const QString& errorMsg);
 
 private slots:
     void _vehicleStateRawValueChanged   (QVariant rawValue);
     void _advanceStateMachine           (void);
-    void _vehicleStateTimeout        (void);
+    void _vehicleStateTimeout           (void);
     void _updateFlightMachineActive     (bool flightMachineActive);
     void _mavCommandResult              (int vehicleId, int component, int command, int result, bool noResponseFromVehicle);
     void _tunnelCommandAckFailed        (void);
     void _controllerHeartbeatFailed     (void);
+    void _logDirListDownloaded          (const QStringList& dirList, const QString& errorMsg);
+    void _logDirDownloadedForFiles      (const QStringList& dirList, const QString& errorMsg);
+    void _logFileDownloadComplete       (const QString& file, const QString& errorMsg);
 
 private:
     typedef enum {
@@ -133,7 +140,7 @@ private:
     void    _sendEndTags                (void);
     void    _setupDelayForSteadyCapture (void);
     void    _rotationDelayComplete      (void);
-    QString _csvLogFilePath             (void);
+    QString _logSavePath             (void);
     void    _csvStartFullPulseLog       (void);
     void    _csvStopFullPulseLog        (void);
     void    _csvClearPrevRotationLogs   (void);
@@ -141,6 +148,7 @@ private:
     void    _csvStopRotationPulseLog    (bool calcBearing);
     void    _csvLogPulse                (QFile& csvFile, const TunnelProtocol::PulseInfo_t& pulseInfo);
     void    _csvLogRotationStartStop    (QFile& csvFile, bool startRotation);
+    void    _logFilesDownloadWorker     (void);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -177,6 +185,10 @@ private:
 
     bool                    _controllerLostHeartbeat { true };
     QTimer                  _controllerHeartbeatTimer;
+
+    int                     _curLogFileDownloadIndex;
+    QString                 _logDirPathOnVehicle;
+    QStringList             _logFileDownloadList;
 };
 
 class PulseRoseMapItem : public QObject
