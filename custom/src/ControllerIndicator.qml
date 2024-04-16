@@ -104,7 +104,7 @@ Item {
         QGCPopupDialog {
             id:         settingsDialog
             title:      qsTr("Settings")
-            buttons:    StandardButton.Close
+            buttons:    Dialog.Close
 
             property var _customSettings: QGroundControl.corePlugin.customSettings
 
@@ -144,7 +144,7 @@ Item {
         QGCPopupDialog {
             id:         manufacturerDialog
             title:      qsTr("Tag Manufacturer")
-            buttons:    StandardButton.Close
+            buttons:    Dialog.Close
 
             property var tagManufacturer
 
@@ -175,7 +175,7 @@ Item {
         QGCPopupDialog {
             id:         manufacturersDialog
             title:      qsTr("Manufacturers")
-            buttons:    StandardButton.Close
+            buttons:    Dialog.Close
 
             property var tagDatabase: QGroundControl.corePlugin.tagDatabase
 
@@ -292,7 +292,7 @@ Item {
         QGCPopupDialog {
             id:         tagInfoDialog
             title:      qsTr("Tag Info")
-            buttons:    StandardButton.Close
+            buttons:    Dialog.Close
 
             property var tagInfo
             property var _manufacturerList: QGroundControl.corePlugin.tagDatabase.tagManufacturerList
