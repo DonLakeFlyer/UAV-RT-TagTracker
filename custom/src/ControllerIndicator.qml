@@ -20,7 +20,7 @@ import QGroundControl.Palette
 import MAVLink
 
 Item {
-    id:                 _root
+    id:                 control
     anchors.margins:    -ScreenTools.defaultFontPixelHeight / 2
     anchors.top:        parent.top
     anchors.bottom:     parent.bottom
@@ -29,7 +29,7 @@ Item {
     property bool showIndicator: true
 
     property var    activeVehicle:  QGroundControl.multiVehicleManager.activeVehicle
-    property real   maxSNR:         QGroundControl.corePlugin.customSettings.maxPulse.rawValue
+    property real   maxStrength:         QGroundControl.corePlugin.customSettings.maxPulseStrength.rawValue
 
     Row {
         id:             rowLayout
@@ -40,7 +40,15 @@ Item {
         Rectangle {
             height: parent.height
             width:  ScreenTools.defaultFontPixelWidth * 3
-            color:  QGroundControl.corePlugin.controllerLostHeartbeat ? "red" : "green" 
+            color:  QGroundControl.corePlugin.controllerLostHeartbeat ? "red" : "green"
+
+            QGCLabel {
+                anchors.fill:           parent
+                text:                   QGroundControl.corePlugin.controllerCPUTemp.toFixed(0)
+                color:                  "black"
+                horizontalAlignment:    Text.AlignHCenter
+                verticalAlignment:      Text.AlignVCenter
+            }
         }
 
         ColumnLayout {
@@ -51,7 +59,7 @@ Item {
                 model: QGroundControl.corePlugin.detectorInfoList
 
                 RowLayout {
-                    property real filteredSNR: Math.max(0, Math.min(object.lastPulseSNR, maxSNR))
+                    property real filteredSNR: Math.max(0, Math.min(object.lastPulseStrength, maxStrength))
 
                     Rectangle {
                         id:                     pulseRect
@@ -65,7 +73,7 @@ Item {
                             anchors.topMargin:      2
                             anchors.bottomMargin:   2
                             anchors.leftMargin:     2
-                            anchors.rightMargin:    ((maxSNR - filteredSNR) / maxSNR) *  (parent.width - 4)
+                            anchors.rightMargin:    ((maxStrength - filteredSNR) / maxStrength) *  (parent.width - 4)
                             anchors.fill:           parent
                             color:                  object.lastPulseStale ? "yellow" : "green"
                             visible:                !object.heartbeatLost
@@ -84,7 +92,7 @@ Item {
 
                     QGCLabel {
                         Layout.preferredHeight: pulseRect.height
-                        text:                   object.tagId + object.tagLabel
+                        text:                   object.tagId + object.tagLabel[0]
                         fontSizeMode:           Text.VerticalFit
                         verticalAlignment:      Text.AlignVCenter
                     }
@@ -95,46 +103,17 @@ Item {
 
     MouseArea {
         anchors.fill:   rowLayout
-        onClicked:      mainWindow.showIndicatorPopup(_root, indicatorPopup)
+        onClicked:      mainWindow.showIndicatorDrawer(indicatorPopup, control)
     }
 
     Component {
-        id: settingsDialogComponent
+        id: indicatorPopup
 
-        QGCPopupDialog {
-            id:         settingsDialog
-            title:      qsTr("Settings")
-            buttons:    Dialog.Close
-
-            property var _customSettings: QGroundControl.corePlugin.customSettings
-
-            Column {
-                spacing: ScreenTools.defaultFontPixelHeight
-
-                FactCheckBox {
-                    text:   qsTr("Show pulse strength on map")
-                    fact:   _customSettings.showPulseOnMap
-                }
-
-                FactTextFieldGrid {
-                    id: grid
-
-                    factList: [
-                        _customSettings.altitude,
-                        _customSettings.divisions,
-                        _customSettings.k,
-                        _customSettings.falseAlarmProbability,
-                        _customSettings.maxPulse,
-                        _customSettings.antennaOffset,
-                    ]
-                }
-
-                FactComboBox {
-                    fact:           QGroundControl.corePlugin.customSettings.sdrType
-                    indexModel:     false
-                    sizeToContents: true
-                }
-            }
+        ToolIndicatorPage {
+            showExpand:         true
+            waitForParameters:  false
+            contentComponent:   indciatorContentComponent
+            expandedComponent:  indicatorExpandedComponent
         }
     }
 
@@ -342,114 +321,142 @@ Item {
     }
 
     Component {
-        id: indicatorPopup
+        id: indciatorContentComponent
 
-        Rectangle {
-            id:     popupRect
-            width:  mainWindow.width * 0.75
-            height: mainWindow.height - ScreenTools.toolbarHeight - (ScreenTools.defaultFontPixelWidth * 0.75 * 2)
-            color:  "white"
+        ColumnLayout {
+            spacing: ScreenTools.defaultFontPixelHeight
 
             property var tagDatabase: QGroundControl.corePlugin.tagDatabase
 
-            QGCFlickable {
-                anchors.margins:    ScreenTools.defaultFontPixelHeight
-                anchors.fill:       parent
-                contentHeight:      mainLayout.height
-                clip:               false
-                
-                ColumnLayout {
-                    id:         mainLayout
-                    spacing:    ScreenTools.defaultFontPixelHeight
+            RowLayout {
+                spacing: ScreenTools.defaultFontPixelWidth
 
-                    RowLayout {
-                        spacing: ScreenTools.defaultFontPixelWidth
-
-                        QGCButton {
-                            text: qsTr("Settings")
-                            onClicked: {
-                                mainWindow.hideIndicatorPopup()
-                                settingsDialogComponent.createObject(mainWindow).open()
-                            }
-                        }
-
-                        QGCButton {
-                            text:       qsTr("Manufacturers")
-                            onClicked:  manufacturersDialogComponent.createObject(mainWindow).open()
-                        }
-
-                        QGCButton {
-                            text:       qsTr("New Tag")
-                            onClicked: { 
-                                if (tagDatabase.tagManufacturerList.count == 0) {
-                                    mainWindow.showMessageDialog(qsTr("New Tag"), qsTr("You must add a Manufacturer first."))
-                                } else {
-                                    tagInfoDialogComponent.createObject(mainWindow, { tagInfo: tagDatabase.newTagInfo() }).open()
-                                }
-                            }
-                        }
+                QGCButton {
+                    text:       qsTr("Capture Screen")
+                    onClicked: {
+                        mainWindow.closeIndicatorDrawer()
+                        QGroundControl.corePlugin.captureScreen()
                     }
+                }
 
-                    GridLayout {
-                        rows:       tagDatabase.tagInfoList.count + 1
-                        columns:    5
-                        flow:       GridLayout.TopToBottom
+                QGCButton {
+                    text:       qsTr("Manufacturers")
+                    onClicked:  manufacturersDialogComponent.createObject(mainWindow).open()
+                }
 
-                        QGCLabel { }
-                        Repeater {
-                            model: tagDatabase.tagInfoList
-
-                            FactCheckBox { 
-                                fact:       object.selected 
-                                onClicked:  QGroundControl.corePlugin.tagDatabase.save()
-                            }
-                        }
-
-                        QGCLabel { text: qsTr("Id") }
-                        Repeater {
-                            model: tagDatabase.tagInfoList
-
-                            QGCLabel { text: object.id.valueString }
-                        }
-
-                        QGCLabel { text: qsTr("Name") }
-                        Repeater {
-                            model: tagDatabase.tagInfoList
-
-                            QGCLabel { text: object.name.valueString }
-                        }
-
-                        QGCLabel { text: qsTr("Frequency") }
-                        Repeater {
-                            model: tagDatabase.tagInfoList
-
-                            QGCLabel { text: object.frequencyHz.valueString }
-                        }
-
-                        QGCLabel { }
-                        Repeater {
-                            model: tagDatabase.tagInfoList
-
-                            QGCButton {
-                                text:       qsTr("Edit")
-                                onClicked:  tagInfoDialogComponent.createObject(mainWindow, { tagInfo: object }).open()
-                            }
-                        }
-
-                        QGCLabel { }
-                        Repeater {
-                            model: tagDatabase.tagInfoList
-
-                            QGCButton {
-                                text:       qsTr("Del")
-                                onClicked: {
-                                    tagDatabase.deleteTagInfoListItem(object)
-                                    QGroundControl.corePlugin.tagDatabase.save()
-                                }
-                            }
+                QGCButton {
+                    text:       qsTr("New Tag")
+                    onClicked: { 
+                        if (tagDatabase.tagManufacturerList.count == 0) {
+                            mainWindow.showMessageDialog(qsTr("New Tag"), qsTr("You must add a Manufacturer first."))
+                        } else {
+                            tagInfoDialogComponent.createObject(mainWindow, { tagInfo: tagDatabase.newTagInfo() }).open()
                         }
                     }
                 }
+            }
+
+            GridLayout {
+                rows:       tagDatabase.tagInfoList.count + 1
+                columns:    5
+                flow:       GridLayout.TopToBottom
+
+                QGCLabel { }
+                Repeater {
+                    model: tagDatabase.tagInfoList
+
+                    FactCheckBox { 
+                        fact:       object.selected 
+                        onClicked:  QGroundControl.corePlugin.tagDatabase.save()
+                    }
+                }
+
+                QGCLabel { text: qsTr("Id") }
+                Repeater {
+                    model: tagDatabase.tagInfoList
+
+                    QGCLabel { text: object.id.valueString }
+                }
+
+                QGCLabel { text: qsTr("Name") }
+                Repeater {
+                    model: tagDatabase.tagInfoList
+
+                    QGCLabel { text: object.name.valueString }
+                }
+
+                QGCLabel { text: qsTr("Frequency") }
+                Repeater {
+                    model: tagDatabase.tagInfoList
+
+                    QGCLabel { text: object.frequencyHz.valueString }
+                }
+
+                QGCLabel { }
+                Repeater {
+                    model: tagDatabase.tagInfoList
+
+                    QGCButton {
+                        text:       qsTr("Edit")
+                        onClicked:  tagInfoDialogComponent.createObject(mainWindow, { tagInfo: object }).open()
+                    }
+                }
+
+                QGCLabel { }
+                Repeater {
+                    model: tagDatabase.tagInfoList
+
+                    QGCButton {
+                        text:       qsTr("Del")
+                        onClicked: {
+                            tagDatabase.deleteTagInfoListItem(object)
+                            QGroundControl.corePlugin.tagDatabase.save()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: indicatorExpandedComponent
+
+        ColumnLayout {
+            spacing: ScreenTools.defaultFontPixelHeight
+
+            property var _customSettings: QGroundControl.corePlugin.customSettings
+
+            FactCheckBox {
+                text:   qsTr("Use SNR for pulse strength")
+                fact:   _customSettings.useSNRForPulseStrength
+            }
+
+            QGCLabel {
+                text:   _customSettings.useSNRForPulseStrength.rawValue ? qsTr("Using snr for pulse strength") : qsTr("Using stft_score for pulse strength")
+            }
+
+            FactCheckBox {
+                text:   qsTr("Show pulse strength on map")
+                fact:   _customSettings.showPulseOnMap
+            }
+
+            FactTextFieldGrid {
+                id: grid
+
+                factList: [
+                    _customSettings.altitude,
+                    _customSettings.divisions,
+                    _customSettings.k,
+                    _customSettings.falseAlarmProbability,
+                    _customSettings.maxPulseStrength,
+                    _customSettings.antennaOffset,
+                ]
+            }
+
+            FactComboBox {
+                fact:           QGroundControl.corePlugin.customSettings.sdrType
+                indexModel:     false
+                sizeToContents: true
             }
         }
     }

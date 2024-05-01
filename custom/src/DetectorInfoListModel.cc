@@ -64,11 +64,11 @@ void DetectorInfoListModel::handleTunnelPulse(const mavlink_tunnel_t& tunnel)
     }
 }
 
-void DetectorInfoListModel::resetMaxSNR()
+void DetectorInfoListModel::resetMaxStrength()
 {
     for (int i=0; i<count(); i++) {
         DetectorInfo* detectorInfo = qobject_cast<DetectorInfo*>(get(i));
-        detectorInfo->resetMaxSNR();
+        detectorInfo->resetMaxStrength();
     }
 }
 
@@ -80,15 +80,15 @@ void DetectorInfoListModel::resetPulseGroupCount()
     }
 }
 
-double DetectorInfoListModel::maxSNR() const
+double DetectorInfoListModel::maxStrength() const
 {
-    double maxSNR = 0.0;
+    double maxStrength = 0.0;
     for (int i=0; i<count(); i++) {
         const DetectorInfo* detectorInfo = qobject_cast<const DetectorInfo*>((*this)[i]);
-        maxSNR = std::max(maxSNR, detectorInfo->maxSNR());
+        maxStrength = std::max(maxStrength, detectorInfo->maxStrength());
     }
 
-    return maxSNR;
+    return maxStrength;
 }
 
 bool DetectorInfoListModel::allHeartbeatCountsReached(uint32_t targetHeartbeatCount) const

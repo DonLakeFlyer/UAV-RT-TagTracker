@@ -22,11 +22,12 @@ public:
 
     DEFINE_SETTINGFACT(altitude)
     DEFINE_SETTINGFACT(divisions)
-    DEFINE_SETTINGFACT(maxPulse)
+    DEFINE_SETTINGFACT(maxPulseStrength)
     DEFINE_SETTINGFACT(k)
     DEFINE_SETTINGFACT(falseAlarmProbability)
     DEFINE_SETTINGFACT(sdrType)
     DEFINE_SETTINGFACT(showPulseOnMap)
     DEFINE_SETTINGFACT(antennaOffset)
     DEFINE_SETTINGFACT(rotationKWaitCount)
+    DEFINE_SETTINGFACT(useSNRForPulseStrength)
 };

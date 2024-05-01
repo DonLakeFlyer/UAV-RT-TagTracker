@@ -126,13 +126,17 @@ void CustomPlugin::_handleTunnelHeartbeat(const mavlink_tunnel_t& tunnel)
 
     switch (heartbeat.system_id) {
     case HEARTBEAT_SYSTEM_ID_MAVLINKCONTROLLER:
-        qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController - counter:status" << counter++ << heartbeat.status;
+        qCDebug(CustomPluginLog) << "HEARTBEAT from MavlinkTagController - counter:status:temp" << counter++ << heartbeat.status << heartbeat.cpu_temp_c;
         _controllerLostHeartbeat = false;
         emit controllerLostHeartbeatChanged();
         _controllerHeartbeatTimer.start();
         if (_controllerStatus != heartbeat.status) {
             _controllerStatus = (ControllerStatus)heartbeat.status;
             emit controllerStatusChanged();
+        }
+        if (_controllerCPUTemp != heartbeat.cpu_temp_c) {
+            _controllerCPUTemp = heartbeat.cpu_temp_c;
+            emit controllerCPUTempChanged();
         }
         break;
     case HEARTBEAT_SYSTEM_ID_CHANNELIZER:
@@ -212,12 +216,14 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
                                         "CONFIRMED tag_id" <<
                                         pulseInfo.tag_id <<
                                         "snr" <<
-                                        pulseInfo.snr;
+                                        pulseInfo.snr <<
+                                        "stft_score" <<
+                                        pulseInfo.stft_score;
 
             // Add pulse to map
             if (_customSettings->showPulseOnMap()->rawValue().toBool() && pulseInfo.snr != 0) {
                 QUrl url = QUrl::fromUserInput("qrc:/qml/PulseMapItem.qml");
-                PulseMapItem* mapItem = new PulseMapItem(url, QGeoCoordinate(pulseInfo.position_x, pulseInfo.position_y), pulseInfo.tag_id, pulseInfo.snr, this);
+                PulseMapItem* mapItem = new PulseMapItem(url, QGeoCoordinate(pulseInfo.position_x, pulseInfo.position_y), pulseInfo.tag_id, _useSNRForPulseStrength() ? pulseInfo.snr : pulseInfo.stft_score, this);
                 _customMapItems.append(mapItem);
             }
         }
@@ -226,7 +232,9 @@ void CustomPlugin::_handleTunnelPulse(const mavlink_tunnel_t& tunnel)
                                     "Uncconfirmed tag_id" <<
                                     pulseInfo.tag_id <<
                                     "snr" <<
-                                    pulseInfo.snr;
+                                    pulseInfo.snr <<
+                                    "stft_score" <<
+                                    pulseInfo.stft_score;
     }
 
 }
@@ -671,7 +679,7 @@ void CustomPlugin::_rotateVehicle(Vehicle* vehicle, double headingDegrees)
 
 void CustomPlugin::_setupDelayForSteadyCapture(void)
 {
-    _detectorInfoListModel.resetMaxSNR();
+    _detectorInfoListModel.resetMaxStrength();
     _detectorInfoListModel.resetPulseGroupCount();
 }
 
@@ -775,27 +783,27 @@ void CustomPlugin::_say(QString text)
 
 int CustomPlugin::_rawPulseToPct(double rawPulse)
 {
-    double maxPossiblePulse = static_cast<double>(_customSettings->maxPulse()->rawValue().toDouble());
+    double maxPossiblePulse = static_cast<double>(_customSettings->maxPulseStrength()->rawValue().toDouble());
     return static_cast<int>(100.0 * (rawPulse / maxPossiblePulse));
 }
 
 void CustomPlugin::_rotationDelayComplete(void)
 {
-    double maxSNR = _detectorInfoListModel.maxSNR();
-    qCDebug(CustomPluginLog) << "_rotationDelayComplete: max snr" << maxSNR;
-    _rgAngleStrengths.last()[_currentSlice] = maxSNR;
+    double maxStrength = _detectorInfoListModel.maxStrength();
+    qCDebug(CustomPluginLog) << "_rotationDelayComplete: max snr" << maxStrength;
+    _rgAngleStrengths.last()[_currentSlice] = maxStrength;
 
     // Adjust the angle ratios to this new information
-    maxSNR = 0;
+    maxStrength = 0;
     for (int i=0; i<_cSlice; i++) {
-        if (_rgAngleStrengths.last()[i] > maxSNR) {
-            maxSNR = _rgAngleStrengths.last()[i];
+        if (_rgAngleStrengths.last()[i] > maxStrength) {
+            maxStrength = _rgAngleStrengths.last()[i];
         }
     }
     for (int i=0; i<_cSlice; i++) {
         double angleStrength = _rgAngleStrengths.last()[i];
         if (!qIsNaN(angleStrength)) {
-            _rgAngleRatios.last()[i] = _rgAngleStrengths.last()[i] / maxSNR;
+            _rgAngleRatios.last()[i] = _rgAngleStrengths.last()[i] / maxStrength;
         }
     }
     emit angleRatiosChanged();
@@ -1163,4 +1171,23 @@ void CustomPlugin::_logFileDownloadComplete(const QString& file, const QString& 
     } else {
         emit downloadLogDirFilesComplete(QString());
     }
+}
+
+void CustomPlugin::_captureScreen(void)
+{
+    QString saveFile = QString("%1/Screen-%2.jpg").arg(_logSavePath(), QDateTime::currentDateTime().toString("yyyy-MM-dd-hh-mm-ss-zzz").toLocal8Bit().data());
+
+    qCDebug(CustomPluginLog) << "captureScreenshot: saveFile" << saveFile;
+
+    QScreen *screen = QGuiApplication::primaryScreen();
+    QPixmap map = screen->grabWindow(0);
+    if (!map.save(saveFile, "JPG")) {
+        qCDebug(CustomPluginLog) << "captureScreenshot: save failed";
+    }
+}
+
+void CustomPlugin::captureScreen(void)
+{
+    // We need to delay the screen capture to allow the dialog to close
+    QTimer::singleShot(500, [this]() { _captureScreen(); } );
 }
