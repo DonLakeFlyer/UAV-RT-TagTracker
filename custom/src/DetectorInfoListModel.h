@@ -15,9 +15,9 @@ public:
 
     void    setupFromTags               (TagDatabase* tagDB);
     void    handleTunnelPulse           (const mavlink_tunnel_t& tunnel);
-    void    resetMaxSNR                 ();
+    void    resetMaxStrength            ();
     void    resetPulseGroupCount        ();
-    double  maxSNR                      () const;
+    double  maxStrength                 () const;
     bool    allHeartbeatCountsReached   (uint32_t targetHeartbeatCount) const;
     bool    allPulseGroupCountsReached  (uint32_t targetPulseGroupCount) const;
 };

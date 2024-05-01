@@ -10,7 +10,6 @@
 #include "CustomSettings.h"
 #include "FactSystem.h"
 #include "TunnelProtocol.h"
-#include "PulseInfo.h"
 #include "DetectorInfoListModel.h"
 #include "TagDatabase.h"
 
@@ -51,6 +50,7 @@ public:
     Q_PROPERTY(bool                 flightMachineActive     MEMBER  _flightStateMachineActive   NOTIFY flightMachineActiveChanged)
     Q_PROPERTY(bool                 controllerLostHeartbeat MEMBER  _controllerLostHeartbeat    NOTIFY controllerLostHeartbeatChanged)
     Q_PROPERTY(int                  controllerStatus        MEMBER  _controllerStatus           NOTIFY controllerStatusChanged)
+    Q_PROPERTY(float                controllerCPUTemp       MEMBER  _controllerCPUTemp          NOTIFY controllerCPUTempChanged)
     Q_PROPERTY(QmlObjectListModel*  detectorInfoList        READ    detectorInfoList            CONSTANT)
     Q_PROPERTY(TagDatabase*         tagDatabase             MEMBER  _tagDatabase                CONSTANT)
 
@@ -65,6 +65,7 @@ public:
     Q_INVOKABLE void rawCapture         (void);
     Q_INVOKABLE void downloadLogDirList (void);
     Q_INVOKABLE void downloadLogDirFiles(const QString& dirPath);
+    Q_INVOKABLE void captureScreen      (void);
 
     // Overrides from QGCCorePlugin
     bool                mavlinkMessage          (Vehicle* vehicle, LinkInterface* link, mavlink_message_t message) final;
@@ -83,6 +84,7 @@ signals:
     void pulseInfoListsChanged          (void);
     void controllerLostHeartbeatChanged ();
     void controllerStatusChanged        ();
+    void controllerCPUTempChanged       ();
     void logDirListDownloaded           (const QStringList& dirList, const QString& errorMsg);
     void downloadLogDirFilesComplete    (const QString& errorMsg);
 
@@ -149,6 +151,8 @@ private:
     void    _csvLogPulse                (QFile& csvFile, const TunnelProtocol::PulseInfo_t& pulseInfo);
     void    _csvLogRotationStartStop    (QFile& csvFile, bool startRotation);
     void    _logFilesDownloadWorker     (void);
+    bool    _useSNRForPulseStrength     (void) { return _customSettings->useSNRForPulseStrength()->rawValue().toBool(); }
+    void    _captureScreen              (void);
 
     QVariantList            _settingsPages;
     QVariantList            _instrumentPages;
@@ -163,6 +167,7 @@ private:
     int                     _detectionStatus    = -1;
     bool                    _retryRotation      = false;
     int                     _controllerStatus   = ControllerStatusIdle;
+    float                   _controllerCPUTemp  = 0.0;
     int                     _nextTagIndexToSend = 0;
 
     QTimer                  _vehicleStateTimeoutTimer;

@@ -103,7 +103,6 @@ SOURCES += \
     $$PWD/src/DetectorInfo.cc \
     $$PWD/src/DetectorInfoListModel.cc \
     $$PWD/src/TagDatabase.cc \
-    $$PWD/src/PulseInfo.cc \
     $$PWD/src/PulseInfoList.cc \
 
 HEADERS += \
@@ -113,7 +112,6 @@ HEADERS += \
     $$PWD/src/DetectorInfo.h \
     $$PWD/src/DetectorInfoListModel.h \
     $$PWD/src/TagDatabase.h \
-    $$PWD/src/PulseInfo.h \
     $$PWD/src/PulseInfoList.h \
 
 # Bearing calc matlab code

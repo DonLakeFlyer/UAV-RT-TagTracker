@@ -25,7 +25,9 @@ DetectorInfo::DetectorInfo(uint32_t tagId, const QString& tagLabel, uint32_t int
     , _intraPulseMsecs  (intraPulseMsecs)
     , _k                (k)
 {
-    _heartbeatTimerInterval = (_k + 1) * intraPulseMsecs;
+    _heartbeatTimerInterval = ((_k + 1) * intraPulseMsecs) + 1000;
+
+    qDebug() << "DetectorInfo::DetectorInfo" << _tagId << _tagLabel << _intraPulseMsecs << _k << _heartbeatTimerInterval;
 
     _heartbeatTimeoutTimer.setSingleShot(true);
     _heartbeatTimeoutTimer.setInterval(_heartbeatTimerInterval);
@@ -34,9 +36,9 @@ DetectorInfo::DetectorInfo(uint32_t tagId, const QString& tagLabel, uint32_t int
         emit heartbeatLostChanged();
     });
 
-    _stalePulseSNRTimer.setSingleShot(true);
-    _stalePulseSNRTimer.setInterval(_heartbeatTimerInterval);
-    _stalePulseSNRTimer.callOnTimeout([this]() {
+    _stalePulseStrengthTimer.setSingleShot(true);
+    _stalePulseStrengthTimer.setInterval(_heartbeatTimerInterval);
+    _stalePulseStrengthTimer.callOnTimeout([this]() {
         _lastPulseStale = true;
         emit lastPulseStaleChanged();
     });
@@ -66,28 +68,29 @@ void DetectorInfo::handleTunnelPulse(const mavlink_tunnel_t& tunnel)
             emit heartbeatLostChanged();
             qCDebug(DetectorInfoLog) << "HEARTBEAT from Detector id" << _tagId;
         } else if (pulseInfo.confirmed_status) {
-            qCDebug(DetectorInfoLog) << "CONFIRMED tag_id:frequency_hz:seq_ctr:snr:noise_psd" <<
+            qCDebug(DetectorInfoLog) << "CONFIRMED tag_id:frequency_hz:seq_ctr:snr:stft_score:noise_psd" <<
                                         pulseInfo.tag_id <<
                                         pulseInfo.frequency_hz <<
                                         pulseInfo.group_seq_counter <<
                                         pulseInfo.snr <<
+                                        pulseInfo.stft_score <<
                                         pulseInfo.noise_psd;
 
             // We track the max pulse in each K group
             if (_lastPulseGroupSeqCtr != pulseInfo.group_seq_counter) {
                 _lastPulseGroupSeqCtr = pulseInfo.group_seq_counter;
                 _pulseGroupGrount++;
-                _lastPulseSNR = pulseInfo.snr;
+                _lastPulseStrength = pulseInfo.snr;
             } else {
-                _lastPulseSNR = std::max(pulseInfo.snr, _lastPulseSNR);
+                _lastPulseStrength = std::max(pulseInfo.snr, _lastPulseStrength);
             }
             _lastPulseStale = false;
 
-            emit lastPulseSNRChanged();
+            emit lastPulseStrengthChanged();
             emit lastPulseStaleChanged();
-            _stalePulseSNRTimer.start();
+            _stalePulseStrengthTimer.start();
 
-            _maxSNR = qMax(_maxSNR, pulseInfo.snr);
+            _maxStrength = qMax(_maxStrength, pulseInfo.snr);
         }
     } 
 }

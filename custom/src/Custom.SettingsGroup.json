@@ -52,7 +52,13 @@
     "default":      false
 },
 {
-    "name":             "maxPulse",
+    "name":         "useSNRForPulseStrength",
+    "shortDesc":    "true: Use snr for pulse string, false: use stft_score",
+    "type":         "bool",
+    "default":      true
+},
+{
+    "name":             "maxPulseStrength",
     "shortDesc":        "Maximum pulse value",
     "type":             "double",
     "min":              0,
