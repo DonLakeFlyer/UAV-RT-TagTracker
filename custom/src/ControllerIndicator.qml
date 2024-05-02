@@ -84,7 +84,7 @@ Item {
                             anchors.fill:           parent
                             text:                   filteredSNR.toFixed(1)
                             font.bold:              true
-                            color:                  "black"
+                            color:                  "white"
                             horizontalAlignment:    Text.AlignHCenter
                             verticalAlignment:      Text.AlignVCenter
                         }
